@@ -2,8 +2,15 @@
 
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import { usePathname } from "next/navigation";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  if (pathname === "/login") {
+    return <>{children}</>;
+  }
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#0a0a0a]">
       {/* Sidebar for desktop */}
@@ -20,3 +27,4 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     </div>
   );
 }
+
