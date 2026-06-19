@@ -12,7 +12,6 @@ import {
   Warning,
   Scroll,
   UserRectangle,
-  PlugsConnected,
   Gear,
   CheckCircle,
   PauseCircle,
@@ -28,14 +27,7 @@ const mainNav = [
   { href: "/alerts", label: "Cảnh báo", icon: Warning },
   { href: "/logs", label: "Nhật ký hệ thống", icon: Scroll },
   { href: "/ad-accounts", label: "Tài khoản quảng cáo", icon: UserRectangle },
-  { href: "/connections", label: "Kết nối tài khoản", icon: PlugsConnected },
   { href: "/settings", label: "Cài đặt", icon: Gear },
-];
-
-const adAccounts = [
-  { name: "BM 01 - Chính", status: "Hoạt động", active: true },
-  { name: "BM 02 - Dự phòng", status: "Hoạt động", active: true },
-  { name: "BM 03 - Test", status: "Tạm dừng", active: false },
 ];
 
 export default function Sidebar() {
@@ -74,42 +66,6 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Ad Accounts */}
-        <div className="px-5">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-            TÀI KHOẢN QUẢNG CÁO
-          </h3>
-          <div className="flex flex-col gap-3">
-            {adAccounts.map((acc, idx) => (
-              <div key={idx} className="flex items-start gap-3">
-                <div className="mt-0.5">
-                  <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px]">
-                    {idx + 1}
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm text-gray-200">{acc.name}</span>
-                  <span
-                    className={`text-xs flex items-center gap-1 ${
-                      acc.active ? "text-green-500" : "text-gray-500"
-                    }`}
-                  >
-                    {acc.active ? (
-                      <CheckCircle size={12} weight="fill" />
-                    ) : (
-                      <PauseCircle size={12} weight="fill" />
-                    )}
-                    {acc.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-            
-            <button className="flex items-center gap-2 text-sm text-gray-400 hover:text-white mt-2">
-              <span className="text-lg leading-none">+</span> Thêm tài khoản
-            </button>
-          </div>
-        </div>
       </div>
       
       {/* Footer / Version */}
