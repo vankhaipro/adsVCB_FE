@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   House,
   Megaphone,
@@ -13,8 +13,7 @@ import {
   Scroll,
   UserRectangle,
   Gear,
-  CheckCircle,
-  PauseCircle,
+  SignOut,
 } from "@phosphor-icons/react";
 
 const mainNav = [
@@ -32,6 +31,13 @@ const mainNav = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  function handleLogout() {
+    localStorage.removeItem("token");
+    document.cookie = "token=; path=/; max-age=0";
+    router.push("/login");
+  }
 
   return (
     <div className="w-[210px] h-full flex flex-col bg-[#111827] text-n-300 border-r border-[#1f2937] flex-shrink-0">
@@ -68,9 +74,17 @@ export default function Sidebar() {
 
       </div>
       
-      {/* Footer / Version */}
-      <div className="p-4 text-xs text-gray-600 border-t border-[#1f2937]">
-        Phiên bản 1.0.0
+      {/* Footer: version + logout */}
+      <div className="p-4 border-t border-[#1f2937] flex items-center justify-between">
+        <span className="text-xs text-gray-600">Phiên bản 1.0.0</span>
+        <button
+          id="logout-btn"
+          onClick={handleLogout}
+          title="Đăng xuất"
+          className="text-gray-500 hover:text-red-400 transition-colors"
+        >
+          <SignOut size={16} />
+        </button>
       </div>
     </div>
   );
