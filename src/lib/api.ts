@@ -1,5 +1,13 @@
-// Client API nhỏ gọn quanh backend (NEXT_PUBLIC_API_URL).
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+function cleanApiUrl(url: string): string {
+  if (!url) return "http://localhost:3001";
+  let cleaned = url.trim().replace(/\/+$/, "");
+  if (!/^https?:\/\//i.test(cleaned) && !/^\/\//.test(cleaned)) {
+    cleaned = `https://${cleaned}`;
+  }
+  return cleaned;
+}
+
+export const API_URL = cleanApiUrl(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001");
 
 async function handle(res: Response) {
   if (!res.ok) {
