@@ -12,6 +12,7 @@ import {
   Warning,
   Scroll,
   UserRectangle,
+  PlugsConnected,
   Gear,
   CheckCircle,
   PauseCircle,
@@ -27,6 +28,7 @@ const mainNav = [
   { href: "/alerts", label: "Cảnh báo", icon: Warning },
   { href: "/logs", label: "Nhật ký hệ thống", icon: Scroll },
   { href: "/ad-accounts", label: "Tài khoản quảng cáo", icon: UserRectangle },
+  { href: "/connections", label: "Kết nối tài khoản", icon: PlugsConnected },
   { href: "/settings", label: "Cài đặt", icon: Gear },
 ];
 
