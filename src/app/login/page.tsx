@@ -123,7 +123,7 @@ export default function LoginPage() {
 
           {/* Hint */}
           <p className="text-xs text-gray-600 text-center mt-6">
-            Tài khoản mặc định: <span className="text-gray-500">admin@adsvcb.com</span>
+            Tài khoản mặc định: <span className="text-gray-500">admin@adsvcb.com / Admin@123</span>
           </p>
         </div>
 
