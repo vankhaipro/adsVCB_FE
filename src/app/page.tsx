@@ -4,11 +4,12 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowsClockwise, SpinnerGap,
-  TrendUp, TrendDown, Circle, Info, Funnel, Calendar, Export, FloppyDisk
+  Circle, Info, Funnel, Calendar, Export, FloppyDisk
 } from "@phosphor-icons/react";
 import { apiGet, fmtVnd } from "@/lib/api";
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Label,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
   Tooltip as RechartsTooltip
 } from "recharts";
 
@@ -62,6 +63,18 @@ type InsightData = {
   hasData: boolean;
 };
 
+type InsightAgg = {
+  spend: number; impressions: number; clicks: number; reach: number;
+  messages: number; likes: number; conversions: number; campaigns: number;
+};
+type BreakdownData = {
+  byPlatform: (InsightAgg & { platform: string })[];
+  byChannel: (InsightAgg & { name: string; platform: string })[];
+  byContentLine: (InsightAgg & { line: string })[];
+  byObjective: (InsightAgg & { objective: string })[];
+  hasData: boolean;
+};
+
 // Hash function to make generated data deterministic per campaign
 function hashString(str: string): number {
   let hash = 0;
@@ -71,22 +84,6 @@ function hashString(str: string): number {
     hash |= 0;
   }
   return Math.abs(hash);
-}
-
-// Map ranges to number of days
-function getDaysCount(range: string): number {
-  switch (range) {
-    case "today": return 1;
-    case "yesterday": return 1;
-    case "last7days": return 7;
-    case "last30days": return 30;
-    case "thisMonth": {
-      const now = new Date();
-      return now.getDate();
-    }
-    case "lastMonth": return 30;
-    default: return 30;
-  }
 }
 
 // Map khoảng thời gian của bộ lọc -> query ?from=&to= cho API Sapo
@@ -185,76 +182,6 @@ function parseCampaignName(name: string, id: string) {
   return { sku, staff, channel };
 }
 
-// Generate realistic deterministic metrics per campaign based on active filters
-function generateCampaignMetrics(campaign: Campaign, dateRange: string) {
-  const days = getDaysCount(dateRange);
-  const hash = hashString(campaign.id);
-  const isAct = campaign.status === "ACTIVE" || campaign.status === "ENABLE" || campaign.status === "CAMPAIGN_STATUS_ENABLE";
-  
-  // Base daily spend
-  let baseDailySpend = campaign.budget > 0 ? campaign.budget : 150000 + (hash % 650000);
-  if (baseDailySpend > 2000000) baseDailySpend = 800000 + (hash % 500000); // Normalize high budgets
-
-  // Active days
-  let activeDays = days;
-  if (!isAct) {
-    if (dateRange === "today" || dateRange === "yesterday") {
-      activeDays = 0;
-    } else {
-      activeDays = Math.max(0, Math.floor(days * (0.1 + (hash % 30) / 100)));
-    }
-  } else {
-    activeDays = Math.max(1, days - (hash % 2));
-  }
-
-  const spend = activeDays * baseDailySpend;
-  const cpm = 25000 + (hash % 20000);
-  const impressions = Math.floor((spend / cpm) * 1000);
-  const frequency = 1.05 + ((hash % 8) / 10);
-  const reach = Math.floor(impressions / frequency);
-  const ctr = 1.8 + ((hash % 40) / 10);
-  const clicks = Math.floor(impressions * (ctr / 100));
-
-  let messages = 0;
-  let likes = 0;
-  let conversions = 0;
-
-  const upperName = campaign.name.toUpperCase();
-  const isMess = upperName.includes("MESS") || upperName.includes("TIN NHAN") || campaign.objective?.includes("ENGAGEMENT");
-  const isLike = upperName.includes("LIKE PAGE") || upperName.includes("THICH TRANG");
-
-  if (spend > 0) {
-    if (isMess) {
-      messages = Math.floor(clicks * (0.15 + (hash % 10) / 100));
-      likes = Math.floor(clicks * 0.02);
-      conversions = Math.max(1, Math.floor(messages * (0.05 + (hash % 5) / 100)));
-    } else if (isLike) {
-      likes = Math.floor(clicks * (0.45 + (hash % 20) / 100));
-      messages = Math.floor(clicks * 0.01);
-      conversions = Math.max(0, Math.floor(likes * 0.01));
-    } else {
-      conversions = Math.max(1, Math.floor(clicks * (0.02 + (hash % 4) / 100)));
-      messages = Math.floor(clicks * (0.08 + (hash % 6) / 100));
-      likes = Math.floor(clicks * 0.04);
-    }
-  }
-
-  const aov = 350000 + (hash % 450000);
-  const revenue = conversions * aov;
-
-  return {
-    spend,
-    impressions,
-    reach,
-    clicks,
-    messages,
-    likes,
-    conversions,
-    revenue,
-    frequency
-  };
-}
-
 function OverviewInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -267,6 +194,7 @@ function OverviewInner() {
   const [sapo, setSapo] = useState<SapoData | null>(null);
   const [sapoSkus, setSapoSkus] = useState<SapoSku[]>([]);
   const [insights, setInsights] = useState<InsightData | null>(null);
+  const [breakdown, setBreakdown] = useState<BreakdownData | null>(null);
 
   // Tab từ query param ?tab=overview|channel|mode
   const TAB_VALUES = ["overview", "channel", "mode"] as const;
@@ -312,18 +240,21 @@ function OverviewInner() {
   const loadSapo = useCallback(async () => {
     const q = rangeToQuery(dateRange);
     try {
-      const [rev, skus, ins] = await Promise.all([
+      const [rev, skus, ins, brk] = await Promise.all([
         apiGet(`/sapo/revenue?${q}`),
         apiGet(`/sapo/revenue/by-sku?${q}&limit=12`),
         apiGet(`/ads/insights?${q}`),
+        apiGet(`/ads/insights/breakdown?${q}`),
       ]);
       setSapo(rev);
       setSapoSkus(skus);
       setInsights(ins);
+      setBreakdown(brk);
     } catch {
       setSapo(null);
       setSapoSkus([]);
       setInsights(null);
+      setBreakdown(null);
     }
   }, [dateRange]);
 
@@ -364,157 +295,6 @@ function OverviewInner() {
     });
     return Array.from(channels).sort();
   }, [campaigns]);
-
-  const objectivesList = useMemo(() => {
-    const objs = new Set<string>();
-    campaigns.forEach((c) => {
-      if (c.objective) objs.add(c.objective);
-    });
-    return Array.from(objs).sort();
-  }, [campaigns]);
-
-  // Apply filters and compute detailed metrics
-  const processedData = useMemo(() => {
-    const list = campaigns.map((c) => {
-      const parsed = parseCampaignName(c.name, c.id);
-      const computed = generateCampaignMetrics(c, dateRange);
-      
-      const isTikTok = c.platform === "TIKTOK";
-      const finalChannel = isTikTok ? "TikTok Ads" : parsed.channel;
-
-      return {
-        ...c,
-        parsedSku: parsed.sku,
-        parsedStaff: parsed.staff,
-        parsedChannel: finalChannel,
-        metrics: computed
-      };
-    });
-
-    // Apply Filter Logic
-    const filtered = list.filter((item) => {
-      if (platform !== "ALL" && item.platform !== platform) return false;
-      if (accountId !== "ALL" && item.adAccount?.id !== accountId) return false;
-      if (staff !== "ALL" && item.parsedStaff !== staff) return false;
-      if (channel !== "ALL" && item.parsedChannel !== channel) return false;
-      
-      if (objective !== "ALL") {
-        if (objective === "MESS" && !item.parsedChannel.includes("Messenger") && item.objective !== "OUTCOME_ENGAGEMENT") return false;
-        if (objective === "LIKES" && !item.parsedChannel.includes("Page Likes")) return false;
-        if (objective === "CONV" && !item.name.toUpperCase().includes("CONVERSION") && !item.name.toUpperCase().includes("WEB")) return false;
-      }
-      return true;
-    });
-
-    // Aggregate overall KPI metrics
-    let totalRevenue = 0;
-    let totalSpend = 0;
-    let totalConversions = 0;
-    let totalReach = 0;
-    let totalLikes = 0;
-    let totalMessages = 0;
-    let totalImpressions = 0;
-    let totalClicks = 0;
-
-    filtered.forEach((item) => {
-      totalRevenue += item.metrics.revenue;
-      totalSpend += item.metrics.spend;
-      totalConversions += item.metrics.conversions;
-      totalReach += item.metrics.reach;
-      totalLikes += item.metrics.likes;
-      totalMessages += item.metrics.messages;
-      totalImpressions += item.metrics.impressions;
-      totalClicks += item.metrics.clicks;
-    });
-
-    const cpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
-    const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
-    const cpm = totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : 0;
-    const costPerMess = totalMessages > 0 ? totalSpend / totalMessages : 0;
-    const costPerLike = totalLikes > 0 ? totalSpend / totalLikes : 0;
-    const freq = totalReach > 0 ? totalImpressions / totalReach : 0;
-
-    // Group by SKU
-    const skuMap: Record<string, { sku: string; adsCount: number; spend: number; likes: number; messages: number; conversions: number }> = {};
-    filtered.forEach((item) => {
-      const s = item.parsedSku;
-      if (!skuMap[s]) {
-        skuMap[s] = { sku: s, adsCount: 0, spend: 0, likes: 0, messages: 0, conversions: 0 };
-      }
-      skuMap[s].adsCount += 1;
-      skuMap[s].spend += item.metrics.spend;
-      skuMap[s].likes += item.metrics.likes;
-      skuMap[s].messages += item.metrics.messages;
-      skuMap[s].conversions += item.metrics.conversions;
-    });
-    const skus = Object.values(skuMap).sort((a, b) => b.spend - a.spend);
-
-    // Group by Channel
-    const channelMap: Record<string, { name: string; spend: number; messages: number; clicks: number; impressions: number }> = {};
-    filtered.forEach((item) => {
-      const cName = item.parsedChannel;
-      if (!channelMap[cName]) {
-        channelMap[cName] = { name: cName, spend: 0, messages: 0, clicks: 0, impressions: 0 };
-      }
-      channelMap[cName].spend += item.metrics.spend;
-      channelMap[cName].messages += item.metrics.messages;
-      channelMap[cName].clicks += item.metrics.clicks;
-      channelMap[cName].impressions += item.metrics.impressions;
-    });
-    const channels = Object.values(channelMap).sort((a, b) => b.spend - a.spend);
-
-    // Platform Split for budget allocation donut chart
-    let metaSpend = 0;
-    let tiktokSpend = 0;
-    filtered.forEach((item) => {
-      if (item.platform === "META") metaSpend += item.metrics.spend;
-      else if (item.platform === "TIKTOK") tiktokSpend += item.metrics.spend;
-    });
-
-    return {
-      filteredCampaigns: filtered,
-      kpis: {
-        totalRevenue,
-        totalSpend,
-        totalConversions,
-        totalReach,
-        totalLikes,
-        totalMessages,
-        cpc,
-        ctr,
-        cpm,
-        costPerMess,
-        costPerLike,
-        freq
-      },
-      skus,
-      channels,
-      platformSplit: [
-        { name: "Meta Ads", value: metaSpend, color: "#3b82f6" },
-        { name: "TikTok Ads", value: tiktokSpend, color: "#f472b6" }
-      ]
-    };
-  }, [campaigns, dateRange, platform, objective, accountId, channel, staff]);
-
-  const { kpis, skus } = processedData;
-
-  // Chart data formatting: Top 5 SKUs by Message Count & Cost/Mess
-  const skuMsgChartData = useMemo(() => {
-    return skus.slice(0, 5).map((s) => ({
-      name: s.sku,
-      "Tin nhắn": s.messages,
-      "Chi phí/mess": s.messages > 0 ? Math.round(s.spend / s.messages) : 0
-    }));
-  }, [skus]);
-
-  // Chart data formatting: Top 5 SKUs by Page Like & Cost/Like
-  const skuLikeChartData = useMemo(() => {
-    return skus.slice(0, 5).map((s) => ({
-      name: s.sku,
-      "Thích trang": s.likes,
-      "Chi phí/like": s.likes > 0 ? Math.round(s.spend / s.likes) : 0
-    }));
-  }, [skus]);
 
   // Format Helper for numbers
   const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n || 0));
@@ -697,6 +477,23 @@ function OverviewInner() {
             const adReal = !!insights?.hasData;
             const platSpend = insights?.byPlatform ?? [];
             const adTotalSpend = insights?.totalSpend ?? 0;
+            const bdReal = !!breakdown?.hasData;
+            const msgByPlatform = (breakdown?.byPlatform ?? []).map((p) => ({
+              name: p.platform === "TIKTOK" ? "tiktok" : "facebook",
+              "Tin nhắn": p.messages,
+              "Chi phí/tin nhắn": p.messages > 0 ? Math.round(p.spend / p.messages) : 0,
+            }));
+            const likeByPlatform = (breakdown?.byPlatform ?? []).map((p) => ({
+              name: p.platform === "TIKTOK" ? "tiktok" : "facebook",
+              "Like page": p.likes,
+              "Chi phí/like": p.likes > 0 ? Math.round(p.spend / p.likes) : 0,
+            }));
+            const contentLineData = (breakdown?.byContentLine ?? []).map((c) => ({
+              name: c.line,
+              "Ngân sách": Math.round(c.spend / 1e6),
+              "Số quảng cáo": c.campaigns,
+            }));
+            const channelRows = breakdown?.byChannel ?? [];
             return (
               <div className="flex flex-col gap-6">
                 {/* ── 12 KPI CARDS ── */}
@@ -770,18 +567,52 @@ function OverviewInner() {
                     {/* Message Bar by Platform */}
                     <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5">
                       <h3 className="text-sm font-semibold text-white mb-3">Hiệu quả tin nhắn</h3>
-                      <div className="h-44 flex flex-col items-center justify-center text-center gap-1 text-gray-600">
-                        <Info size={20} />
-                        <span className="text-[11px]">Cần đồng bộ insight Meta/TikTok</span>
+                      <div className="h-44">
+                        {!bdReal ? (
+                          <div className="h-full flex flex-col items-center justify-center text-center gap-1 text-gray-600">
+                            <Info size={20} />
+                            <span className="text-[11px]">Cần đồng bộ insight Meta/TikTok</span>
+                          </div>
+                        ) : (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={msgByPlatform} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                              <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
+                              <YAxis yAxisId="left" stroke="#64748b" fontSize={9} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                              <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={9} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                              <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', fontSize: 11 }} />
+                              <Legend wrapperStyle={{ fontSize: '10px' }} />
+                              <Bar yAxisId="left" dataKey="Tin nhắn" fill="#10b981" radius={[3, 3, 0, 0]} />
+                              <Bar yAxisId="right" dataKey="Chi phí/tin nhắn" fill="#f59e0b" radius={[3, 3, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        )}
                       </div>
                     </div>
 
                     {/* Like Bar by Platform */}
                     <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5">
                       <h3 className="text-sm font-semibold text-white mb-3">Hiệu quả like page</h3>
-                      <div className="h-44 flex flex-col items-center justify-center text-center gap-1 text-gray-600">
-                        <Info size={20} />
-                        <span className="text-[11px]">Cần đồng bộ insight Meta/TikTok</span>
+                      <div className="h-44">
+                        {!bdReal ? (
+                          <div className="h-full flex flex-col items-center justify-center text-center gap-1 text-gray-600">
+                            <Info size={20} />
+                            <span className="text-[11px]">Cần đồng bộ insight Meta/TikTok</span>
+                          </div>
+                        ) : (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={likeByPlatform} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                              <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
+                              <YAxis yAxisId="left" stroke="#64748b" fontSize={9} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                              <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={9} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                              <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', fontSize: 11 }} />
+                              <Legend wrapperStyle={{ fontSize: '10px' }} />
+                              <Bar yAxisId="left" dataKey="Like page" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                              <Bar yAxisId="right" dataKey="Chi phí/like" fill="#06b6d4" radius={[3, 3, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -833,9 +664,26 @@ function OverviewInner() {
                     {/* Content Line Bar - full width */}
                     <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5">
                       <h3 className="text-sm font-semibold text-white mb-3">Hiệu quả theo tuyến nội dung</h3>
-                      <div className="h-[140px] flex flex-col items-center justify-center text-center gap-1 text-gray-600">
-                        <Info size={20} />
-                        <span className="text-[11px]">Cần đồng bộ chi phí QC theo tuyến nội dung</span>
+                      <div className="h-[140px]">
+                        {!bdReal ? (
+                          <div className="h-full flex flex-col items-center justify-center text-center gap-1 text-gray-600">
+                            <Info size={20} />
+                            <span className="text-[11px]">Cần đồng bộ chi phí QC theo tuyến nội dung</span>
+                          </div>
+                        ) : (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={contentLineData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                              <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
+                              <YAxis yAxisId="left" stroke="#64748b" fontSize={9} tickLine={false} tickFormatter={(v) => `${v}M`} />
+                              <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={9} tickLine={false} />
+                              <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', fontSize: 11 }} />
+                              <Legend wrapperStyle={{ fontSize: '10px' }} />
+                              <Bar yAxisId="left" dataKey="Ngân sách" fill="#10b981" radius={[3, 3, 0, 0]} />
+                              <Bar yAxisId="right" dataKey="Số quảng cáo" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        )}
                       </div>
                     </div>
 
@@ -845,10 +693,50 @@ function OverviewInner() {
                         <h3 className="text-sm font-semibold text-white">Hiệu suất chi tiết theo Kênh</h3>
                         <span className="text-xs text-gray-500">Sắp xếp theo chi tiêu</span>
                       </div>
-                      <div className="px-5 py-10 flex flex-col items-center justify-center text-center gap-2 text-gray-600">
-                        <Info size={22} />
-                        <span className="text-[11px] max-w-[260px]">Chi tiêu/like/tin nhắn theo kênh cần đồng bộ insight Meta/TikTok. Doanh thu theo kênh thật xem ở tab “Hiệu quả theo Kênh”.</span>
-                      </div>
+                      {!bdReal ? (
+                        <div className="px-5 py-10 flex flex-col items-center justify-center text-center gap-2 text-gray-600">
+                          <Info size={22} />
+                          <span className="text-[11px] max-w-[260px]">Chi tiêu/like/tin nhắn theo kênh cần đồng bộ insight Meta/TikTok.</span>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left whitespace-nowrap">
+                            <thead className="border-b border-[#1e293b]">
+                              <tr>
+                                <th className="px-4 py-3 font-medium text-blue-400">Kênh</th>
+                                <th className="px-4 py-3 font-medium text-blue-400 text-center">Nền tảng</th>
+                                <th className="px-4 py-3 font-medium text-blue-400 text-right">Quảng cáo</th>
+                                <th className="px-4 py-3 font-medium text-blue-400 text-right">Chi tiêu</th>
+                                <th className="px-4 py-3 font-medium text-blue-400 text-right">Like</th>
+                                <th className="px-4 py-3 font-medium text-blue-400 text-right">Tin nhắn</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#1e293b]/60 text-gray-300">
+                              {channelRows.slice(0, 14).map((ch, i) => (
+                                <tr key={i} className="hover:bg-[#1e293b]/40">
+                                  <td className="px-4 py-2.5 text-blue-400 font-medium max-w-[200px] truncate" title={ch.name}>{ch.name}</td>
+                                  <td className="px-4 py-2.5 text-center">
+                                    <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${ch.platform === "TIKTOK" ? "bg-pink-500/20 text-pink-400" : "bg-blue-500/20 text-blue-400"}`}>
+                                      {ch.platform === "TIKTOK" ? "tiktok" : "facebook"}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2.5 text-right">{ch.campaigns}</td>
+                                  <td className="px-4 py-2.5 text-right">{fmtVnd(ch.spend)}</td>
+                                  <td className="px-4 py-2.5 text-right">{fmtNum(ch.likes)}</td>
+                                  <td className="px-4 py-2.5 text-right">{fmtNum(ch.messages)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            {channelRows.length > 14 && (
+                              <tfoot className="border-t border-[#1e293b]">
+                                <tr>
+                                  <td colSpan={6} className="px-4 py-2 text-right text-[11px] text-gray-500">{channelRows.length} kênh</td>
+                                </tr>
+                              </tfoot>
+                            )}
+                          </table>
+                        </div>
+                      )}
                     </div>
 
                   </div>
@@ -858,54 +746,24 @@ function OverviewInner() {
 
           {/* TAB 2: EFFICIENCY BY CHANNEL (SmartBI-style) */}
           {selectedTab === "channel" && (() => {
-            // Group by ad-account name (= "kênh" / fanpage in SmartBI context)
-            type ChannelRow = {
-              name: string;
-              spend: number;
-              messages: number;
-              likes: number;
-              clicks: number;
-              impressions: number;
-              reach: number;
-              comments: number;
-            };
-            const channelByName: Record<string, ChannelRow> = {};
-            processedData.filteredCampaigns.forEach((item) => {
-              const rawName = item.adAccount?.name || item.parsedChannel || "Khác";
-              if (!channelByName[rawName]) {
-                channelByName[rawName] = {
-                  name: rawName, spend: 0, messages: 0, likes: 0,
-                  clicks: 0, impressions: 0, reach: 0, comments: 0
-                };
-              }
-              const m = item.metrics;
-              channelByName[rawName].spend += m.spend;
-              channelByName[rawName].messages += m.messages;
-              channelByName[rawName].likes += m.likes;
-              channelByName[rawName].clicks += m.clicks;
-              channelByName[rawName].impressions += m.impressions;
-              channelByName[rawName].reach += m.reach;
-              // estimate comments ~ 30% of messages for variety
-              const hash = hashString(rawName);
-              channelByName[rawName].comments += Math.floor(m.messages * (0.28 + (hash % 8) / 100));
-            });
-            const channelRows = Object.values(channelByName).sort((a, b) => b.spend - a.spend);
+            // Dữ liệu THẬT từ insight Meta/TikTok (qua /ads/insights + /ads/insights/breakdown)
+            const adReal = !!insights?.hasData;
+            const bd = breakdown;
+            const channelRows = (bd?.byChannel ?? []).map((c) => ({
+              name: c.name, spend: c.spend, messages: c.messages, likes: c.likes,
+              clicks: c.clicks, impressions: c.impressions, reach: c.reach, comments: 0,
+            }));
 
-            // Aggregate KPIs for this tab (same filters already applied)
-            const totalSpend = kpis.totalSpend;
-            const totalLikes = kpis.totalLikes;
-            const totalMessages = kpis.totalMessages;
-            const totalReach = kpis.totalReach;
-            const totalImpressions = processedData.filteredCampaigns.reduce((s, c) => s + c.metrics.impressions, 0);
-            const totalClicks = processedData.filteredCampaigns.reduce((s, c) => s + c.metrics.clicks, 0);
-            const totalComments = channelRows.reduce((s, c) => s + c.comments, 0);
-            const cpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
-            const cpm = totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : 0;
-            const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
-            const freq = totalReach > 0 ? totalImpressions / totalReach : 0;
+            const totalSpend = insights?.totalSpend ?? 0;
+            const totalLikes = insights?.likes ?? 0;
+            const totalMessages = insights?.messages ?? 0;
+            const totalReach = insights?.reach ?? 0;
+            const cpc = insights?.cpc ?? 0;
+            const cpm = insights?.cpm ?? 0;
+            const ctr = insights?.ctr ?? 0;
+            const freq = insights?.frequency ?? 0;
             const costPerLike = totalLikes > 0 ? totalSpend / totalLikes : 0;
-            const costPerMess = totalMessages > 0 ? totalSpend / totalMessages : 0;
-            const costPerComment = totalComments > 0 ? totalSpend / totalComments : 0;
+            const costPerMess = insights?.costPerMessage ?? 0;
 
             // Sorted tables
             const likeRanking = [...channelRows].sort((a, b) => b.likes - a.likes);
@@ -924,24 +782,18 @@ function OverviewInner() {
               ...(restSpend > 0 ? [{ name: "Khác", value: restSpend, color: "#94a3b8" }] : [])
             ];
 
-            // Horizontal bar: by objective group
-            type ObjGroup = { name: string; value: number; color: string };
-            const objMap: Record<string, number> = {};
-            processedData.filteredCampaigns.forEach(item => {
-              const obj = item.objective || "KHÁC";
-              objMap[obj] = (objMap[obj] || 0) + item.metrics.spend;
-            });
-            const objBarData: ObjGroup[] = Object.entries(objMap)
-              .sort((a, b) => b[1] - a[1])
-              .map(([name, value], i) => ({ name, value, color: DONUT_COLORS[i] || "#94a3b8" }));
+            // Horizontal bar: ngân sách theo mục tiêu (objective thật)
+            const objBarData = (bd?.byObjective ?? []).map((o, i) => ({
+              name: o.objective, value: o.spend, color: DONUT_COLORS[i] || "#94a3b8",
+            }));
 
-            // Scatter/dot data: top 30 channels by spend
-            const scatterData = channelRows.slice(0, 30).map((ch, i) => ({
+            // Top 30 kênh theo chi tiêu
+            const scatterData = channelRows.slice(0, 30).map((ch) => ({
               name: ch.name.length > 20 ? ch.name.slice(0, 20) + "…" : ch.name,
               messages: ch.messages,
               likes: ch.likes,
               spend: ch.spend,
-              comments: ch.comments,
+              comments: 0,
             }));
 
             return (
@@ -950,27 +802,22 @@ function OverviewInner() {
                 {/* ── 12 KPI CARDS ── */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {[
-                    { label: "Chi phí quảng cáo", value: fmtVnd(totalSpend), color: "text-blue-400", trend: "+8.4%" },
-                    { label: "Like Page | Follows", value: fmtNum(totalLikes), color: "text-white", trend: "+2.1%" },
-                    { label: "Tin nhắn", value: fmtNum(totalMessages), color: "text-white", trend: "+19.8%" },
-                    { label: "Bình luận", value: fmtNum(totalComments), color: "text-white", trend: "+5.3%" },
-                    { label: "Lượt tiếp cận", value: fmtNum(totalReach), color: "text-white", trend: null },
-                    { label: "CPM", value: cpm > 0 ? cpm.toFixed(2) : "—", color: "text-white", trend: "+1.5%" },
-                    { label: "CPC", value: cpc > 0 ? fmtVnd(cpc) : "—", color: "text-white", trend: "-4.2%" },
-                    { label: "Chi phí/Like page", value: costPerLike > 0 ? fmtVnd(costPerLike) : "—", color: "text-white", trend: "-1.8%" },
-                    { label: "Chi phí/tin nhắn", value: costPerMess > 0 ? fmtVnd(costPerMess) : "—", color: "text-white", trend: "-9.6%" },
-                    { label: "Chi phí/bình luận", value: costPerComment > 0 ? fmtVnd(costPerComment) : "—", color: "text-white", trend: null },
-                    { label: "CTR", value: ctr > 0 ? ctr.toFixed(1) : "—", color: "text-white", trend: "+0.35%" },
-                    { label: "Frequency", value: freq > 0 ? freq.toFixed(2) : "—", color: "text-white", trend: null },
+                    { label: "Chi phí quảng cáo", value: adReal ? fmtVnd(totalSpend) : "—", color: "text-blue-400", trend: null },
+                    { label: "Like Page | Follows", value: adReal ? fmtNum(totalLikes) : "—", color: "text-white", trend: null },
+                    { label: "Tin nhắn", value: adReal ? fmtNum(totalMessages) : "—", color: "text-white", trend: null },
+                    { label: "Bình luận", value: "—", color: "text-gray-600", trend: null },
+                    { label: "Lượt tiếp cận", value: adReal ? fmtNum(totalReach) : "—", color: "text-white", trend: null },
+                    { label: "CPM", value: adReal ? fmtVnd(cpm) : "—", color: "text-white", trend: null },
+                    { label: "CPC", value: adReal ? fmtVnd(cpc) : "—", color: "text-white", trend: null },
+                    { label: "Chi phí/Like page", value: costPerLike > 0 ? fmtVnd(costPerLike) : "—", color: "text-white", trend: null },
+                    { label: "Chi phí/tin nhắn", value: costPerMess > 0 ? fmtVnd(costPerMess) : "—", color: "text-white", trend: null },
+                    { label: "Chi phí/bình luận", value: "—", color: "text-gray-600", trend: null },
+                    { label: "CTR", value: adReal ? `${ctr.toFixed(2)}%` : "—", color: "text-white", trend: null },
+                    { label: "Frequency", value: adReal ? freq.toFixed(2) : "—", color: "text-white", trend: null },
                   ].map((k, i) => (
                     <div key={i} className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-4 flex flex-col justify-between min-h-[90px]">
                       <span className="text-[11px] font-medium text-gray-400 block mb-1">{k.label}</span>
                       <div className={`text-lg font-bold leading-tight ${k.color}`}>{k.value}</div>
-                      {k.trend && (
-                        <span className={`text-[10px] flex items-center gap-0.5 mt-1 ${k.trend.startsWith('-') ? 'text-green-400' : 'text-red-400'}`}>
-                          {k.trend.startsWith('-') ? <TrendDown size={10}/> : <TrendUp size={10}/>} {k.trend}
-                        </span>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -1047,8 +894,6 @@ function OverviewInner() {
                     <div className="flex-1 overflow-x-auto">
                       <div className="flex flex-col gap-2 min-w-0">
                         {scatterData.slice(0, 12).map((d, i) => {
-                          const maxSpend = scatterData[0]?.spend || 1;
-                          const pct = (d.spend / maxSpend) * 100;
                           return (
                             <div key={i} className="flex items-center gap-2 text-[10px]">
                               <span className="text-gray-500 w-4 text-right shrink-0">{i + 1}</span>
@@ -1182,32 +1027,26 @@ function OverviewInner() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#1e293b] text-gray-300">
-                      {objectivesList.map((obj, idx) => {
-                        const related = campaigns.filter(c => c.objective === obj);
-                        let spend = 0, imp = 0, click = 0, conv = 0;
-                        related.forEach(c => {
-                          const met = generateCampaignMetrics(c, dateRange);
-                          spend += met.spend;
-                          imp += met.impressions;
-                          click += met.clicks;
-                          conv += met.messages + met.likes;
-                        });
-
-                        const ctr = imp > 0 ? (click / imp) * 100 : 0;
-                        const cpc = click > 0 ? spend / click : 0;
-
-                        return (
-                          <tr key={idx} className="hover:bg-[#1e293b]/40">
-                            <td className="px-4 py-3 font-semibold text-white">{obj}</td>
-                            <td className="px-4 py-3 text-right">{fmtVnd(spend)}</td>
-                            <td className="px-4 py-3 text-right">{fmtNum(imp)}</td>
-                            <td className="px-4 py-3 text-right">{fmtNum(click)}</td>
-                            <td className="px-4 py-3 text-right">{ctr.toFixed(2)}%</td>
-                            <td className="px-4 py-3 text-right">{cpc > 0 ? fmtVnd(cpc) : "—"}</td>
-                            <td className="px-4 py-3 text-right text-blue-400">{fmtNum(conv)}</td>
-                          </tr>
-                        );
-                      })}
+                      {!breakdown?.hasData ? (
+                        <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-500">Chưa có dữ liệu insight. Hãy đồng bộ insight Meta/TikTok.</td></tr>
+                      ) : (
+                        breakdown.byObjective.map((o, idx) => {
+                          const ctr = o.impressions > 0 ? (o.clicks / o.impressions) * 100 : 0;
+                          const cpc = o.clicks > 0 ? o.spend / o.clicks : 0;
+                          const conv = o.messages + o.conversions;
+                          return (
+                            <tr key={idx} className="hover:bg-[#1e293b]/40">
+                              <td className="px-4 py-3 font-semibold text-white">{o.objective}</td>
+                              <td className="px-4 py-3 text-right">{fmtVnd(o.spend)}</td>
+                              <td className="px-4 py-3 text-right">{fmtNum(o.impressions)}</td>
+                              <td className="px-4 py-3 text-right">{fmtNum(o.clicks)}</td>
+                              <td className="px-4 py-3 text-right">{ctr.toFixed(2)}%</td>
+                              <td className="px-4 py-3 text-right">{cpc > 0 ? fmtVnd(cpc) : "—"}</td>
+                              <td className="px-4 py-3 text-right text-blue-400">{fmtNum(conv)}</td>
+                            </tr>
+                          );
+                        })
+                      )}
                     </tbody>
                   </table>
                 </div>
