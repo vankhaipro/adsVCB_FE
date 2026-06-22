@@ -18,9 +18,8 @@ import {
 
 const mainNav = [
   { href: "/", label: "Tổng quan", icon: House },
-  { href: "/campaigns", label: "Chiến dịch", icon: Megaphone },
+  { href: "/campaigns", label: "Quản lý Ads", icon: Megaphone },
   { href: "/auto-rules", label: "Quy tắc tự động", icon: GitBranch },
-  { href: "/schedule", label: "Lịch trình", icon: Calendar },
   { href: "/budget", label: "Ngân sách", icon: CurrencyCircleDollar },
   { href: "/reports", label: "Báo cáo", icon: ChartBar },
   { href: "/alerts", label: "Cảnh báo", icon: Warning },
