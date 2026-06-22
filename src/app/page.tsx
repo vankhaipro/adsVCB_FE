@@ -53,19 +53,21 @@ type InsightData = {
   reach: number;
   messages: number;
   likes: number;
+  comments: number;
   conversions: number;
   cpc: number;
   ctr: number;
   cpm: number;
   frequency: number;
   costPerMessage: number;
+  costPerComment: number;
   byPlatform: { platform: string; spend: number }[];
   hasData: boolean;
 };
 
 type InsightAgg = {
   spend: number; impressions: number; clicks: number; reach: number;
-  messages: number; likes: number; conversions: number; campaigns: number;
+  messages: number; likes: number; comments: number; conversions: number; campaigns: number;
 };
 type BreakdownData = {
   byPlatform: (InsightAgg & { platform: string })[];
@@ -236,38 +238,60 @@ function OverviewInner() {
     load();
   }, [load]);
 
-  // Nạp doanh thu thật từ Sapo mỗi khi đổi khoảng thời gian
+  // Doanh thu Sapo chỉ map được theo thời gian (utm_id của đơn ở cấp ad,
+  // không gắn được vào campaign/nền tảng/tài khoản) → chỉ phụ thuộc dateRange.
   const loadSapo = useCallback(async () => {
     const q = rangeToQuery(dateRange);
     try {
-      const [rev, skus, ins, brk] = await Promise.all([
+      const [rev, skus] = await Promise.all([
         apiGet(`/sapo/revenue?${q}`),
         apiGet(`/sapo/revenue/by-sku?${q}&limit=12`),
-        apiGet(`/ads/insights?${q}`),
-        apiGet(`/ads/insights/breakdown?${q}`),
       ]);
       setSapo(rev);
       setSapoSkus(skus);
-      setInsights(ins);
-      setBreakdown(brk);
     } catch {
       setSapo(null);
       setSapoSkus([]);
+    }
+  }, [dateRange]);
+
+  // Chỉ số quảng cáo (Meta/TikTok) tôn trọng toàn bộ bộ lọc của Tổng quan.
+  const loadInsights = useCallback(async () => {
+    const params = new URLSearchParams(rangeToQuery(dateRange));
+    if (platform !== "ALL") params.set("platform", platform);
+    if (objective !== "ALL") params.set("objective", objective);
+    if (accountId !== "ALL") params.set("accountId", accountId);
+    if (channel !== "ALL") params.set("channel", channel);
+    if (staff !== "ALL") params.set("staff", staff);
+    const q = params.toString();
+    try {
+      const [ins, brk] = await Promise.all([
+        apiGet(`/ads/insights?${q}`),
+        apiGet(`/ads/insights/breakdown?${q}`),
+      ]);
+      setInsights(ins);
+      setBreakdown(brk);
+    } catch {
       setInsights(null);
       setBreakdown(null);
     }
-  }, [dateRange]);
+  }, [dateRange, platform, objective, accountId, channel, staff]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadSapo();
   }, [loadSapo]);
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadInsights();
+  }, [loadInsights]);
+
   const refresh = async () => {
     setSyncing(true);
     try {
       await apiGet("/ads/sync");
-      await Promise.all([load(), loadSapo()]);
+      await Promise.all([load(), loadSapo(), loadInsights()]);
     } finally {
       setSyncing(false);
     }
@@ -751,12 +775,13 @@ function OverviewInner() {
             const bd = breakdown;
             const channelRows = (bd?.byChannel ?? []).map((c) => ({
               name: c.name, spend: c.spend, messages: c.messages, likes: c.likes,
-              clicks: c.clicks, impressions: c.impressions, reach: c.reach, comments: 0,
+              clicks: c.clicks, impressions: c.impressions, reach: c.reach, comments: c.comments ?? 0,
             }));
 
             const totalSpend = insights?.totalSpend ?? 0;
             const totalLikes = insights?.likes ?? 0;
             const totalMessages = insights?.messages ?? 0;
+            const totalComments = insights?.comments ?? 0;
             const totalReach = insights?.reach ?? 0;
             const cpc = insights?.cpc ?? 0;
             const cpm = insights?.cpm ?? 0;
@@ -764,6 +789,7 @@ function OverviewInner() {
             const freq = insights?.frequency ?? 0;
             const costPerLike = totalLikes > 0 ? totalSpend / totalLikes : 0;
             const costPerMess = insights?.costPerMessage ?? 0;
+            const costPerComment = insights?.costPerComment ?? 0;
 
             // Sorted tables
             const likeRanking = [...channelRows].sort((a, b) => b.likes - a.likes);
@@ -793,7 +819,7 @@ function OverviewInner() {
               messages: ch.messages,
               likes: ch.likes,
               spend: ch.spend,
-              comments: 0,
+              comments: ch.comments,
             }));
 
             return (
@@ -805,13 +831,13 @@ function OverviewInner() {
                     { label: "Chi phí quảng cáo", value: adReal ? fmtVnd(totalSpend) : "—", color: "text-blue-400", trend: null },
                     { label: "Like Page | Follows", value: adReal ? fmtNum(totalLikes) : "—", color: "text-white", trend: null },
                     { label: "Tin nhắn", value: adReal ? fmtNum(totalMessages) : "—", color: "text-white", trend: null },
-                    { label: "Bình luận", value: "—", color: "text-gray-600", trend: null },
+                    { label: "Bình luận", value: adReal ? fmtNum(totalComments) : "—", color: adReal ? "text-white" : "text-gray-600", trend: null },
                     { label: "Lượt tiếp cận", value: adReal ? fmtNum(totalReach) : "—", color: "text-white", trend: null },
                     { label: "CPM", value: adReal ? fmtVnd(cpm) : "—", color: "text-white", trend: null },
                     { label: "CPC", value: adReal ? fmtVnd(cpc) : "—", color: "text-white", trend: null },
                     { label: "Chi phí/Like page", value: costPerLike > 0 ? fmtVnd(costPerLike) : "—", color: "text-white", trend: null },
                     { label: "Chi phí/tin nhắn", value: costPerMess > 0 ? fmtVnd(costPerMess) : "—", color: "text-white", trend: null },
-                    { label: "Chi phí/bình luận", value: "—", color: "text-gray-600", trend: null },
+                    { label: "Chi phí/bình luận", value: costPerComment > 0 ? fmtVnd(costPerComment) : "—", color: costPerComment > 0 ? "text-white" : "text-gray-600", trend: null },
                     { label: "CTR", value: adReal ? `${ctr.toFixed(2)}%` : "—", color: "text-white", trend: null },
                     { label: "Frequency", value: adReal ? freq.toFixed(2) : "—", color: "text-white", trend: null },
                   ].map((k, i) => (
