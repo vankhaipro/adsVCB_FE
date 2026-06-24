@@ -48,11 +48,22 @@ export default function ChannelsPage() {
   const [team, setTeam] = useState("");
   const [channelName, setChannelName] = useState("");
 
+  // Master data nhân sự (gợi ý) — quản lý ở trang Cài đặt
+  const [teamList, setTeamList] = useState<{ id: string; name: string }[]>([]);
+  const [empList, setEmpList] = useState<{ id: string; name: string; team: { name: string } | null }[]>([]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      setChannels(await apiGet("/channels"));
+      const [chs, teams, emps] = await Promise.all([
+        apiGet("/channels"),
+        apiGet("/teams"),
+        apiGet("/employees"),
+      ]);
+      setChannels(chs);
+      setTeamList(teams);
+      setEmpList(emps);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
     } finally {
@@ -181,12 +192,32 @@ export default function ChannelsPage() {
             <input className={inputCls} placeholder="(tự điền nếu trống)" value={channelName} onChange={(e) => setChannelName(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1 w-[140px]">
-            <label className="text-xs text-gray-400">Nhân viên</label>
-            <input className={inputCls} value={staff} onChange={(e) => setStaff(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1 w-[140px]">
             <label className="text-xs text-gray-400">Team</label>
-            <input className={inputCls} value={team} onChange={(e) => setTeam(e.target.value)} />
+            <input
+              className={inputCls}
+              list="team-suggestions"
+              placeholder="Chọn / gõ team"
+              value={team}
+              onChange={(e) => setTeam(e.target.value)}
+            />
+            <datalist id="team-suggestions">
+              {teamList.map((t) => <option key={t.id} value={t.name} />)}
+            </datalist>
+          </div>
+          <div className="flex flex-col gap-1 w-[160px]">
+            <label className="text-xs text-gray-400">Nhân viên</label>
+            <input
+              className={inputCls}
+              list="staff-suggestions"
+              placeholder="Chọn / gõ nhân viên"
+              value={staff}
+              onChange={(e) => setStaff(e.target.value)}
+            />
+            <datalist id="staff-suggestions">
+              {empList
+                .filter((e) => !team.trim() || e.team?.name === team.trim())
+                .map((e) => <option key={e.id} value={e.name} />)}
+            </datalist>
           </div>
           <button
             onClick={addChannel}
