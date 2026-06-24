@@ -14,10 +14,12 @@ import {
   UserRectangle,
   Gear,
   SignOut,
+  Broadcast,
 } from "@phosphor-icons/react";
 
 const mainNav = [
   { href: "/", label: "Tổng quan", icon: House },
+  { href: "/channels", label: "Kênh organic", icon: Broadcast },
   { href: "/campaigns", label: "Quản lý Ads", icon: Megaphone },
   { href: "/auto-rules", label: "Quy tắc tự động", icon: GitBranch },
   { href: "/budget", label: "Ngân sách", icon: CurrencyCircleDollar },

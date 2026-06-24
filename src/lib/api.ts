@@ -39,6 +39,9 @@ export const apiPatch = (path: string, body?: unknown) =>
     body: body ? JSON.stringify(body) : undefined,
   }).then(handle);
 
+export const apiDelete = (path: string) =>
+  fetch(`${API_URL}${path}`, { method: "DELETE" }).then(handle);
+
 // Format tiền VND
 export const fmtVnd = (n: number) =>
   new Intl.NumberFormat("vi-VN").format(Math.round(n || 0)) + "đ";
