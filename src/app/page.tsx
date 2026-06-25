@@ -523,18 +523,20 @@ function OverviewInner() {
                 {/* ── 12 KPI CARDS ── */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {[
+                    // Hàng trên (cột 1→6); hàng dưới ngay bên dưới cùng cột — nhóm liên quan xếp dọc.
                     { label: "Tổng doanh thu", value: sapo ? fmtVnd(sapo.totalRevenue) : "—", real: true },
-                    { label: "Đã thực thu", value: sapo ? fmtVnd(sapo.totalReceived) : "—", real: true },
                     { label: "Lượt mua hàng", value: sapo ? fmtNum(sapo.orderCount) : "—", real: true },
-                    { label: "Giá trị TB/đơn", value: sapo && sapo.orderCount > 0 ? fmtVnd(sapo.totalRevenue / sapo.orderCount) : "—", real: true },
-                    { label: "Tổng giảm giá", value: sapo ? fmtVnd(sapo.totalDiscounts) : "—", real: true },
-                    { label: "Chi phí quảng cáo", value: adReal ? fmtVnd(insights!.totalSpend) : "—", real: adReal },
-                    { label: "Lượt tiếp cận", value: adReal ? fmtNum(insights!.reach) : "—", real: adReal },
+                    { label: "Lượt thích trang", value: adReal ? fmtNum(insights!.likes) : "—", real: adReal },
                     { label: "Tổng tin nhắn", value: adReal ? fmtNum(insights!.messages) : "—", real: adReal },
-                    { label: "CPC", value: adReal ? fmtVnd(insights!.cpc) : "—", real: adReal },
+                    { label: "Lượt tiếp cận", value: adReal ? fmtNum(insights!.reach) : "—", real: adReal },
                     { label: "CTR", value: adReal ? `${insights!.ctr.toFixed(2)}%` : "—", real: adReal },
-                    { label: "CPM", value: adReal ? fmtVnd(insights!.cpm) : "—", real: adReal },
+                    // Hàng dưới
+                    { label: "Giá trị TB/đơn", value: sapo && sapo.orderCount > 0 ? fmtVnd(sapo.totalRevenue / sapo.orderCount) : "—", real: true },
+                    { label: "Chi phí quảng cáo", value: adReal ? fmtVnd(insights!.totalSpend) : "—", real: adReal },
+                    { label: "Chi phí/lượt thích trang", value: adReal && insights!.likes > 0 ? fmtVnd(insights!.totalSpend / insights!.likes) : "—", real: adReal },
+                    { label: "Chi phí/tin nhắn", value: adReal && insights!.messages > 0 ? fmtVnd(insights!.totalSpend / insights!.messages) : "—", real: adReal },
                     { label: "Frequency", value: adReal ? insights!.frequency.toFixed(2) : "—", real: adReal },
+                    { label: "CPC", value: adReal ? fmtVnd(insights!.cpc) : "—", real: adReal },
                   ].map((k, i) => (
                     <div key={i} className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-4 flex flex-col justify-between min-h-[88px]">
                       <span className="text-xs text-gray-400 block mb-2">{k.label}</span>
