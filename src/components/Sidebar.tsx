@@ -32,7 +32,7 @@ const mainNav: NavItem[] = [
       { href: "/content/overview", label: "Tổng quan content" },
     ],
   },
-  
+
   {
     label: "Quản lý",
     icon: Megaphone,
@@ -106,11 +106,10 @@ export default function Sidebar() {
                 <div key={item.label}>
                   <button
                     onClick={() => toggle(item.label)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                      parentActive
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${parentActive
                         ? "text-white font-medium"
                         : "text-gray-400 hover:text-white hover:bg-[#1f2937]"
-                    }`}
+                      }`}
                   >
                     <Icon size={16} weight={parentActive ? "fill" : "regular"} />
                     {item.label}
@@ -128,16 +127,14 @@ export default function Sidebar() {
                           <Link
                             key={child.href}
                             href={child.href}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                              childActive
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${childActive
                                 ? "bg-[#1f2937] text-white font-medium"
                                 : "text-gray-400 hover:text-white hover:bg-[#1f2937]"
-                            }`}
+                              }`}
                           >
                             <span
-                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                childActive ? "bg-blue-500" : "bg-gray-600"
-                              }`}
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${childActive ? "bg-blue-500" : "bg-gray-600"
+                                }`}
                             />
                             {child.label}
                           </Link>
@@ -155,11 +152,10 @@ export default function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                  active
+                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${active
                     ? "bg-[#1f2937] text-white font-medium"
                     : "text-gray-400 hover:text-white hover:bg-[#1f2937]"
-                }`}
+                  }`}
               >
                 <Icon size={16} weight={active ? "fill" : "regular"} />
                 {item.label}
