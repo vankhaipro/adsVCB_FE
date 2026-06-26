@@ -3,10 +3,18 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ArrowsClockwise, SpinnerGap,
-  Circle, Info, Funnel, Calendar, Export, FloppyDisk
+  SpinnerGap, Circle, Info,
+  CurrencyDollar, TrendUp, Eye, Waveform,
+  CursorClick, ShoppingCart, Lightning, ChartBar,
+  type Icon,
 } from "@phosphor-icons/react";
 import { apiGet, fmtVnd } from "@/lib/api";
+import OverviewHeader, { type KpiItem } from "@/components/overview/OverviewHeader";
+import OverviewBody from "@/components/overview/OverviewBody";
+import { KPIS, type Kpi } from "@/components/overview/dashboardData";
+
+// Bản Tổng quan cũ (dữ liệu thật) được giữ lại — đặt true để bật lại.
+const LEGACY_OVERVIEW: boolean = false;
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Label,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
@@ -212,6 +220,8 @@ function OverviewInner() {
   const [dateRange, setDateRange] = useState("thisMonth");
   const [platform, setPlatform] = useState("ALL");
   const [objective, setObjective] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [search, setSearch] = useState("");
   const [accountId, setAccountId] = useState("ALL");
   const [channel, setChannel] = useState("ALL");
   const [staff, setStaff] = useState("ALL");
@@ -297,54 +307,43 @@ function OverviewInner() {
     }
   };
 
-  // Derive unique lists from loaded data
-  const staffList = useMemo(() => {
-    const staffs = new Set<string>();
-    campaigns.forEach((c) => {
-      const { staff } = parseCampaignName(c.name, c.id);
-      staffs.add(staff);
-    });
-    return Array.from(staffs).sort();
-  }, [campaigns]);
-
-  const channelList = useMemo(() => {
-    const channels = new Set<string>();
-    campaigns.forEach((c) => {
-      if (c.platform === "TIKTOK") {
-        channels.add("TikTok Ads");
-      } else {
-        const { channel } = parseCampaignName(c.name, c.id);
-        channels.add(channel);
-      }
-    });
-    return Array.from(channels).sort();
-  }, [campaigns]);
-
   // Format Helper for numbers
   const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n || 0));
+  const fmtCompact = (n: number) => {
+    const abs = Math.abs(n || 0);
+    if (abs >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
+    if (abs >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+    if (abs >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+    return fmtNum(n);
+  };
+
+  const overviewKpis = useMemo((): KpiItem[] => {
+    // KPI khớp thiết kế Figma (dữ liệu mẫu — xem dashboardData.ts).
+    const ICONS: Record<Kpi["icon"], Icon> = {
+      spend: CurrencyDollar,
+      revenue: TrendUp,
+      reach: Eye,
+      impressions: Waveform,
+      clicks: CursorClick,
+      orders: ShoppingCart,
+      ctr: Lightning,
+      roas: ChartBar,
+    };
+    return KPIS.map((k) => ({
+      label: k.label,
+      value: k.value,
+      sub: k.sub,
+      change: k.change,
+      icon: ICONS[k.icon],
+      iconColor: k.color,
+      iconBg: k.bg,
+    }));
+  }, []);
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-full overflow-x-hidden pb-10 font-sans text-gray-200">
-      {/* Title Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1e293b] pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Báo cáo Quảng cáo Đa kênh</h1>
-          <p className="text-xs text-gray-400 mt-1">Hệ thống phân tích &amp; theo dõi hiệu năng thông minh</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={refresh}
-            disabled={syncing || loading}
-            className="flex items-center gap-2 px-4 py-2 bg-[#1e293b] hover:bg-[#334155] disabled:opacity-60 text-gray-200 text-sm font-medium rounded-md transition-colors border border-[#334155]"
-          >
-            {syncing ? <SpinnerGap size={16} className="animate-spin" /> : <ArrowsClockwise size={16} />}
-            Đồng bộ Pipeboard
-          </button>
-        </div>
-      </div>
-
+    <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10 font-sans -m-4 sm:-m-5 p-4 sm:p-5 bg-[#0a0a0a] min-h-full">
       {/* Navigation Tabs — URL query param: ?tab=overview|channel|mode */}
-      <div className="flex border-b border-[#1e293b] gap-2">
+      <div className="flex border-b border-[#1e293b] gap-1 bg-[#0f172a] rounded-t-xl px-2 pt-1">
         {([
           { value: "overview", label: "Tổng quan" },
           { value: "channel", label: "Hiệu quả theo Kênh" },
@@ -355,7 +354,7 @@ function OverviewInner() {
             onClick={() => setSelectedTab(t.value)}
             className={`px-5 py-3 text-sm font-medium border-b-2 transition-all ${
               selectedTab === t.value
-                ? "border-blue-500 text-blue-400"
+                ? "border-blue-600 text-blue-600"
                 : "border-transparent text-gray-400 hover:text-gray-200"
             }`}
           >
@@ -364,140 +363,37 @@ function OverviewInner() {
         ))}
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-4 flex flex-wrap gap-4 items-center">
-        {/* Date Selector */}
-        <div className="flex items-center gap-2 bg-[#1e293b] border border-[#334155] rounded-md px-3 py-2 text-xs">
-          <Calendar size={16} className="text-blue-400" />
-          <span className="text-gray-300">Thời gian:</span>
-          <select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="bg-transparent text-white outline-none cursor-pointer font-medium"
-          >
-            <option className="bg-[#0f172a]" value="today">Hôm nay</option>
-            <option className="bg-[#0f172a]" value="yesterday">Hôm qua</option>
-            <option className="bg-[#0f172a]" value="last7days">7 ngày qua</option>
-            <option className="bg-[#0f172a]" value="last30days">30 ngày qua</option>
-            <option className="bg-[#0f172a]" value="thisMonth">Tháng này</option>
-            <option className="bg-[#0f172a]" value="lastMonth">Tháng trước</option>
-          </select>
-        </div>
-
-        {/* Platform Selector */}
-        <div className="flex items-center gap-2 bg-[#1e293b] border border-[#334155] rounded-md px-3 py-2 text-xs">
-          <Funnel size={14} className="text-gray-400" />
-          <span className="text-gray-300">Nền tảng:</span>
-          <select
-            value={platform}
-            onChange={(e) => {
-              setPlatform(e.target.value);
-              setAccountId("ALL"); // Reset account filter on platform change
-            }}
-            className="bg-transparent text-white outline-none cursor-pointer"
-          >
-            <option className="bg-[#0f172a]" value="ALL">Tất cả</option>
-            <option className="bg-[#0f172a]" value="META">Meta Ads</option>
-            <option className="bg-[#0f172a]" value="TIKTOK">TikTok Ads</option>
-          </select>
-        </div>
-
-        {/* Campaign Objective Selector */}
-        <div className="flex items-center gap-2 bg-[#1e293b] border border-[#334155] rounded-md px-3 py-2 text-xs">
-          <Funnel size={14} className="text-gray-400" />
-          <span className="text-gray-300">Mục tiêu:</span>
-          <select
-            value={objective}
-            onChange={(e) => setObjective(e.target.value)}
-            className="bg-transparent text-white outline-none cursor-pointer"
-          >
-            <option className="bg-[#0f172a]" value="ALL">Tất cả mục tiêu</option>
-            <option className="bg-[#0f172a]" value="MESS">Tin nhắn</option>
-            <option className="bg-[#0f172a]" value="LIKES">Thích trang</option>
-            <option className="bg-[#0f172a]" value="CONV">Chuyển đổi</option>
-          </select>
-        </div>
-
-        {/* Ad Account Selector */}
-        <div className="flex items-center gap-2 bg-[#1e293b] border border-[#334155] rounded-md px-3 py-2 text-xs max-w-[200px]">
-          <Funnel size={14} className="text-gray-400" />
-          <span className="text-gray-300 truncate">Tài khoản:</span>
-          <select
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-            className="bg-transparent text-white outline-none cursor-pointer truncate max-w-[100px]"
-          >
-            <option className="bg-[#0f172a]" value="ALL">Tất cả</option>
-            {accounts
-              .filter((acc) => platform === "ALL" || acc.platform === platform)
-              .map((acc) => (
-                <option className="bg-[#0f172a]" key={acc.id} value={acc.id}>
-                  {acc.name || acc.externalId}
-                </option>
-              ))}
-          </select>
-        </div>
-
-        {/* Channel Selector */}
-        <div className="flex items-center gap-2 bg-[#1e293b] border border-[#334155] rounded-md px-3 py-2 text-xs">
-          <Funnel size={14} className="text-gray-400" />
-          <span className="text-gray-300">Kênh:</span>
-          <select
-            value={channel}
-            onChange={(e) => setChannel(e.target.value)}
-            className="bg-transparent text-white outline-none cursor-pointer"
-          >
-            <option className="bg-[#0f172a]" value="ALL">Tất cả kênh</option>
-            {channelList.map((ch) => (
-              <option className="bg-[#0f172a]" key={ch} value={ch}>{ch}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Staff Selector */}
-        <div className="flex items-center gap-2 bg-[#1e293b] border border-[#334155] rounded-md px-3 py-2 text-xs">
-          <Funnel size={14} className="text-gray-400" />
-          <span className="text-gray-300">Nhân sự:</span>
-          <select
-            value={staff}
-            onChange={(e) => setStaff(e.target.value)}
-            className="bg-transparent text-white outline-none cursor-pointer"
-          >
-            <option className="bg-[#0f172a]" value="ALL">Tất cả nhân sự</option>
-            {staffList.map((st) => (
-              <option className="bg-[#0f172a]" key={st} value={st}>{st}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Filter Utilities */}
-        <div className="ml-auto flex gap-2">
-          <button 
-            onClick={() => alert("Đã lưu bộ lọc thành công!")}
-            className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-medium transition-colors"
-          >
-            <FloppyDisk size={14} />
-            Lưu bộ lọc
-          </button>
-          <button 
-            onClick={() => alert("Bắt đầu xuất dữ liệu báo cáo...")}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#1e293b] border border-[#334155] hover:bg-[#334155] text-gray-300 rounded-md text-xs font-medium transition-colors"
-          >
-            <Export size={14} />
-            Export
-          </button>
-        </div>
-      </div>
+      <OverviewHeader
+        search={search}
+        onSearchChange={setSearch}
+        platform={platform}
+        status={statusFilter}
+        objective={objective}
+        dateRange={dateRange}
+        onPlatformChange={(v) => {
+          setPlatform(v);
+          setAccountId("ALL");
+        }}
+        onStatusChange={setStatusFilter}
+        onObjectiveChange={setObjective}
+        onDateRangeChange={setDateRange}
+        kpis={overviewKpis}
+        showKpis={selectedTab === "overview"}
+        onRefresh={refresh}
+        onExport={() => alert("Bắt đầu xuất dữ liệu báo cáo...")}
+        refreshing={syncing || loading}
+      />
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-20 gap-3">
-          <SpinnerGap size={36} className="animate-spin text-blue-500" />
-          <span className="text-sm text-gray-400">Đang tải và đồng bộ hóa báo cáo...</span>
+        <div className="flex flex-col items-center justify-center p-20 gap-3 bg-[#0f172a] rounded-xl border border-[#1e293b]">
+          <SpinnerGap size={36} className="animate-spin text-blue-600" />
+          <span className="text-sm text-gray-500">Đang tải và đồng bộ hóa báo cáo...</span>
         </div>
       ) : (
         <>
-          {/* TAB 1: OVERVIEW - SmartBI style */}
-          {selectedTab === "overview" && (() => {
+          {/* TAB 1: OVERVIEW — dựng lại theo Figma (dữ liệu mẫu, xem dashboardData.ts) */}
+          {selectedTab === "overview" && <OverviewBody />}
+          {LEGACY_OVERVIEW && (() => {
             const adReal = !!insights?.hasData;
             const platSpend = insights?.byPlatform ?? [];
             const adTotalSpend = insights?.totalSpend ?? 0;
@@ -520,32 +416,6 @@ function OverviewInner() {
             const channelRows = breakdown?.byChannel ?? [];
             return (
               <div className="flex flex-col gap-6">
-                {/* ── 12 KPI CARDS ── */}
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {[
-                    // Hàng trên (cột 1→6); hàng dưới ngay bên dưới cùng cột — nhóm liên quan xếp dọc.
-                    { label: "Tổng doanh thu", value: sapo ? fmtVnd(sapo.totalRevenue) : "—", real: true },
-                    { label: "Lượt mua hàng", value: sapo ? fmtNum(sapo.orderCount) : "—", real: true },
-                    { label: "Lượt thích trang", value: adReal ? fmtNum(insights!.likes) : "—", real: adReal },
-                    { label: "Tổng tin nhắn", value: adReal ? fmtNum(insights!.messages) : "—", real: adReal },
-                    { label: "Lượt tiếp cận", value: adReal ? fmtNum(insights!.reach) : "—", real: adReal },
-                    { label: "CTR", value: adReal ? `${insights!.ctr.toFixed(2)}%` : "—", real: adReal },
-                    // Hàng dưới
-                    { label: "Giá trị TB/đơn", value: sapo && sapo.orderCount > 0 ? fmtVnd(sapo.totalRevenue / sapo.orderCount) : "—", real: true },
-                    { label: "Chi phí quảng cáo", value: adReal ? fmtVnd(insights!.totalSpend) : "—", real: adReal },
-                    { label: "Chi phí/lượt thích trang", value: adReal && insights!.likes > 0 ? fmtVnd(insights!.totalSpend / insights!.likes) : "—", real: adReal },
-                    { label: "Chi phí/tin nhắn", value: adReal && insights!.messages > 0 ? fmtVnd(insights!.totalSpend / insights!.messages) : "—", real: adReal },
-                    { label: "Frequency", value: adReal ? insights!.frequency.toFixed(2) : "—", real: adReal },
-                    { label: "CPC", value: adReal ? fmtVnd(insights!.cpc) : "—", real: adReal },
-                  ].map((k, i) => (
-                    <div key={i} className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-4 flex flex-col justify-between min-h-[88px]">
-                      <span className="text-xs text-gray-400 block mb-2">{k.label}</span>
-                      <div className={`text-2xl font-bold leading-tight ${k.real ? "text-white" : "text-gray-600"}`}>{k.value}</div>
-                      {!k.real && <span className="text-[9px] text-gray-600 mt-1">Cần đồng bộ insight</span>}
-                    </div>
-                  ))}
-                </div>
-
                 {/* ── ROW 2: Donut + 2 bar charts + SKU table ── */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
