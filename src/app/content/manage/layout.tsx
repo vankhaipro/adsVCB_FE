@@ -1,18 +1,18 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect, useRef, Suspense } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 import {
-  CaretDown,
   FacebookLogo,
   TiktokLogo,
   YoutubeLogo,
   CloudArrowDown,
-  ChartPie
+  MagnifyingGlass,
+  Funnel
 } from "@phosphor-icons/react";
 
 const options = [
-  { id: "overview", label: "Tổng quan", href: "/content/manage/overview", icon: ChartPie },
   { id: "meta", label: "Meta Content", href: "/content/manage/meta", icon: FacebookLogo },
   { id: "tiktok", label: "Tiktok Content", href: "/content/manage/tiktok", icon: TiktokLogo },
   { id: "youtube", label: "Youtube Content", href: "/content/manage/youtube", icon: YoutubeLogo },
@@ -29,84 +29,66 @@ export default function ContentManageLayout({ children }: { children: React.Reac
 
 function ContentManageLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
   const selectedOption = options.find((o) => pathname === o.href || pathname.startsWith(o.href + "/")) || options[0];
 
-  function handleSelect(href: string) {
-    router.push(href);
-    setIsOpen(false);
-  }
-
   return (
-    <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10 text-gray-200">
-      {/* Header and Dropdown Selector */}
-      <div className="border-b border-[#1e293b] pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <span>Quản lý content</span>
-            {selectedOption.id !== "overview" && (
-              <span className="text-sm font-normal px-2.5 py-0.5 rounded-full bg-[#1f2937] text-blue-400 border border-blue-500/20">
-                {selectedOption.label}
-              </span>
-            )}
-          </h1>
-          <p className="text-sm text-gray-400 mt-1">
-            Quản lý nội dung organic: kênh, video, lịch đăng và phân công nhân sự.
-          </p>
+    <div className="flex flex-col gap-6 w-full max-w-full overflow-x-hidden pb-10 text-gray-200">
+      {/* Header Title and Description */}
+      <div>
+        <h1 className="text-2xl font-bold text-white">Quản lý content</h1>
+        <p className="text-sm text-gray-400 mt-1">
+          Quản lý nội dung organic: kênh, video, lịch đăng và phân công nhân sự.
+        </p>
+      </div>
+
+      {/* Horizontal Tabs with Underline Indicator & Search/Filter on the right */}
+      <div className="border-b border-[#1e293b] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Left Side: Tabs */}
+        <div className="flex items-center gap-8">
+          {options.map((option) => {
+            const isActive = selectedOption.id === option.id;
+            const Icon = option.icon;
+            return (
+              <Link
+                key={option.id}
+                href={option.href}
+                className={`flex items-center gap-2 pb-3 text-xs font-semibold relative transition-all duration-200 cursor-pointer ${
+                  isActive ? "text-[#3b82f6]" : "text-gray-400 hover:text-white"
+                }`}
+              >
+                <Icon size={14} className={isActive ? "text-[#3b82f6]" : "text-gray-500"} />
+                <span>{option.label}</span>
+                {isActive && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#3b82f6]" />
+                )}
+              </Link>
+            );
+          })}
         </div>
 
-        {/* Custom Selector Dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="flex items-center justify-between gap-3 px-4 py-2.5 bg-[#111827] border border-[#1f2937] hover:border-blue-500 rounded-lg text-sm text-gray-200 min-w-[220px] transition-all duration-200 cursor-pointer shadow-lg hover:shadow-blue-500/5 focus:outline-none"
-          >
-            <div className="flex items-center gap-2.5">
-              <selectedOption.icon size={18} className="text-blue-500" />
-              <span className="font-semibold text-white">{selectedOption.label}</span>
+        {/* Right Side: Search & Filter (Hide on sourcing content page) */}
+        {selectedOption.id !== "sourcing" && (
+          <div className="flex items-center gap-2 pb-2">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder={
+                  selectedOption.id === "meta"
+                    ? "Tìm kiếm bài viết..."
+                    : selectedOption.id === "tiktok"
+                    ? "Tìm kiếm video TikTok..."
+                    : "Tìm kiếm video YouTube..."
+                }
+                className="bg-[#111827] border border-[#1f2937] hover:border-gray-700 rounded-lg px-3 py-1.5 pl-9 text-xs focus:border-blue-500 focus:outline-none w-[200px] text-white"
+              />
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
             </div>
-            <CaretDown
-              size={14}
-              className={`text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-            />
-          </button>
-
-          {isOpen && (
-            <div className="absolute right-0 mt-2 w-[220px] bg-[#111827] border border-[#1f2937] rounded-lg shadow-2xl py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-              {options.map((option) => {
-                const isActive = selectedOption.id === option.id;
-                return (
-                  <button
-                    key={option.id}
-                    onClick={() => handleSelect(option.href)}
-                    className={`w-[calc(100%-12px)] mx-1.5 flex items-center px-3 py-2.5 rounded-md text-sm text-left transition-all duration-150 cursor-pointer ${
-                      isActive
-                        ? "bg-[#1f2937] text-[#3b82f6] font-semibold"
-                        : "text-gray-400 hover:text-white hover:bg-[#1f2937]/50"
-                    }`}
-                  >
-                    <span>{option.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#111827] hover:bg-[#1f2937] border border-[#1f2937] rounded-lg text-xs text-gray-300 cursor-pointer">
+              <Funnel size={14} />
+              Bộ lọc
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Page contents */}

@@ -1,128 +1,686 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   MagnifyingGlass,
-  Funnel,
-  Plus,
+  FloppyDisk,
+  DownloadSimple,
+  X,
+  ArrowsDownUp,
   FacebookLogo,
-  Eye,
-  Trash,
-  TrendUp
+  InstagramLogo
 } from "@phosphor-icons/react";
 
-const metaPosts = [
-  { id: "m1", title: "Cách chạy quảng cáo chuyển đổi hiệu quả năm 2026", type: "Facebook Post", date: "26 Th06, 08:00", status: "Scheduled", reach: "0", engagement: "0" },
-  { id: "m2", title: "Chia sẻ tips target đối tượng khách hàng bất động sản cao cấp", type: "Facebook Post", date: "25 Th06, 17:30", status: "Published", reach: "15,200", engagement: "1,480" },
-  { id: "m3", title: "Video ngắn: Hướng dẫn đọc báo cáo Ads siêu tốc", type: "Instagram Reel", date: "24 Th06, 15:00", status: "Published", reach: "28,400", engagement: "3,120" },
-  { id: "m4", title: "Chương trình ưu đãi nạp tiền Ads tài khoản đại lý VCB", type: "Facebook Image", date: "Draft", status: "Draft", reach: "0", engagement: "0" },
+// Mock data based on user screenshots
+const initialPosts = [
+  {
+    id: "1",
+    caption: "Đố mọi người biết đây là sản phẩm gì...",
+    link: "https://www.facebook.com/watch?v=123",
+    channel: "Huyk Mê Đá Quý",
+    platform: "facebook",
+    date: "26/6/2026",
+    productCode: "",
+    productName: "",
+    concept: "Mới",
+    line: "A2",
+    team: "Team K3",
+    staff: "[Trung Hiếu]",
+    totalViews: 990,
+    totalReach: 699,
+    totalLikes: 6,
+    totalComments: 0,
+    totalShares: 0,
+    views: 990,
+    reach: 699,
+    likes: 6,
+    comments: 0,
+    productLine: "Khác"
+  },
+  {
+    id: "2",
+    caption: "Phụ nữ nên đeo trang sức gì vào mùa hè...",
+    link: "https://www.facebook.com/watch?v=124",
+    channel: "Huyk Mê Đá Quý",
+    platform: "facebook",
+    date: "26/6/2026",
+    productCode: "",
+    productName: "",
+    concept: "Cũ",
+    line: "A1",
+    team: "Team K3",
+    staff: "[Trung Hiếu]",
+    totalViews: 539,
+    totalReach: 85,
+    totalLikes: 0,
+    totalComments: 0,
+    totalShares: 1,
+    views: 539,
+    reach: 85,
+    likes: 0,
+    comments: 0,
+    productLine: "Vàng"
+  },
+  {
+    id: "3",
+    caption: "đặt chiếc dây chuyền này lên bàn cân...",
+    link: "https://www.facebook.com/watch?v=125",
+    channel: "1/2/2001",
+    platform: "facebook",
+    date: "26/6/2026",
+    productCode: "",
+    productName: "",
+    concept: "Mới",
+    line: "A4",
+    team: "Team K2",
+    staff: "[Bùi Minh Quyết]",
+    totalViews: 46,
+    totalReach: 33,
+    totalLikes: 0,
+    totalComments: 0,
+    totalShares: 0,
+    views: 46,
+    reach: 33,
+    likes: 0,
+    comments: 0,
+    productLine: "Khác"
+  },
+  {
+    id: "4",
+    caption: "dây chuyền mở khóa tình yêu độc đáo...",
+    link: "https://www.facebook.com/watch?v=126",
+    channel: "1/2/2001",
+    platform: "facebook",
+    date: "26/6/2026",
+    productCode: "",
+    productName: "",
+    concept: "Cũ",
+    line: "A2",
+    team: "Team K2",
+    staff: "[Bùi Minh Quyết]",
+    totalViews: 25,
+    totalReach: 0,
+    totalLikes: 0,
+    totalComments: 0,
+    totalShares: 0,
+    views: 25,
+    reach: 0,
+    likes: 0,
+    comments: 0,
+    productLine: "Khác"
+  },
+  {
+    id: "5",
+    caption: "Người tặng bạn chiếc nhẫn này là ai...",
+    link: "https://www.facebook.com/watch?v=127",
+    channel: "Huyk - Chế Tác ...",
+    platform: "facebook",
+    date: "26/6/2026",
+    productCode: "",
+    productName: "",
+    concept: "Mới",
+    line: "A4",
+    team: "Team K2",
+    staff: "[Bui Doan]",
+    totalViews: 138,
+    totalReach: 122,
+    totalLikes: 3,
+    totalComments: 1,
+    totalShares: 1,
+    views: 138,
+    reach: 122,
+    likes: 3,
+    comments: 1,
+    productLine: "Vàng"
+  },
+  {
+    id: "6",
+    caption: "Vàng bị nam châm hút là thật hay giả...",
+    link: "https://www.facebook.com/watch?v=128",
+    channel: "Huyk - Chế Tác ...",
+    platform: "facebook",
+    date: "26/6/2026",
+    productCode: "",
+    productName: "",
+    concept: "Cũ",
+    line: "A2",
+    team: "Team K2",
+    staff: "[Bui Doan]",
+    totalViews: 367,
+    totalReach: 133,
+    totalLikes: 2,
+    totalComments: 0,
+    totalShares: 0,
+    views: 367,
+    reach: 133,
+    likes: 2,
+    comments: 0,
+    productLine: "Khác"
+  },
+  {
+    id: "7",
+    caption: "Người mà vẫn đeo chiếc lắc tay này...",
+    link: "https://www.facebook.com/watch?v=129",
+    channel: "Huyk - Trang S...",
+    platform: "facebook",
+    date: "26/6/2026",
+    productCode: "",
+    productName: "",
+    concept: "Mới",
+    line: "A4",
+    team: "Team K2",
+    staff: "[Văn Nguyễn]",
+    totalViews: 0,
+    totalReach: 0,
+    totalLikes: 0,
+    totalComments: 0,
+    totalShares: 0,
+    views: 0,
+    reach: 0,
+    likes: 0,
+    comments: 0,
+    productLine: "Vàng"
+  },
+  {
+    id: "8",
+    caption: "Vàng bị nam châm hút - P2...",
+    link: "https://www.instagram.com/p/130",
+    channel: "Huyk - Chế Tác ...",
+    platform: "instagram",
+    date: "26/6/2026",
+    productCode: "",
+    productName: "",
+    concept: "Cũ",
+    line: "A2",
+    team: "Team K2",
+    staff: "[Bui Doan]",
+    totalViews: 54,
+    totalReach: 0,
+    totalLikes: 1,
+    totalComments: 0,
+    totalShares: 0,
+    views: 54,
+    reach: 0,
+    likes: 1,
+    comments: 0,
+    productLine: "Vàng"
+  },
+  {
+    id: "9",
+    caption: "Trạm khắc thủ công tinh xảo trên đá...",
+    link: "https://www.facebook.com/watch?v=131",
+    channel: "Nhạn Nhạn - X...",
+    platform: "facebook",
+    date: "25/6/2026",
+    productCode: "",
+    productName: "",
+    concept: "",
+    line: "A2",
+    team: "",
+    staff: "[]",
+    totalViews: 61,
+    totalReach: 38,
+    totalLikes: 2,
+    totalComments: 0,
+    totalShares: 0,
+    views: 61,
+    reach: 38,
+    likes: 2,
+    comments: 0,
+    productLine: "Khác"
+  },
+  {
+    id: "10",
+    caption: "Đang khâu mà đứt chỉ thì phải làm sao...",
+    link: "https://www.facebook.com/watch?v=132",
+    channel: "Nhạn Nhạn - X...",
+    platform: "facebook",
+    date: "25/6/2026",
+    productCode: "",
+    productName: "",
+    concept: "",
+    line: "A2",
+    team: "",
+    staff: "[]",
+    totalViews: 308,
+    totalReach: 263,
+    totalLikes: 1,
+    totalComments: 0,
+    totalShares: 0,
+    views: 308,
+    reach: 263,
+    likes: 1,
+    comments: 0,
+    productLine: "Khác"
+  },
+  {
+    id: "11",
+    caption: "Mẫu như này thì đeo ngón nào hợp...",
+    link: "https://www.facebook.com/watch?v=133",
+    channel: "Nhạn Nhạn - X...",
+    platform: "facebook",
+    date: "25/6/2026",
+    productCode: "",
+    productName: "",
+    concept: "",
+    line: "A4",
+    team: "",
+    staff: "[]",
+    totalViews: 38,
+    totalReach: 34,
+    totalLikes: 3,
+    totalComments: 0,
+    totalShares: 1,
+    views: 38,
+    reach: 34,
+    likes: 3,
+    comments: 0,
+    productLine: "Khác"
+  },
+  {
+    id: "12",
+    caption: "Vũ khí của thợ kim hoàn chuyên nghiệp...",
+    link: "https://www.facebook.com/watch?v=134",
+    channel: "Nhạn Nhạn - X...",
+    platform: "facebook",
+    date: "25/6/2026",
+    productCode: "",
+    productName: "",
+    concept: "",
+    line: "A2",
+    team: "",
+    staff: "[]",
+    totalViews: 30,
+    totalReach: 25,
+    totalLikes: 2,
+    totalComments: 0,
+    totalShares: 0,
+    views: 30,
+    reach: 25,
+    likes: 2,
+    comments: 0,
+    productLine: "Khác"
+  }
 ];
 
 export default function MetaContentPage() {
+  const [posts, setPosts] = useState(initialPosts);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+
+  // Active filters list
+  const [activeFilters, setActiveFilters] = useState([
+    { id: "date", label: "date trong khoảng thời gian: 30 ngày qua" },
+    { id: "created_time", label: "created_time trong khoảng thời gian: 30 ngày qua" },
+    { id: "platform_name", label: "platform_name trong: facebook, instagram" }
+  ]);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus search input on "/" keydown
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "/" && document.activeElement !== searchInputRef.current) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Remove individual filter tag
+  function removeFilter(id: string) {
+    setActiveFilters(activeFilters.filter((filter) => filter.id !== id));
+  }
+
+  // Handle Sort
+  function requestSort(key: string) {
+    let direction: "asc" | "desc" = "asc";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+
+    const sortedData = [...posts].sort((a: any, b: any) => {
+      if (a[key] === undefined || b[key] === undefined) return 0;
+      if (typeof a[key] === "number" && typeof b[key] === "number") {
+        return direction === "asc" ? a[key] - b[key] : b[key] - a[key];
+      }
+      return direction === "asc"
+        ? String(a[key]).localeCompare(String(b[key]))
+        : String(b[key]).localeCompare(String(a[key]));
+    });
+    setPosts(sortedData);
+  }
+
+  // Handle Select All
+  function handleSelectAll(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.checked) {
+      setSelectedIds(posts.map((post) => post.id));
+    } else {
+      setSelectedIds([]);
+    }
+  }
+
+  // Handle Select Row
+  function handleSelectRow(id: string, checked: boolean) {
+    if (checked) {
+      setSelectedIds([...selectedIds, id]);
+    } else {
+      setSelectedIds(selectedIds.filter((item) => item !== id));
+    }
+  }
+
+  // Filter list by search query
+  const filteredPosts = posts.filter((post) => {
+    return (
+      post.caption.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.channel.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.staff.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+    <div className="flex flex-col gap-4 animate-in fade-in duration-300 w-full max-w-full text-gray-200">
       
-      {/* Action Row */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Tìm kiếm bài viết..."
-              className="bg-[#111827] border border-[#1f2937] hover:border-gray-700 rounded-lg px-3 py-1.5 pl-9 text-xs focus:border-blue-500 focus:outline-none w-[200px] text-white"
-            />
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+      {/* Sticky Filters Toolbar Row */}
+      <div className="sticky top-0 z-20 bg-[#0a0a0a] py-2 -mx-4 px-4 sm:-mx-5 sm:px-5 shrink-0">
+        <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-3 flex flex-wrap items-center justify-between gap-4 shadow-md">
+          {/* Left Side: Filter Tags */}
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilters.map((filter) => (
+              <div
+                key={filter.id}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1f2937] border border-[#1f2937] hover:border-gray-700 rounded-lg text-xs text-gray-300 transition-colors"
+              >
+                <span>{filter.label}</span>
+                <button
+                  onClick={() => removeFilter(filter.id)}
+                  className="text-gray-500 hover:text-red-400 transition-colors cursor-pointer"
+                  title="Xóa bộ lọc"
+                >
+                  <X size={12} weight="bold" />
+                </button>
+              </div>
+            ))}
           </div>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#111827] hover:bg-[#1f2937] border border-[#1f2937] rounded-lg text-xs text-gray-300 cursor-pointer">
-            <Funnel size={14} />
-            Bộ lọc
-          </button>
-        </div>
-        <button className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs text-white font-bold transition-all shadow-lg shadow-blue-500/15 cursor-pointer">
-          <Plus size={14} weight="bold" />
-          Lên lịch bài viết mới
-        </button>
-      </div>
 
-      {/* Performance Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-5 shadow-sm">
-          <p className="text-xs text-gray-400 font-medium">Lượt tiếp cận trang Facebook</p>
-          <h3 className="text-2xl font-bold text-white mt-2">689,400</h3>
-          <p className="text-[10px] text-green-500 mt-1 font-semibold flex items-center gap-0.5">
-            <TrendUp size={12} />
-            +8.9% so với tuần trước
-          </p>
-        </div>
-        <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-5 shadow-sm">
-          <p className="text-xs text-gray-400 font-medium">Lượt tiếp cận Instagram</p>
-          <h3 className="text-2xl font-bold text-white mt-2">490,800</h3>
-          <p className="text-[10px] text-green-500 mt-1 font-semibold flex items-center gap-0.5">
-            <TrendUp size={12} />
-            +15.2% so với tuần trước
-          </p>
-        </div>
-        <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-5 shadow-sm">
-          <p className="text-xs text-gray-400 font-medium">Chi phí sản xuất content trung bình</p>
-          <h3 className="text-2xl font-bold text-white mt-2">0đ</h3>
-          <p className="text-[10px] text-gray-500 mt-1">Đội ngũ In-house organic</p>
+          {/* Right Side: Input & Action Buttons */}
+          <div className="flex items-center gap-3.5">
+            {/* Quick Filter Search input */}
+            <div className="relative">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Bộ lọc (/)"
+                className="bg-[#1f2937]/50 border border-[#1f2937] hover:border-gray-700 rounded-lg px-3 py-1.5 pl-9 text-xs focus:border-blue-500 focus:outline-none w-[180px] text-white transition-all font-medium"
+              />
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+            </div>
+
+            {/* Save Button */}
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1f2937]/80 hover:bg-[#1f2937] border border-[#1f2937] text-blue-400 rounded-lg text-xs font-semibold cursor-pointer transition-colors">
+              <FloppyDisk size={14} />
+              Lưu
+            </button>
+
+            {/* Export Button */}
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1f2937]/80 hover:bg-[#1f2937] border border-[#1f2937] text-gray-300 rounded-lg text-xs font-semibold cursor-pointer transition-colors">
+              <DownloadSimple size={14} />
+              Export
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Meta Content Table */}
-      <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-5 shadow-md">
-        <div className="flex items-center justify-between mb-4 border-b border-[#1f2937] pb-3">
-          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-            <FacebookLogo size={18} className="text-blue-500" />
-            Danh sách bài viết Meta (Facebook & Instagram)
-          </h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+      {/* Main Data Table */}
+      <div className="bg-[#111827] border border-[#1f2937] rounded-xl shadow-md overflow-hidden">
+        <div className="overflow-auto w-full max-h-[calc(100vh-380px)] custom-scrollbar">
+          <table className="w-full text-left text-xs border-collapse relative">
             <thead>
-              <tr className="border-b border-[#1f2937] text-gray-400 text-xs">
-                <th className="py-2.5 font-medium">Chi tiết bài viết</th>
-                <th className="py-2.5 font-medium">Phân loại</th>
-                <th className="py-2.5 font-medium">Lịch đăng/Ngày đăng</th>
-                <th className="py-2.5 font-medium text-right">Tiếp cận</th>
-                <th className="py-2.5 font-medium text-right">Tương tác</th>
-                <th className="py-2.5 font-medium text-center">Trạng thái</th>
-                <th className="py-2.5 font-medium text-center">Thao tác</th>
+              <tr className="border-b border-[#1f2937] text-gray-400 font-semibold select-none">
+                
+                {/* Checkbox column */}
+                <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 w-12 text-center border-r border-[#1f2937]/40">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.length === posts.length && posts.length > 0}
+                    onChange={handleSelectAll}
+                    className="accent-blue-500 cursor-pointer rounded"
+                  />
+                </th>
+
+                {/* Column Headers */}
+                {[
+                  { key: "caption", label: "Caption" },
+                  { key: "link", label: "Link" },
+                  { key: "channel", label: "Kênh" },
+                  { key: "platform", label: "platform_name" },
+                  { key: "date", label: "Ngày tạo" },
+                  { key: "productCode", label: "Mã sản phẩm" },
+                  { key: "productName", label: "Sản phẩm" },
+                  { key: "concept", label: "Concept" },
+                  { key: "line", label: "Tuyến" },
+                  { key: "team", label: "Team" },
+                  { key: "staff", label: "Nhân sự" },
+                  { key: "totalViews", label: "Tổng lượt xem" },
+                  { key: "totalReach", label: "Tổng tiếp cận" },
+                  { key: "totalLikes", label: "Tổng lượt thích" },
+                  { key: "totalComments", label: "Tổng bình luận" },
+                  { key: "totalShares", label: "Tổng chia sẻ" },
+                  { key: "views", label: "Lượt xem" },
+                  { key: "reach", label: "Lượt tiếp cận" },
+                  { key: "likes", label: "Lượt thích" },
+                  { key: "comments", label: "Lượt bình luận" },
+                  { key: "productLine", label: "Dòng sản phẩm" }
+                ].map((col) => (
+                  <th
+                    key={col.key}
+                    onClick={() => col.key && requestSort(col.key)}
+                    className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 cursor-pointer hover:bg-[#1f2937]/40 hover:text-white transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5 whitespace-nowrap">
+                      <span>{col.label}</span>
+                      <ArrowsDownUp size={11} className="text-gray-500" />
+                    </div>
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1f2937]/50 text-gray-300">
-              {metaPosts.map((post) => (
-                <tr key={post.id} className="hover:bg-[#1f2937]/20 transition-colors group">
-                  <td className="py-3.5 font-medium text-white max-w-sm truncate group-hover:text-blue-400 transition-colors">{post.title}</td>
-                  <td className="py-3.5 text-xs text-gray-300">{post.type}</td>
-                  <td className="py-3.5 text-xs text-gray-400">{post.date}</td>
-                  <td className="py-3.5 text-right font-medium">{post.reach}</td>
-                  <td className="py-3.5 text-right font-medium">{post.engagement}</td>
-                  <td className="py-3.5 text-center">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      post.status === "Published" ? "bg-green-500/10 text-green-500" :
-                      post.status === "Scheduled" ? "bg-blue-500/10 text-blue-500" :
-                      "bg-gray-500/10 text-gray-400"
-                    }`}>
-                      {post.status}
-                    </span>
-                  </td>
-                  <td className="py-3.5 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <button className="p-1 hover:text-blue-500 transition-colors cursor-pointer" title="Xem chi tiết">
-                        <Eye size={14} />
-                      </button>
-                      <button className="p-1 hover:text-red-500 transition-colors cursor-pointer" title="Xóa">
-                        <Trash size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+
+            <tbody className="divide-y divide-[#1f2937]/40 text-gray-300">
+              {filteredPosts.map((post) => {
+                const isSelected = selectedIds.includes(post.id);
+                return (
+                  <tr
+                    key={post.id}
+                    className={`hover:bg-[#1f2937]/20 transition-all ${
+                      isSelected ? "bg-blue-500/5" : ""
+                    }`}
+                  >
+                    {/* Checkbox cell */}
+                    <td className="py-2.5 px-4 text-center border-r border-[#1f2937]/40">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => handleSelectRow(post.id, e.target.checked)}
+                        className="accent-blue-500 cursor-pointer rounded"
+                      />
+                    </td>
+
+                    {/* Content cells */}
+                    <td className="py-2.5 px-4 max-w-[200px] truncate border-r border-[#1f2937]/40 font-medium text-white" title={post.caption}>
+                      {post.caption}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40">
+                      <a href={post.link} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">
+                        https://www.fa...
+                      </a>
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 font-medium text-gray-400">
+                      {post.channel}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 font-medium text-gray-400">
+                      <div className="flex items-center gap-1.5 capitalize">
+                        {post.platform === "facebook" ? (
+                          <FacebookLogo size={14} className="text-blue-500 fill-current" />
+                        ) : (
+                          <InstagramLogo size={14} className="text-pink-500 fill-current" />
+                        )}
+                        <span>{post.platform}</span>
+                      </div>
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-gray-500">
+                      {post.date}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-gray-500">
+                      {post.productCode}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-gray-500">
+                      {post.productName}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 font-semibold text-gray-400">
+                      {post.concept}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 font-bold text-gray-300">
+                      {post.line}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 font-medium text-gray-400">
+                      {post.team}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 font-semibold text-[#a3a3a3]">
+                      {post.staff}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono">
+                      {post.totalViews.toLocaleString("vi-VN")}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-400">
+                      {post.totalReach.toLocaleString("vi-VN")}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-400">
+                      {post.totalLikes.toLocaleString("vi-VN")}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-500">
+                      {post.totalComments.toLocaleString("vi-VN")}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-400">
+                      {post.totalShares.toLocaleString("vi-VN")}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono">
+                      {post.views.toLocaleString("vi-VN")}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-400">
+                      {post.reach.toLocaleString("vi-VN")}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-400">
+                      {post.likes.toLocaleString("vi-VN")}
+                    </td>
+
+                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-500">
+                      {post.comments.toLocaleString("vi-VN")}
+                    </td>
+
+                    <td className="py-2.5 px-4 font-semibold text-[#d4d4d8]">
+                      {post.productLine}
+                    </td>
+
+                  </tr>
+                );
+              })}
             </tbody>
+
+            {/* Total Footer matching user screenshot sums exactly */}
+            <tfoot>
+              <tr className="bg-[#111827] text-white font-bold">
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-center"></td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] font-black">
+                  TỔNG (2000)
+                </td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
+                {/* Total sums matched exactly to screenshot 2 & 3 */}
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono">
+                  3.233.633
+                </td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono text-blue-400">
+                  2.546.044
+                </td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono">
+                  42.563
+                </td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono text-gray-400">
+                  1.784
+                </td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono">
+                  5.760
+                </td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono text-[#a3a3a3]">
+                  59.144.201
+                </td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono text-[#a3a3a3]">
+                  45.838.152
+                </td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono text-[#3b82f6]">
+                  601.894
+                </td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono">
+                  31.594
+                </td>
+                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-t-2 border-[#1f2937]"></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
+      
+      {/* CSS details to style horizontal scrollbar */}
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          height: 8px;
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #111827;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #1f2937;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #374151;
+        }
+      `}</style>
+
     </div>
   );
 }

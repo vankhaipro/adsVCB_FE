@@ -39,16 +39,7 @@ const mainNav: NavItem[] = [
     icon: Megaphone,
     children: [
       { href: "/campaigns", label: "Quản lý ads" },
-      {
-        label: "Quản lý content",
-        children: [
-          { href: "/content/manage/overview", label: "Tổng quan" },
-          { href: "/content/manage/meta", label: "Meta Content" },
-          { href: "/content/manage/tiktok", label: "Tiktok Content" },
-          { href: "/content/manage/youtube", label: "Youtube Content" },
-          { href: "/content/manage/sourcing", label: "Sourcing Content" },
-        ],
-      },
+      { href: "/content/manage/meta", label: "Quản lý content" },
     ],
   },
   { href: "/auto-rules", label: "Quy tắc tự động", icon: GitBranch },
