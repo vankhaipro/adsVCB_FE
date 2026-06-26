@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ArrowsClockwise, SpinnerGap, MagnifyingGlass, MetaLogo, TiktokLogo, Plus, X, Calendar,
+  ArrowsClockwise, SpinnerGap, MagnifyingGlass, MetaLogo, TiktokLogo, GoogleLogo, Plus, X, Calendar,
 } from "@phosphor-icons/react";
 import { apiGet, apiPatch, apiPost, fmtVnd } from "@/lib/api";
 
@@ -46,17 +46,37 @@ type Account = { id: string; platform: string; name: string | null };
 const RUNNING = new Set(["ACTIVE", "ENABLE", "CAMPAIGN_STATUS_ENABLE"]);
 const isRunning = (s: string | null) => !!s && RUNNING.has(s);
 
+// So sánh để đẩy mục đang bật chạy lên trước (sort ổn định -> giữ thứ tự trong từng nhóm).
+const runningFirst = (a: { status: string | null }, b: { status: string | null }) =>
+  Number(isRunning(b.status)) - Number(isRunning(a.status));
+
 const OBJECTIVES: Record<string, string[]> = {
   META: ["OUTCOME_TRAFFIC", "OUTCOME_ENGAGEMENT", "OUTCOME_LEADS", "OUTCOME_SALES", "OUTCOME_AWARENESS"],
   TIKTOK: ["TRAFFIC", "ENGAGEMENT", "VIDEO_VIEWS", "REACH", "WEB_CONVERSIONS", "LEAD_GENERATION"],
 };
 
+// Tên hiển thị cho từng nền tảng (platform của campaign từ API).
+const PLATFORM_LABEL: Record<string, string> = {
+  META: "Facebook",
+  TIKTOK: "TikTok",
+  GOOGLE: "Google",
+  ZALO: "Zalo",
+};
+const platformLabel = (p: string) => PLATFORM_LABEL[p] ?? p;
+
+function PlatformIcon({ platform, size = 14 }: { platform: string; size?: number }) {
+  if (platform === "META") return <MetaLogo size={size} weight="fill" />;
+  if (platform === "TIKTOK") return <TiktokLogo size={size} weight="fill" />;
+  if (platform === "GOOGLE") return <GoogleLogo size={size} weight="fill" />;
+  return null;
+}
+
 function PlatformBadge({ platform }: { platform: string }) {
   const meta = platform === "META";
   return (
     <span className={`inline-flex items-center gap-1 text-xs ${meta ? "text-blue-400" : "text-pink-400"}`}>
-      {meta ? <MetaLogo size={14} weight="fill" /> : <TiktokLogo size={14} weight="fill" />}
-      {meta ? "Meta" : "TikTok"}
+      <PlatformIcon platform={platform} />
+      {platformLabel(platform)}
     </span>
   );
 }
@@ -101,7 +121,7 @@ export default function CampaignsPage() {
   
   // Filter States
   const [dateRange, setDateRange] = useState("thisMonth");
-  const [platform, setPlatform] = useState<"ALL" | "META" | "TIKTOK">("ALL");
+  const [platform, setPlatform] = useState<string>("ALL");
   const [q, setQ] = useState("");
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>("ALL");
   const [selectedAdSetId, setSelectedAdSetId] = useState<string>("ALL");
@@ -343,32 +363,45 @@ export default function CampaignsPage() {
     }
   }, [availableAdSets, selectedAdSetId]);
 
+  // Danh sách nền tảng có trong dữ liệu (kèm số lượng) -> render nút lọc động.
+  const platformList = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const c of campaigns) counts.set(c.platform, (counts.get(c.platform) ?? 0) + 1);
+    return Array.from(counts, ([id, count]) => ({ id, count })).sort((a, b) => b.count - a.count);
+  }, [campaigns]);
+
   // Filter lists based on platform, query q, and hierarchical filters
   const filteredCampaigns = useMemo(() => {
-    return campaigns.filter(
-      (c) => 
-        (platform === "ALL" || c.platform === platform) && 
-        (!q || c.name.toLowerCase().includes(q.toLowerCase()))
-    );
+    return campaigns
+      .filter(
+        (c) =>
+          (platform === "ALL" || c.platform === platform) &&
+          (!q || c.name.toLowerCase().includes(q.toLowerCase()))
+      )
+      .sort(runningFirst);
   }, [campaigns, platform, q]);
 
   const filteredAdSets = useMemo(() => {
-    return adSets.filter(
-      (as) => 
-        (platform === "ALL" || as.platform === platform) &&
-        (selectedCampaignId === "ALL" || as.campaignId === selectedCampaignId) &&
-        (!q || as.name.toLowerCase().includes(q.toLowerCase()))
-    );
+    return adSets
+      .filter(
+        (as) =>
+          (platform === "ALL" || as.platform === platform) &&
+          (selectedCampaignId === "ALL" || as.campaignId === selectedCampaignId) &&
+          (!q || as.name.toLowerCase().includes(q.toLowerCase()))
+      )
+      .sort(runningFirst);
   }, [adSets, platform, selectedCampaignId, q]);
 
   const filteredAds = useMemo(() => {
-    return ads.filter(
-      (ad) =>
-        (platform === "ALL" || ad.platform === platform) &&
-        (selectedCampaignId === "ALL" || ad.campaignId === selectedCampaignId) &&
-        (selectedAdSetId === "ALL" || ad.adSetId === selectedAdSetId) &&
-        (!q || ad.name.toLowerCase().includes(q.toLowerCase()))
-    );
+    return ads
+      .filter(
+        (ad) =>
+          (platform === "ALL" || ad.platform === platform) &&
+          (selectedCampaignId === "ALL" || ad.campaignId === selectedCampaignId) &&
+          (selectedAdSetId === "ALL" || ad.adSetId === selectedAdSetId) &&
+          (!q || ad.name.toLowerCase().includes(q.toLowerCase()))
+      )
+      .sort(runningFirst);
   }, [ads, platform, selectedCampaignId, selectedAdSetId, q]);
 
   // Compute metrics for the rendered lists
@@ -499,19 +532,37 @@ export default function CampaignsPage() {
           </select>
         </div>
 
-        {/* Platform selection */}
-        <div className="flex gap-1 bg-[#0a0a0a] border border-[#1f2937] rounded-md p-1">
-          {(["ALL", "META", "TIKTOK"] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPlatform(p)}
-              className={`px-3 py-1.5 text-xs rounded transition-all ${
-                platform === p ? "bg-[#1f2937] text-white" : "text-gray-400 hover:text-white"
-              }`}
-            >
-              {p === "ALL" ? "Tất cả" : p === "META" ? "Meta" : "TikTok"}
-            </button>
-          ))}
+        {/* Nút lọc theo nền tảng — "Tất cả" + mỗi nền tảng có trong dữ liệu */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            onClick={() => setPlatform("ALL")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-all ${
+              platform === "ALL"
+                ? "bg-blue-600 border-blue-600 text-white"
+                : "bg-[#0a0a0a] border-[#1f2937] text-gray-400 hover:text-white hover:border-[#374151]"
+            }`}
+          >
+            Tất cả
+            <span className={`text-[10px] ${platform === "ALL" ? "text-blue-100" : "text-gray-600"}`}>{campaigns.length}</span>
+          </button>
+          {platformList.map(({ id, count }) => {
+            const active = platform === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setPlatform(id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-all ${
+                  active
+                    ? "bg-blue-600 border-blue-600 text-white"
+                    : "bg-[#0a0a0a] border-[#1f2937] text-gray-400 hover:text-white hover:border-[#374151]"
+                }`}
+              >
+                <PlatformIcon platform={id} />
+                {platformLabel(id)}
+                <span className={`text-[10px] ${active ? "text-blue-100" : "text-gray-600"}`}>{count}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Hierarchical Filters */}
