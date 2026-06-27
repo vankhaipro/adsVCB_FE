@@ -63,26 +63,26 @@ function VideosInner() {
   return (
     <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10">
       <div className="flex items-center gap-3">
-        <button onClick={() => router.push("/channels")} className="text-gray-400 hover:text-white">
+        <button onClick={() => router.push("/channels")} className="text-muted-foreground hover:text-foreground">
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-white">{title}</h1>
-          <p className="text-sm text-gray-400 mt-1">{rows.length} bài viết (tháng hiện tại)</p>
+          <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{rows.length} bài viết (tháng hiện tại)</p>
         </div>
       </div>
 
       {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-md px-4 py-2">{error}</div>}
 
       {loading ? (
-        <div className="flex items-center justify-center p-20 gap-3 text-gray-400">
+        <div className="flex items-center justify-center p-20 gap-3 text-muted-foreground">
           <SpinnerGap size={28} className="animate-spin text-blue-500" /> Đang tải...
         </div>
       ) : (
-        <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl overflow-hidden">
+        <div className="bg-background border border-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left whitespace-nowrap">
-              <thead className="border-b border-[#1e293b] text-blue-400">
+              <thead className="border-b border-border text-blue-400">
                 <tr>
                   <th className="px-4 py-3 font-medium">Nền tảng</th>
                   <th className="px-4 py-3 font-medium">Tên kênh</th>
@@ -97,12 +97,12 @@ function VideosInner() {
                   <th className="px-4 py-3 font-medium">Ngày đăng</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1e293b]/60 text-gray-300">
+              <tbody className="divide-y divide-border text-foreground">
                 {rows.length === 0 ? (
-                  <tr><td colSpan={11} className="px-4 py-10 text-center text-gray-500">Chưa có dữ liệu. Hãy đồng bộ kênh.</td></tr>
+                  <tr><td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">Chưa có dữ liệu. Hãy đồng bộ kênh.</td></tr>
                 ) : (
                   rows.map((r, i) => (
-                    <tr key={i} className="hover:bg-[#1e293b]/40">
+                    <tr key={i} className="hover:bg-card/40">
                       <td className="px-4 py-2.5">{PLATFORM_LABEL[r.platform] || r.platform}</td>
                       <td className="px-4 py-2.5 max-w-[140px] truncate" title={r.channelName || ""}>{r.channelName || "—"}</td>
                       <td className="px-4 py-2.5">
@@ -113,13 +113,13 @@ function VideosInner() {
                         ) : "—"}
                       </td>
                       <td className="px-4 py-2.5 max-w-[220px] truncate" title={r.caption || ""}>{r.caption || "—"}</td>
-                      <td className="px-4 py-2.5 max-w-[160px] truncate text-gray-400" title={r.hashtags || ""}>{r.hashtags || "—"}</td>
+                      <td className="px-4 py-2.5 max-w-[160px] truncate text-muted-foreground" title={r.hashtags || ""}>{r.hashtags || "—"}</td>
                       <td className="px-4 py-2.5 text-right">{fmtNum(r.views)}</td>
                       <td className="px-4 py-2.5 text-right">{fmtNum(r.likes)}</td>
                       <td className="px-4 py-2.5 text-right">{fmtNum(r.shares)}</td>
                       <td className="px-4 py-2.5 text-right">{fmtNum(r.comments)}</td>
-                      <td className="px-4 py-2.5 text-right text-gray-400">{fmtNum(r.followers)}</td>
-                      <td className="px-4 py-2.5 text-gray-400">{fmtDate(r.postedAt)}</td>
+                      <td className="px-4 py-2.5 text-right text-muted-foreground">{fmtNum(r.followers)}</td>
+                      <td className="px-4 py-2.5 text-muted-foreground">{fmtDate(r.postedAt)}</td>
                     </tr>
                   ))
                 )}
@@ -134,7 +134,7 @@ function VideosInner() {
 
 export default function ChannelVideosPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400 text-sm">Đang tải...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Đang tải...</div>}>
       <VideosInner />
     </Suspense>
   );

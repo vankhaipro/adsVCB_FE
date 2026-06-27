@@ -20,12 +20,12 @@ export function Panel({
   bodyClassName?: string;
 }) {
   return (
-    <div className={`bg-[#0f172a] border border-[#1e293b] rounded-xl ${className}`}>
+    <div className={`bg-background border border-border rounded-xl ${className}`}>
       {(title || right) && (
         <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-2">
           <div>
-            {title && <h3 className="text-sm font-semibold text-white leading-tight">{title}</h3>}
-            {subtitle && <p className="text-[11px] text-gray-500 mt-0.5">{subtitle}</p>}
+            {title && <h3 className="text-sm font-semibold text-foreground leading-tight">{title}</h3>}
+            {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
           </div>
           {right && <div className="shrink-0">{right}</div>}
         </div>
@@ -47,10 +47,10 @@ export function Th({
 }) {
   const a = align === "right" ? "text-right justify-end" : align === "center" ? "text-center justify-center" : "text-left";
   return (
-    <th className={`px-3 py-2.5 font-medium text-gray-500 whitespace-nowrap ${className}`}>
+    <th className={`px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap ${className}`}>
       <span className={`inline-flex items-center gap-1 ${a}`}>
         {children}
-        <span className="flex flex-col -space-y-1 text-gray-600">
+        <span className="flex flex-col -space-y-1 text-muted-foreground">
           <CaretUp size={8} weight="fill" />
           <CaretDown size={8} weight="fill" />
         </span>
@@ -63,12 +63,12 @@ export function StatusPill({ status }: { status: CampaignStatus }) {
   const map: Record<CampaignStatus, string> = {
     "Đang chạy": "text-green-400",
     "Tạm dừng": "text-amber-400",
-    "Kết thúc": "text-gray-500",
+    "Kết thúc": "text-muted-foreground",
   };
   const dot: Record<CampaignStatus, string> = {
     "Đang chạy": "bg-green-400",
     "Tạm dừng": "bg-amber-400",
-    "Kết thúc": "bg-gray-500",
+    "Kết thúc": "bg-muted",
   };
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${map[status]}`}>
@@ -99,7 +99,7 @@ export function ScoreBar({ score }: { score: number }) {
   const text = score >= 8.5 ? "text-green-400" : score >= 7.5 ? "text-amber-400" : "text-orange-400";
   return (
     <span className="inline-flex items-center gap-2 justify-end">
-      <span className="w-10 h-1.5 rounded-full bg-[#1e293b] overflow-hidden">
+      <span className="w-10 h-1.5 rounded-full bg-card overflow-hidden">
         <span className={`block h-full rounded-full ${color}`} style={{ width: `${(score / 10) * 100}%` }} />
       </span>
       <span className={`font-semibold ${text}`}>{score.toFixed(1)}</span>

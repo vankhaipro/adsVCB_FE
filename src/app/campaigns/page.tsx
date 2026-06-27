@@ -451,8 +451,8 @@ export default function CampaignsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Quản lý Ads</h1>
-          <p className="text-sm text-gray-400 mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Quản lý Ads</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             {activeTab === "campaign" && `${campaignsWithMetrics.length} chiến dịch`}
             {activeTab === "adset" && `${adSetsWithMetrics.length} nhóm quảng cáo`}
             {activeTab === "ad" && `${adsWithMetrics.length} quảng cáo`}
@@ -462,7 +462,7 @@ export default function CampaignsPage() {
           {activeTab === "campaign" && (
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#1f2937] hover:bg-[#374151] text-gray-200 text-sm font-medium rounded-md border border-[#374151]"
+              className="flex items-center gap-2 px-4 py-2 bg-muted hover:bg-muted text-foreground text-sm font-medium rounded-md border border-border"
             >
               <Plus size={16} weight="bold" /> Tạo chiến dịch
             </button>
@@ -470,7 +470,7 @@ export default function CampaignsPage() {
           <button
             onClick={sync}
             disabled={syncing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium rounded-md"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-foreground text-sm font-medium rounded-md"
           >
             {syncing ? <SpinnerGap size={16} className="animate-spin" /> : <ArrowsClockwise size={16} />}
             Đồng bộ
@@ -479,13 +479,13 @@ export default function CampaignsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[#1f2937]">
+      <div className="flex border-b border-border">
         <button
           onClick={() => setActiveTab("campaign")}
           className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "campaign"
-              ? "border-blue-500 text-white"
-              : "border-transparent text-gray-400 hover:text-white"
+              ? "border-blue-500 text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           Chiến dịch
@@ -494,8 +494,8 @@ export default function CampaignsPage() {
           onClick={() => setActiveTab("adset")}
           className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "adset"
-              ? "border-blue-500 text-white"
-              : "border-transparent text-gray-400 hover:text-white"
+              ? "border-blue-500 text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           Nhóm quảng cáo
@@ -504,8 +504,8 @@ export default function CampaignsPage() {
           onClick={() => setActiveTab("ad")}
           className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "ad"
-              ? "border-blue-500 text-white"
-              : "border-transparent text-gray-400 hover:text-white"
+              ? "border-blue-500 text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           Quảng cáo
@@ -513,22 +513,22 @@ export default function CampaignsPage() {
       </div>
 
       {/* Filters & Dropdowns */}
-      <div className="flex flex-wrap items-center gap-3 bg-[#111827] border border-[#1f2937] rounded-xl p-4">
+      <div className="flex flex-wrap items-center gap-3 bg-card border border-border rounded-xl p-4">
         {/* Date Selector */}
-        <div className="flex items-center gap-2 bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-1.5 text-xs">
+        <div className="flex items-center gap-2 bg-background border border-border rounded-md px-3 py-1.5 text-xs">
           <Calendar size={14} className="text-blue-400" />
-          <span className="text-gray-400">Thời gian:</span>
+          <span className="text-muted-foreground">Thời gian:</span>
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="bg-transparent text-white outline-none cursor-pointer font-medium"
+            className="bg-transparent text-foreground outline-none cursor-pointer font-medium"
           >
-            <option className="bg-[#0f172a]" value="today">Hôm nay</option>
-            <option className="bg-[#0f172a]" value="yesterday">Hôm qua</option>
-            <option className="bg-[#0f172a]" value="last7days">7 ngày qua</option>
-            <option className="bg-[#0f172a]" value="last30days">30 ngày qua</option>
-            <option className="bg-[#0f172a]" value="thisMonth">Tháng này</option>
-            <option className="bg-[#0f172a]" value="lastMonth">Tháng trước</option>
+            <option className="bg-background" value="today">Hôm nay</option>
+            <option className="bg-background" value="yesterday">Hôm qua</option>
+            <option className="bg-background" value="last7days">7 ngày qua</option>
+            <option className="bg-background" value="last30days">30 ngày qua</option>
+            <option className="bg-background" value="thisMonth">Tháng này</option>
+            <option className="bg-background" value="lastMonth">Tháng trước</option>
           </select>
         </div>
 
@@ -538,12 +538,12 @@ export default function CampaignsPage() {
             onClick={() => setPlatform("ALL")}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-all ${
               platform === "ALL"
-                ? "bg-blue-600 border-blue-600 text-white"
-                : "bg-[#0a0a0a] border-[#1f2937] text-gray-400 hover:text-white hover:border-[#374151]"
+                ? "bg-blue-600 border-blue-600 text-foreground"
+                : "bg-background border-border text-muted-foreground hover:text-foreground hover:border-border"
             }`}
           >
             Tất cả
-            <span className={`text-[10px] ${platform === "ALL" ? "text-blue-100" : "text-gray-600"}`}>{campaigns.length}</span>
+            <span className={`text-[10px] ${platform === "ALL" ? "text-blue-100" : "text-muted-foreground"}`}>{campaigns.length}</span>
           </button>
           {platformList.map(({ id, count }) => {
             const active = platform === id;
@@ -553,13 +553,13 @@ export default function CampaignsPage() {
                 onClick={() => setPlatform(id)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-all ${
                   active
-                    ? "bg-blue-600 border-blue-600 text-white"
-                    : "bg-[#0a0a0a] border-[#1f2937] text-gray-400 hover:text-white hover:border-[#374151]"
+                    ? "bg-blue-600 border-blue-600 text-foreground"
+                    : "bg-background border-border text-muted-foreground hover:text-foreground hover:border-border"
                 }`}
               >
                 <PlatformIcon platform={id} />
                 {platformLabel(id)}
-                <span className={`text-[10px] ${active ? "text-blue-100" : "text-gray-600"}`}>{count}</span>
+                <span className={`text-[10px] ${active ? "text-blue-100" : "text-muted-foreground"}`}>{count}</span>
               </button>
             );
           })}
@@ -570,7 +570,7 @@ export default function CampaignsPage() {
           <select
             value={selectedCampaignId}
             onChange={(e) => setSelectedCampaignId(e.target.value)}
-            className="bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-1.5 text-xs text-gray-200 outline-none max-w-xs"
+            className="bg-background border border-border rounded-md px-3 py-1.5 text-xs text-foreground outline-none max-w-xs"
           >
             <option value="ALL">Lọc theo chiến dịch (Tất cả)</option>
             {campaigns
@@ -587,7 +587,7 @@ export default function CampaignsPage() {
           <select
             value={selectedAdSetId}
             onChange={(e) => setSelectedAdSetId(e.target.value)}
-            className="bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-1.5 text-xs text-gray-200 outline-none max-w-xs"
+            className="bg-background border border-border rounded-md px-3 py-1.5 text-xs text-foreground outline-none max-w-xs"
           >
             <option value="ALL">Lọc theo nhóm quảng cáo (Tất cả)</option>
             {availableAdSets.map((as) => (
@@ -599,8 +599,8 @@ export default function CampaignsPage() {
         )}
 
         {/* Search Query */}
-        <div className="flex items-center gap-2 bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-1.5 flex-1 min-w-[200px]">
-          <MagnifyingGlass size={16} className="text-gray-500" />
+        <div className="flex items-center gap-2 bg-background border border-border rounded-md px-3 py-1.5 flex-1 min-w-[200px]">
+          <MagnifyingGlass size={16} className="text-muted-foreground" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -611,15 +611,15 @@ export default function CampaignsPage() {
                 ? "Tìm theo tên nhóm quảng cáo…"
                 : "Tìm theo tên quảng cáo…"
             }
-            className="bg-transparent text-xs text-gray-200 outline-none w-full placeholder:text-gray-600"
+            className="bg-transparent text-xs text-foreground outline-none w-full placeholder:text-muted-foreground"
           />
         </div>
       </div>
 
       {/* Tables View */}
-      <div className="bg-[#111827] border border-[#1f2937] rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         {loading ? (
-          <div className="flex items-center gap-2 text-gray-400 text-sm p-6">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm p-6">
             <SpinnerGap size={18} className="animate-spin" /> Đang tải…
           </div>
         ) : error ? (
@@ -629,9 +629,9 @@ export default function CampaignsPage() {
         ) : (
           <div className="overflow-x-auto">
             {activeTab === "campaign" && (
-              <table className="w-full text-[13px] text-gray-300 border-collapse">
+              <table className="w-full text-[13px] text-foreground border-collapse">
                 <thead>
-                  <tr className="text-left text-gray-500 text-[11px] uppercase border-b border-[#1f2937] bg-[#0f172a]">
+                  <tr className="text-left text-muted-foreground text-[11px] uppercase border-b border-border bg-background">
                     <th className="px-3 py-3 font-medium text-center">Thao tác</th>
                     <th className="px-3 py-3 font-medium min-w-[220px]">Tên chiến dịch</th>
                     <th className="px-3 py-3 font-medium">Nền tảng</th>
@@ -651,13 +651,13 @@ export default function CampaignsPage() {
                 </thead>
                 <tbody>
                   {campaignsWithMetrics.slice(0, 150).map((c) => (
-                    <tr key={c.id} className="border-b border-[#1f2937]/60 hover:bg-[#1f2937]/40 transition-colors">
+                    <tr key={c.id} className="border-b border-border hover:bg-muted/40 transition-colors">
                       <td className="px-3 py-3 text-center">
                         <button
                           onClick={() => toggle(c)}
                           disabled={busyId === c.id}
                           className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            isRunning(c.status) ? "bg-blue-600" : "bg-gray-700"
+                            isRunning(c.status) ? "bg-blue-600" : "bg-muted"
                           }`}
                         >
                           <span
@@ -667,39 +667,39 @@ export default function CampaignsPage() {
                           />
                         </button>
                       </td>
-                      <td className="px-3 py-3 text-white font-medium max-w-[240px] truncate" title={c.name}>
+                      <td className="px-3 py-3 text-foreground font-medium max-w-[240px] truncate" title={c.name}>
                         {c.name}
                       </td>
                       <td className="px-3 py-3">
                         <PlatformBadge platform={c.platform} />
                       </td>
                       <td className="px-3 py-3">
-                        <span className={`text-[11px] px-2 py-0.5 rounded ${isRunning(c.status) ? "bg-green-950/40 text-green-400" : "bg-gray-900 text-gray-500"}`}>
+                        <span className={`text-[11px] px-2 py-0.5 rounded ${isRunning(c.status) ? "bg-green-950/40 text-green-400" : "bg-card text-muted-foreground"}`}>
                           {c.status ?? "—"}
                         </span>
                       </td>
                       <td className="px-3 py-3 font-mono text-xs text-yellow-500/90">{c.sku}</td>
-                      <td className="px-3 py-3 text-right font-medium text-white">{fmtNum(c.metrics.spend)}đ</td>
-                      <td className="px-3 py-3 text-right font-mono text-gray-400">{fmtNum(c.metrics.impressions)}</td>
-                      <td className="px-3 py-3 text-right font-mono text-gray-400">{fmtNum(c.metrics.reach)}</td>
-                      <td className="px-3 py-3 text-right font-mono text-gray-400">{fmtNum(c.metrics.clicks)}</td>
+                      <td className="px-3 py-3 text-right font-medium text-foreground">{fmtNum(c.metrics.spend)}đ</td>
+                      <td className="px-3 py-3 text-right font-mono text-muted-foreground">{fmtNum(c.metrics.impressions)}</td>
+                      <td className="px-3 py-3 text-right font-mono text-muted-foreground">{fmtNum(c.metrics.reach)}</td>
+                      <td className="px-3 py-3 text-right font-mono text-muted-foreground">{fmtNum(c.metrics.clicks)}</td>
                       <td className="px-3 py-3 text-right font-mono text-blue-400">{fmtNum(c.metrics.results)}</td>
-                      <td className="px-3 py-3 text-right text-gray-300">
+                      <td className="px-3 py-3 text-right text-foreground">
                         {c.metrics.costPerResult > 0 ? `${fmtNum(c.metrics.costPerResult)}đ` : "—"}
                       </td>
                       <td className="px-3 py-3 text-right font-mono text-green-400">{fmtNum(c.metrics.messages)}</td>
-                      <td className="px-3 py-3 text-right font-mono text-gray-400">
+                      <td className="px-3 py-3 text-right font-mono text-muted-foreground">
                         {c.metrics.rateMess > 0 ? `${c.metrics.rateMess.toFixed(1)}%` : "0%"}
                       </td>
                       <td className="px-3 py-3 text-right font-mono text-emerald-400">{c.metrics.ctr.toFixed(2)}%</td>
-                      <td className="px-3 py-3 text-right text-gray-300">
+                      <td className="px-3 py-3 text-right text-foreground">
                         {c.metrics.cpc > 0 ? `${Math.round(c.metrics.cpc).toLocaleString("vi-VN")}đ` : "—"}
                       </td>
                     </tr>
                   ))}
                   {campaignsWithMetrics.length === 0 && (
                     <tr>
-                      <td colSpan={15} className="text-center py-10 text-gray-500">
+                      <td colSpan={15} className="text-center py-10 text-muted-foreground">
                         Không tìm thấy chiến dịch nào.
                       </td>
                     </tr>
@@ -709,9 +709,9 @@ export default function CampaignsPage() {
             )}
 
             {activeTab === "adset" && (
-              <table className="w-full text-[13px] text-gray-300 border-collapse">
+              <table className="w-full text-[13px] text-foreground border-collapse">
                 <thead>
-                  <tr className="text-left text-gray-500 text-[11px] uppercase border-b border-[#1f2937] bg-[#0f172a]">
+                  <tr className="text-left text-muted-foreground text-[11px] uppercase border-b border-border bg-background">
                     <th className="px-3 py-3 font-medium text-center">Thao tác</th>
                     <th className="px-3 py-3 font-medium min-w-[220px]">Nhóm quảng cáo</th>
                     <th className="px-3 py-3 font-medium">Nền tảng</th>
@@ -732,12 +732,12 @@ export default function CampaignsPage() {
                 </thead>
                 <tbody>
                   {adSetsWithMetrics.slice(0, 150).map((as) => (
-                    <tr key={as.id} className="border-b border-[#1f2937]/60 hover:bg-[#1f2937]/40 transition-colors">
+                    <tr key={as.id} className="border-b border-border hover:bg-muted/40 transition-colors">
                       <td className="px-3 py-3 text-center">
                         <button
                           disabled
                           className={`relative inline-flex h-5 w-9 shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out opacity-60 ${
-                            isRunning(as.status) ? "bg-blue-600" : "bg-gray-700"
+                            isRunning(as.status) ? "bg-blue-600" : "bg-muted"
                           }`}
                         >
                           <span
@@ -747,40 +747,40 @@ export default function CampaignsPage() {
                           />
                         </button>
                       </td>
-                      <td className="px-3 py-3 text-white font-medium max-w-[240px] truncate" title={as.name}>
+                      <td className="px-3 py-3 text-foreground font-medium max-w-[240px] truncate" title={as.name}>
                         {as.name}
                       </td>
                       <td className="px-3 py-3">
                         <PlatformBadge platform={as.platform} />
                       </td>
                       <td className="px-3 py-3">
-                        <span className={`text-[11px] px-2 py-0.5 rounded ${isRunning(as.status) ? "bg-green-950/40 text-green-400" : "bg-gray-900 text-gray-500"}`}>
+                        <span className={`text-[11px] px-2 py-0.5 rounded ${isRunning(as.status) ? "bg-green-950/40 text-green-400" : "bg-card text-muted-foreground"}`}>
                           {as.status ?? "—"}
                         </span>
                       </td>
                       <td className="px-3 py-3 font-mono text-xs text-yellow-500/90">{as.sku}</td>
-                      <td className="px-3 py-3 text-right font-medium text-white">{fmtNum(as.metrics.spend)}đ</td>
-                      <td className="px-3 py-3 text-right font-mono text-gray-400">{fmtNum(as.metrics.impressions)}</td>
-                      <td className="px-3 py-3 text-right font-mono text-gray-400">{fmtNum(as.metrics.reach)}</td>
-                      <td className="px-3 py-3 text-right font-mono text-gray-400">{fmtNum(as.metrics.clicks)}</td>
+                      <td className="px-3 py-3 text-right font-medium text-foreground">{fmtNum(as.metrics.spend)}đ</td>
+                      <td className="px-3 py-3 text-right font-mono text-muted-foreground">{fmtNum(as.metrics.impressions)}</td>
+                      <td className="px-3 py-3 text-right font-mono text-muted-foreground">{fmtNum(as.metrics.reach)}</td>
+                      <td className="px-3 py-3 text-right font-mono text-muted-foreground">{fmtNum(as.metrics.clicks)}</td>
                       <td className="px-3 py-3 text-right font-mono text-blue-400">{fmtNum(as.metrics.results)}</td>
-                      <td className="px-3 py-3 text-right text-gray-300">
+                      <td className="px-3 py-3 text-right text-foreground">
                         {as.metrics.costPerResult > 0 ? `${fmtNum(as.metrics.costPerResult)}đ` : "—"}
                       </td>
                       <td className="px-3 py-3 text-right font-mono text-green-400">{fmtNum(as.metrics.messages)}</td>
-                      <td className="px-3 py-3 text-right font-mono text-gray-400">
+                      <td className="px-3 py-3 text-right font-mono text-muted-foreground">
                         {as.metrics.rateMess > 0 ? `${as.metrics.rateMess.toFixed(1)}%` : "0%"}
                       </td>
                       <td className="px-3 py-3 text-right font-mono text-emerald-400">{as.metrics.ctr.toFixed(2)}%</td>
-                      <td className="px-3 py-3 text-right text-gray-300">
+                      <td className="px-3 py-3 text-right text-foreground">
                         {as.metrics.cpc > 0 ? `${Math.round(as.metrics.cpc).toLocaleString("vi-VN")}đ` : "—"}
                       </td>
-                      <td className="px-3 py-3 text-right font-mono text-gray-400">{fmtNum(as.metrics.cpm)}đ</td>
+                      <td className="px-3 py-3 text-right font-mono text-muted-foreground">{fmtNum(as.metrics.cpm)}đ</td>
                     </tr>
                   ))}
                   {adSetsWithMetrics.length === 0 && (
                     <tr>
-                      <td colSpan={16} className="text-center py-10 text-gray-500">
+                      <td colSpan={16} className="text-center py-10 text-muted-foreground">
                         Không tìm thấy nhóm quảng cáo nào.
                       </td>
                     </tr>
@@ -790,9 +790,9 @@ export default function CampaignsPage() {
             )}
 
             {activeTab === "ad" && (
-              <table className="w-full text-[13px] text-gray-300 border-collapse">
+              <table className="w-full text-[13px] text-foreground border-collapse">
                 <thead>
-                  <tr className="text-left text-gray-500 text-[11px] uppercase border-b border-[#1f2937] bg-[#0f172a]">
+                  <tr className="text-left text-muted-foreground text-[11px] uppercase border-b border-border bg-background">
                     <th className="px-3 py-3 font-medium text-center">Thao tác</th>
                     <th className="px-3 py-3 font-medium min-w-[200px]">Tên quảng cáo</th>
                     <th className="px-3 py-3 font-medium text-center">Ảnh</th>
@@ -814,12 +814,12 @@ export default function CampaignsPage() {
                   {adsWithMetrics.slice(0, 150).map((ad) => {
                     const hash = hashString(ad.id);
                     return (
-                      <tr key={ad.id} className="border-b border-[#1f2937]/60 hover:bg-[#1f2937]/40 transition-colors">
+                      <tr key={ad.id} className="border-b border-border hover:bg-muted/40 transition-colors">
                         <td className="px-3 py-3 text-center">
                           <button
                             disabled
                             className={`relative inline-flex h-5 w-9 shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out opacity-60 ${
-                              isRunning(ad.status) ? "bg-blue-600" : "bg-gray-700"
+                              isRunning(ad.status) ? "bg-blue-600" : "bg-muted"
                             }`}
                           >
                             <span
@@ -829,42 +829,42 @@ export default function CampaignsPage() {
                             />
                           </button>
                         </td>
-                        <td className="px-3 py-3 text-white font-medium max-w-[200px] truncate" title={ad.name}>
+                        <td className="px-3 py-3 text-foreground font-medium max-w-[200px] truncate" title={ad.name}>
                           {ad.name}
                         </td>
                         <td className="px-3 py-3 text-center">
-                          <div className="w-8 h-8 rounded bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden mx-auto">
-                            <span className="text-[9px] uppercase font-bold text-gray-500">AD{(hash % 9) + 1}</span>
+                          <div className="w-8 h-8 rounded bg-muted border border-border flex items-center justify-center overflow-hidden mx-auto">
+                            <span className="text-[9px] uppercase font-bold text-muted-foreground">AD{(hash % 9) + 1}</span>
                           </div>
                         </td>
                         <td className="px-3 py-3">
                           <PlatformBadge platform={ad.platform} />
                         </td>
                         <td className="px-3 py-3">
-                          <span className={`text-[11px] px-2 py-0.5 rounded ${isRunning(ad.status) ? "bg-green-950/40 text-green-400" : "bg-gray-900 text-gray-500"}`}>
+                          <span className={`text-[11px] px-2 py-0.5 rounded ${isRunning(ad.status) ? "bg-green-950/40 text-green-400" : "bg-card text-muted-foreground"}`}>
                             {ad.status ?? "—"}
                           </span>
                         </td>
-                        <td className="px-3 py-3 text-right font-medium text-white">{fmtNum(ad.metrics.spend)}đ</td>
-                        <td className="px-3 py-3 text-right font-mono text-gray-400">{fmtNum(ad.metrics.impressions)}</td>
-                        <td className="px-3 py-3 text-right font-mono text-gray-400">{fmtNum(ad.metrics.reach)}</td>
-                        <td className="px-3 py-3 text-right font-mono text-gray-400">{fmtNum(ad.metrics.clicks)}</td>
+                        <td className="px-3 py-3 text-right font-medium text-foreground">{fmtNum(ad.metrics.spend)}đ</td>
+                        <td className="px-3 py-3 text-right font-mono text-muted-foreground">{fmtNum(ad.metrics.impressions)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-muted-foreground">{fmtNum(ad.metrics.reach)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-muted-foreground">{fmtNum(ad.metrics.clicks)}</td>
                         <td className="px-3 py-3 text-right font-mono text-green-400">{fmtNum(ad.metrics.messages)}</td>
-                        <td className="px-3 py-3 text-right font-mono text-gray-400">
+                        <td className="px-3 py-3 text-right font-mono text-muted-foreground">
                           {ad.metrics.rateMess > 0 ? `${ad.metrics.rateMess.toFixed(1)}%` : "0%"}
                         </td>
                         <td className="px-3 py-3 text-right font-mono text-emerald-400">{ad.metrics.ctr.toFixed(2)}%</td>
-                        <td className="px-3 py-3 text-right text-gray-300">
+                        <td className="px-3 py-3 text-right text-foreground">
                           {ad.metrics.cpc > 0 ? `${Math.round(ad.metrics.cpc).toLocaleString("vi-VN")}đ` : "—"}
                         </td>
-                        <td className="px-3 py-3 text-right font-mono text-gray-400">{fmtNum(ad.metrics.cpm)}đ</td>
+                        <td className="px-3 py-3 text-right font-mono text-muted-foreground">{fmtNum(ad.metrics.cpm)}đ</td>
                         <td className="px-3 py-3 font-mono text-xs text-yellow-500/90">{ad.sku}</td>
                       </tr>
                     );
                   })}
                   {adsWithMetrics.length === 0 && (
                     <tr>
-                      <td colSpan={15} className="text-center py-10 text-gray-500">
+                      <td colSpan={15} className="text-center py-10 text-muted-foreground">
                         Không tìm thấy quảng cáo nào.
                       </td>
                     </tr>
@@ -879,19 +879,19 @@ export default function CampaignsPage() {
       {/* Create modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#111827] border border-[#1f2937] rounded-xl w-full max-w-md p-5">
+          <div className="bg-card border border-border rounded-xl w-full max-w-md p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white font-semibold">Tạo chiến dịch mới</h3>
-              <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-white">
+              <h3 className="text-foreground font-semibold">Tạo chiến dịch mới</h3>
+              <button onClick={() => setShowCreate(false)} className="text-muted-foreground hover:text-foreground">
                 <X size={18} />
               </button>
             </div>
             <div className="flex flex-col gap-3">
-              <label className="text-xs text-gray-400">Tài khoản</label>
+              <label className="text-xs text-muted-foreground">Tài khoản</label>
               <select
                 value={form.accountId}
                 onChange={(e) => setForm({ ...form, accountId: e.target.value, objective: "" })}
-                className="bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-2 text-sm text-gray-200 outline-none"
+                className="bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground outline-none"
               >
                 <option value="">— Chọn tài khoản —</option>
                 {accounts.map((a) => (
@@ -901,20 +901,20 @@ export default function CampaignsPage() {
                 ))}
               </select>
 
-              <label className="text-xs text-gray-400">Tên chiến dịch</label>
+              <label className="text-xs text-muted-foreground">Tên chiến dịch</label>
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-2 text-sm text-gray-200 outline-none"
+                className="bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground outline-none"
                 placeholder="VD: Test - Remarketing"
               />
 
-              <label className="text-xs text-gray-400">Mục tiêu</label>
+              <label className="text-xs text-muted-foreground">Mục tiêu</label>
               <select
                 value={form.objective}
                 onChange={(e) => setForm({ ...form, objective: e.target.value })}
                 disabled={!selectedAccount}
-                className="bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-2 text-sm text-gray-200 outline-none disabled:opacity-50"
+                className="bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground outline-none disabled:opacity-50"
               >
                 <option value="">— Mặc định —</option>
                 {(OBJECTIVES[selectedAccount?.platform ?? ""] ?? []).map((o) => (
@@ -922,12 +922,12 @@ export default function CampaignsPage() {
                 ))}
               </select>
 
-              <label className="text-xs text-gray-400">Ngân sách/ngày (đ, tuỳ chọn)</label>
+              <label className="text-xs text-muted-foreground">Ngân sách/ngày (đ, tuỳ chọn)</label>
               <input
                 type="number"
                 value={form.budget}
                 onChange={(e) => setForm({ ...form, budget: e.target.value })}
-                className="bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-2 text-sm text-gray-200 outline-none"
+                className="bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground outline-none"
                 placeholder="VD: 100000"
               />
 
@@ -936,7 +936,7 @@ export default function CampaignsPage() {
               <button
                 onClick={submitCreate}
                 disabled={creating || !form.accountId || !form.name}
-                className="mt-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-md"
+                className="mt-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-foreground text-sm font-medium rounded-md"
               >
                 {creating ? <SpinnerGap size={16} className="animate-spin" /> : <Plus size={16} weight="bold" />}
                 Tạo (PAUSED)

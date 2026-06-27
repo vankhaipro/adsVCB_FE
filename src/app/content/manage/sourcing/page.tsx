@@ -52,16 +52,16 @@ export default function SourcingContentPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-300 w-full max-w-full text-gray-200">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-300 w-full max-w-full text-foreground">
 
       {/* Sub-menu Tabs Row */}
-      <div className="flex items-center justify-between border-b border-[#1e293b]/40 pb-3">
-        <div className="flex items-center gap-2 bg-[#111827] p-1 rounded-lg border border-[#1f2937]/60">
+      <div className="flex items-center justify-between border-b border-border pb-3">
+        <div className="flex items-center gap-2 bg-card p-1 rounded-lg border border-border">
           <button
             onClick={() => setActiveSubTab("video")}
             className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${activeSubTab === "video"
-                ? "bg-[#1f2937] text-white shadow-sm"
-                : "text-gray-400 hover:text-white"
+                ? "bg-muted text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
               }`}
           >
             Video
@@ -69,8 +69,8 @@ export default function SourcingContentPage() {
           <button
             onClick={() => setActiveSubTab("channel")}
             className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${activeSubTab === "channel"
-                ? "bg-[#1f2937] text-white shadow-sm"
-                : "text-gray-400 hover:text-white"
+                ? "bg-muted text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
               }`}
           >
             Kênh
@@ -80,13 +80,13 @@ export default function SourcingContentPage() {
         {/* Date picker on tab Kênh */}
         {activeSubTab === "channel" && (
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#111827] border border-[#1f2937] rounded-lg text-xs text-gray-400 select-none">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-muted-foreground select-none">
               <Calendar size={14} />
               <span>28/05/2026 &nbsp;→&nbsp; 26/06/2026</span>
             </div>
 
             {/* Create New Button */}
-            <button className="flex items-center gap-1.5 px-4 py-1.5 bg-[#3b82f6] hover:bg-[#2563eb] rounded-lg text-xs text-white font-bold transition-colors cursor-pointer shadow-md shadow-blue-500/10">
+            <button className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary rounded-lg text-xs text-foreground font-bold transition-colors cursor-pointer shadow-md shadow-blue-500/10">
               <Plus size={14} weight="bold" />
               Tạo mới
             </button>
@@ -98,126 +98,126 @@ export default function SourcingContentPage() {
       {activeSubTab === "video" ? (
         <>
           {/* Filters Form Panel */}
-          <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-5 shadow-md">
+          <div className="bg-card border border-border rounded-xl p-5 shadow-md">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
               {/* Row 1 */}
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Thời gian phân tích</span>
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Thời gian phân tích</span>
                 <div className="relative">
-                  <div className="flex items-center justify-between bg-[#1f2937]/50 border border-[#1f2937] hover:border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 select-none cursor-pointer">
+                  <div className="flex items-center justify-between bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground select-none cursor-pointer">
                     <span>28/05/2026 &nbsp;→&nbsp; 26/06/2026</span>
-                    <Calendar size={13} className="text-gray-400" />
+                    <Calendar size={13} className="text-muted-foreground" />
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Ngày đăng video</span>
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Ngày đăng video</span>
                 <div className="relative">
-                  <div className="flex items-center justify-between bg-[#1f2937]/50 border border-[#1f2937] hover:border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 select-none cursor-pointer">
+                  <div className="flex items-center justify-between bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground select-none cursor-pointer">
                     <span>28/05/2026 &nbsp;→&nbsp; 26/06/2026</span>
-                    <Calendar size={13} className="text-gray-400" />
+                    <Calendar size={13} className="text-muted-foreground" />
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Lượt xem</span>
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Lượt xem</span>
                 <div className="relative">
-                  <select className="w-full bg-[#1f2937]/50 border border-[#1f2937] hover:border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
+                  <select className="w-full bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
                     <option>Không giới hạn</option>
                   </select>
-                  <CaretDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                  <CaretDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Lượt thích</span>
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Lượt thích</span>
                 <div className="relative">
-                  <select className="w-full bg-[#1f2937]/50 border border-[#1f2937] hover:border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
+                  <select className="w-full bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
                     <option>Không giới hạn</option>
                   </select>
-                  <CaretDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                  <CaretDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
 
               {/* Row 2 */}
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Nền tảng</span>
-                <div className="relative bg-[#1f2937]/50 border border-[#1f2937] rounded-lg px-3 py-2 text-xs text-white font-medium">
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Nền tảng</span>
+                <div className="relative bg-muted/50 border border-border rounded-lg px-3 py-2 text-xs text-foreground font-medium">
                   Tiktok
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Kênh</span>
-                <div className="relative bg-[#1f2937]/50 border border-[#1f2937] rounded-lg px-3 py-2 text-xs text-gray-500 font-medium">
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Kênh</span>
+                <div className="relative bg-muted/50 border border-border rounded-lg px-3 py-2 text-xs text-muted-foreground font-medium">
                   Tất cả
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Lượt bình luận</span>
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Lượt bình luận</span>
                 <div className="relative">
-                  <select className="w-full bg-[#1f2937]/50 border border-[#1f2937] hover:border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
+                  <select className="w-full bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
                     <option>Không giới hạn</option>
                   </select>
-                  <CaretDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                  <CaretDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Lượt chia sẻ</span>
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Lượt chia sẻ</span>
                 <div className="relative">
-                  <select className="w-full bg-[#1f2937]/50 border border-[#1f2937] hover:border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
+                  <select className="w-full bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
                     <option>Không giới hạn</option>
                   </select>
-                  <CaretDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                  <CaretDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
 
               {/* Row 3 */}
               <div className="flex flex-col gap-1.5 md:col-span-2">
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Lọc theo nhãn</span>
-                  <button className="text-gray-400 hover:text-white" title="Cấu hình nhãn">
+                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Lọc theo nhãn</span>
+                  <button className="text-muted-foreground hover:text-foreground" title="Cấu hình nhãn">
                     <Gear size={12} />
                   </button>
                 </div>
                 <div className="relative">
-                  <select className="w-full bg-[#1f2937]/50 border border-[#1f2937] hover:border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-500 appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8">
+                  <select className="w-full bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-muted-foreground appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8">
                     <option>Chọn nhãn</option>
                   </select>
-                  <CaretDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                  <CaretDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5 md:col-span-2">
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Tỉ lệ tương tác</span>
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Tỉ lệ tương tác</span>
                 <div className="relative">
-                  <select className="w-full bg-[#1f2937]/50 border border-[#1f2937] hover:border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
+                  <select className="w-full bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
                     <option>Không giới hạn</option>
                   </select>
-                  <CaretDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                  <CaretDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
 
             </div>
 
             {/* Buttons Row */}
-            <div className="flex justify-end items-center gap-2.5 mt-5 pt-3 border-t border-[#1f2937]/40">
-              <button className="flex items-center gap-1.5 px-4 py-1.5 bg-[#3b82f6] hover:bg-[#2563eb] rounded-lg text-xs text-white font-bold transition-all cursor-pointer">
+            <div className="flex justify-end items-center gap-2.5 mt-5 pt-3 border-t border-border">
+              <button className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary rounded-lg text-xs text-foreground font-bold transition-all cursor-pointer">
                 <DownloadSimple size={14} weight="bold" />
                 Tải tài liệu
               </button>
 
-              <button className="flex items-center gap-1.5 px-4 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-[#1f2937] hover:border-gray-700 text-gray-300 rounded-lg text-xs font-semibold cursor-pointer transition-colors">
+              <button className="flex items-center gap-1.5 px-4 py-1.5 bg-muted hover:bg-muted border border-border hover:border-border text-foreground rounded-lg text-xs font-semibold cursor-pointer transition-colors">
                 <ArrowClockwise size={14} />
                 Làm mới bộ lọc
               </button>
 
-              <button className="flex items-center gap-1.5 px-4 py-1.5 bg-[#1f2937]/40 text-gray-600 rounded-lg text-xs font-semibold cursor-not-allowed select-none" disabled>
+              <button className="flex items-center gap-1.5 px-4 py-1.5 bg-muted/40 text-muted-foreground rounded-lg text-xs font-semibold cursor-not-allowed select-none" disabled>
                 <Play size={14} weight="fill" />
                 Phân tích
               </button>
@@ -225,33 +225,33 @@ export default function SourcingContentPage() {
           </div>
 
           {/* Sourcing Empty Video Table */}
-          <div className="bg-[#111827] border border-[#1f2937] rounded-xl shadow-md overflow-hidden flex flex-col flex-1">
+          <div className="bg-card border border-border rounded-xl shadow-md overflow-hidden flex flex-col flex-1">
             <div className="overflow-auto w-full max-h-[calc(100vh-420px)] custom-scrollbar">
               <table style={{ minWidth: "1900px" }} className="w-full text-left text-xs border-collapse relative">
                 <thead>
-                  <tr className="border-b border-[#1f2937] text-gray-400 font-semibold select-none">
-                    <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 w-12 text-center border-r border-[#1f2937]/40">
+                  <tr className="border-b border-border text-muted-foreground font-semibold select-none">
+                    <th className="sticky top-0 z-10 bg-card py-3 px-4 w-12 text-center border-r border-border">
                       <input type="checkbox" disabled className="accent-blue-500 rounded cursor-not-allowed" />
                     </th>
-                    <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap min-w-[350px]">Video</th>
-                    <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap min-w-[180px]">Kênh</th>
-                    <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap min-w-[140px]">Nhãn</th>
-                    <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap min-w-[180px]">Lịch sử views</th>
-                    <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap text-right min-w-[130px]">Tổng lượt xem</th>
-                    <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap text-right min-w-[120px]">Lượt xem</th>
-                    <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap text-right min-w-[120px]">Lượt thích</th>
-                    <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap text-right min-w-[120px]">Lượt bình luận</th>
-                    <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap text-right min-w-[120px]">Lượt chia sẻ</th>
-                    <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap text-right min-w-[135px]">Tỷ lệ tương tác</th>
-                    <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap min-w-[130px]">Ngày đăng</th>
-                    <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold whitespace-nowrap min-w-[180px]">Hashtags</th>
+                    <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap min-w-[350px]">Video</th>
+                    <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap min-w-[180px]">Kênh</th>
+                    <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap min-w-[140px]">Nhãn</th>
+                    <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap min-w-[180px]">Lịch sử views</th>
+                    <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap text-right min-w-[130px]">Tổng lượt xem</th>
+                    <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap text-right min-w-[120px]">Lượt xem</th>
+                    <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap text-right min-w-[120px]">Lượt thích</th>
+                    <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap text-right min-w-[120px]">Lượt bình luận</th>
+                    <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap text-right min-w-[120px]">Lượt chia sẻ</th>
+                    <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap text-right min-w-[135px]">Tỷ lệ tương tác</th>
+                    <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap min-w-[130px]">Ngày đăng</th>
+                    <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold whitespace-nowrap min-w-[180px]">Hashtags</th>
                   </tr>
                 </thead>
               </table>
 
               {/* Empty Data Placeholder inside scroll boundaries */}
-              <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-500">
-                <FolderOpen size={48} className="text-gray-600/80 stroke-1" />
+              <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+                <FolderOpen size={48} className="text-muted-foreground/80 stroke-1" />
                 <span className="text-xs font-semibold">No data</span>
               </div>
             </div>
@@ -259,114 +259,114 @@ export default function SourcingContentPage() {
         </>
       ) : (
         /* Tab Kênh */
-        <div className="bg-[#111827] border border-[#1f2937] rounded-xl shadow-md overflow-hidden flex flex-col flex-1">
+        <div className="bg-card border border-border rounded-xl shadow-md overflow-hidden flex flex-col flex-1">
           <div className="overflow-auto w-full max-h-[calc(100vh-320px)] custom-scrollbar">
             <table style={{ minWidth: "1500px" }} className="w-full text-left text-xs border-collapse relative">
               <thead>
-                <tr className="border-b border-[#1f2937] text-gray-400 font-semibold select-none">
-                  <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap min-w-[280px]">
-                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
+                <tr className="border-b border-border text-muted-foreground font-semibold select-none">
+                  <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap min-w-[280px]">
+                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-foreground transition-colors">
                       <span>Kênh</span>
-                      <ArrowsDownUp size={11} className="text-gray-500" />
+                      <ArrowsDownUp size={11} className="text-muted-foreground" />
                     </div>
                   </th>
                   
-                  <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap min-w-[140px]">
-                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
+                  <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap min-w-[140px]">
+                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-foreground transition-colors">
                       <span>Chủ đề</span>
-                      <ArrowsDownUp size={11} className="text-gray-500" />
+                      <ArrowsDownUp size={11} className="text-muted-foreground" />
                     </div>
                   </th>
                   
-                  <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap min-w-[140px]">
-                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
+                  <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap min-w-[140px]">
+                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-foreground transition-colors">
                       <span>Lượt xem</span>
-                      <ArrowsDownUp size={11} className="text-gray-500" />
+                      <ArrowsDownUp size={11} className="text-muted-foreground" />
                     </div>
                   </th>
                   
-                  <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap min-w-[150px]">
-                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
+                  <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap min-w-[150px]">
+                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-foreground transition-colors">
                       <span>Số video mới</span>
-                      <ArrowsDownUp size={11} className="text-gray-500" />
+                      <ArrowsDownUp size={11} className="text-muted-foreground" />
                     </div>
                   </th>
                   
-                  <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap min-w-[180px]">
-                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
+                  <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap min-w-[180px]">
+                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-foreground transition-colors">
                       <span>Tổng lượt theo dõi</span>
-                      <ArrowsDownUp size={11} className="text-gray-500" />
+                      <ArrowsDownUp size={11} className="text-muted-foreground" />
                     </div>
                   </th>
                   
-                  <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap min-w-[160px]">
-                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
+                  <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap min-w-[160px]">
+                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-foreground transition-colors">
                       <span>Tổng lượt thích</span>
-                      <ArrowsDownUp size={11} className="text-gray-500" />
+                      <ArrowsDownUp size={11} className="text-muted-foreground" />
                     </div>
                   </th>
                   
-                  <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap min-w-[160px]">
-                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
+                  <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap min-w-[160px]">
+                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-foreground transition-colors">
                       <span>Tổng số video</span>
-                      <ArrowsDownUp size={11} className="text-gray-500" />
+                      <ArrowsDownUp size={11} className="text-muted-foreground" />
                     </div>
                   </th>
                   
-                  <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 whitespace-nowrap min-w-[200px]">Top videos</th>
-                  <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold text-center whitespace-nowrap min-w-[120px]">Thao tác</th>
+                  <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border whitespace-nowrap min-w-[200px]">Top videos</th>
+                  <th className="sticky top-0 z-10 bg-card py-3 px-4 font-bold text-center whitespace-nowrap min-w-[120px]">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1f2937]/40 text-gray-300">
+              <tbody className="divide-y divide-border text-foreground">
                 {channels.map((chan) => (
-                  <tr key={chan.id} className="hover:bg-[#1f2937]/20 transition-all">
+                  <tr key={chan.id} className="hover:bg-muted/20 transition-all">
 
                     {/* Channel info with avatar */}
-                    <td className="py-3 px-4 border-r border-[#1f2937]/40 font-medium">
+                    <td className="py-3 px-4 border-r border-border font-medium">
                       <div className="flex items-center gap-3">
-                        <UserCircle size={32} className="text-gray-500 shrink-0" />
+                        <UserCircle size={32} className="text-muted-foreground shrink-0" />
                         <div className="flex flex-col">
-                          <span className="text-white font-bold leading-tight">{chan.name}</span>
-                          <span className="text-[10px] text-gray-500 font-medium">ID: {chan.username}</span>
+                          <span className="text-foreground font-bold leading-tight">{chan.name}</span>
+                          <span className="text-[10px] text-muted-foreground font-medium">ID: {chan.username}</span>
                         </div>
                       </div>
                     </td>
 
-                    <td className="py-3 px-4 border-r border-[#1f2937]/40 text-gray-400 font-medium text-left">
+                    <td className="py-3 px-4 border-r border-border text-muted-foreground font-medium text-left">
                       {chan.topic}
                     </td>
 
-                    <td className="py-3 px-4 border-r border-[#1f2937]/40 font-semibold font-mono text-gray-300">
+                    <td className="py-3 px-4 border-r border-border font-semibold font-mono text-foreground">
                       {chan.views}
                     </td>
 
-                    <td className="py-3 px-4 border-r border-[#1f2937]/40 font-semibold font-mono text-gray-400">
+                    <td className="py-3 px-4 border-r border-border font-semibold font-mono text-muted-foreground">
                       {chan.newVideos}
                     </td>
 
-                    <td className="py-3 px-4 border-r border-[#1f2937]/40 font-semibold font-mono italic text-gray-400">
+                    <td className="py-3 px-4 border-r border-border font-semibold font-mono italic text-muted-foreground">
                       {chan.followers}
                     </td>
 
-                    <td className="py-3 px-4 border-r border-[#1f2937]/40 font-semibold font-mono italic text-gray-400">
+                    <td className="py-3 px-4 border-r border-border font-semibold font-mono italic text-muted-foreground">
                       {chan.likes}
                     </td>
 
-                    <td className="py-3 px-4 border-r border-[#1f2937]/40 font-semibold font-mono text-gray-300">
+                    <td className="py-3 px-4 border-r border-border font-semibold font-mono text-foreground">
                       {chan.totalVideos}
                     </td>
 
-                    <td className="py-3 px-4 border-r border-[#1f2937]/40 text-gray-400 font-medium italic">
+                    <td className="py-3 px-4 border-r border-border text-muted-foreground font-medium italic">
                       {chan.topVideos}
                     </td>
 
                     {/* Actions */}
                     <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-3 text-gray-400">
-                        <button className="p-1 hover:text-white transition-colors cursor-pointer" title="Xem biểu đồ">
+                      <div className="flex items-center justify-center gap-3 text-muted-foreground">
+                        <button className="p-1 hover:text-foreground transition-colors cursor-pointer" title="Xem biểu đồ">
                           <ChartBar size={16} />
                         </button>
-                        <button className="p-1 hover:text-white transition-colors cursor-pointer" title="Chỉnh sửa">
+                        <button className="p-1 hover:text-foreground transition-colors cursor-pointer" title="Chỉnh sửa">
                           <PencilSimple size={16} />
                         </button>
                         <button className="p-1 hover:text-red-500 transition-colors cursor-pointer" title="Xóa">
@@ -382,12 +382,12 @@ export default function SourcingContentPage() {
           </div>
 
           {/* Table footer containing pagination */}
-          <div className="bg-[#111827] border-t border-[#1f2937] px-5 py-3 flex items-center justify-end">
+          <div className="bg-card border-t border-border px-5 py-3 flex items-center justify-end">
             <div className="flex items-center gap-1.5 select-none">
 
               <button
                 onClick={() => currentPage === 2 && handlePageChange(1)}
-                className={`p-1.5 rounded transition-colors cursor-pointer ${currentPage === 1 ? "text-gray-600 cursor-not-allowed" : "text-gray-400 hover:bg-[#1f2937] hover:text-white"
+                className={`p-1.5 rounded transition-colors cursor-pointer ${currentPage === 1 ? "text-muted-foreground cursor-not-allowed" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 disabled={currentPage === 1}
               >
@@ -396,7 +396,7 @@ export default function SourcingContentPage() {
 
               <button
                 onClick={() => handlePageChange(1)}
-                className={`w-6 h-6 rounded text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${currentPage === 1 ? "bg-blue-600 text-white font-bold" : "text-gray-400 hover:bg-[#1f2937] hover:text-white"
+                className={`w-6 h-6 rounded text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${currentPage === 1 ? "bg-blue-600 text-foreground font-bold" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
               >
                 1
@@ -404,7 +404,7 @@ export default function SourcingContentPage() {
 
               <button
                 onClick={() => handlePageChange(2)}
-                className={`w-6 h-6 rounded text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${currentPage === 2 ? "bg-blue-600 text-white font-bold" : "text-gray-400 hover:bg-[#1f2937] hover:text-white"
+                className={`w-6 h-6 rounded text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${currentPage === 2 ? "bg-blue-600 text-foreground font-bold" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
               >
                 2
@@ -412,7 +412,7 @@ export default function SourcingContentPage() {
 
               <button
                 onClick={() => currentPage === 1 && handlePageChange(2)}
-                className={`p-1.5 rounded transition-colors cursor-pointer ${currentPage === 2 ? "text-gray-600 cursor-not-allowed" : "text-gray-400 hover:bg-[#1f2937] hover:text-white"
+                className={`p-1.5 rounded transition-colors cursor-pointer ${currentPage === 2 ? "text-muted-foreground cursor-not-allowed" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 disabled={currentPage === 2}
               >

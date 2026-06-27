@@ -52,15 +52,15 @@ export default function AdAccountsPage() {
     <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Tài khoản quảng cáo</h1>
-          <p className="text-sm text-gray-400 mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Tài khoản quảng cáo</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             {accounts.length} tài khoản (Meta + TikTok) qua Pipeboard.
           </p>
         </div>
         <button
           onClick={sync}
           disabled={syncing}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium rounded-md transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-foreground text-sm font-medium rounded-md transition-colors"
         >
           {syncing ? <SpinnerGap size={16} className="animate-spin" /> : <ArrowsClockwise size={16} />}
           Đồng bộ
@@ -68,7 +68,7 @@ export default function AdAccountsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-gray-400 text-sm p-6">
+        <div className="flex items-center gap-2 text-muted-foreground text-sm p-6">
           <SpinnerGap size={18} className="animate-spin" /> Đang tải…
         </div>
       ) : error ? (
@@ -82,7 +82,7 @@ export default function AdAccountsPage() {
             return (
               <div
                 key={a.id}
-                className={`bg-[#111827] border rounded-xl p-5 flex flex-col gap-3 ${
+                className={`bg-card border rounded-xl p-5 flex flex-col gap-3 ${
                   meta ? "border-blue-900/30" : "border-pink-900/30"
                 }`}
               >
@@ -93,19 +93,19 @@ export default function AdAccountsPage() {
                     <TiktokLogo size={28} weight="fill" className="text-pink-400" />
                   )}
                   <div className="min-w-0">
-                    <div className="text-white font-semibold truncate" title={a.name ?? ""}>
+                    <div className="text-foreground font-semibold truncate" title={a.name ?? ""}>
                       {a.name ?? a.externalId}
                     </div>
-                    <div className="text-xs text-gray-500">{meta ? "Meta Ads" : "TikTok Ads"}</div>
+                    <div className="text-xs text-muted-foreground">{meta ? "Meta Ads" : "TikTok Ads"}</div>
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Chiến dịch</span>
-                  <span className="text-gray-200 font-medium">{a._count.campaigns}</span>
+                  <span className="text-muted-foreground">Chiến dịch</span>
+                  <span className="text-foreground font-medium">{a._count.campaigns}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Đã chi tiêu</span>
-                  <span className="text-gray-200 font-medium">{fmtVnd(a.amountSpent)}</span>
+                  <span className="text-muted-foreground">Đã chi tiêu</span>
+                  <span className="text-foreground font-medium">{fmtVnd(a.amountSpent)}</span>
                 </div>
               </div>
             );

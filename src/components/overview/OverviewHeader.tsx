@@ -33,7 +33,7 @@ type PillGroupProps = {
 function PillGroup({ label, items, value, onChange }: PillGroupProps) {
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-xs text-gray-500 font-medium shrink-0">{label}</span>
+      <span className="text-xs text-muted-foreground font-medium shrink-0">{label}</span>
       {items.map((item) => (
         <button
           key={item.id}
@@ -41,8 +41,8 @@ function PillGroup({ label, items, value, onChange }: PillGroupProps) {
           onClick={() => onChange(value === item.id ? "ALL" : item.id)}
           className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
             value === item.id
-              ? "bg-blue-600 text-white"
-              : "bg-[#1e293b] text-gray-400 hover:bg-[#334155]"
+              ? "bg-blue-600 text-foreground"
+              : "bg-card text-muted-foreground hover:bg-muted"
           }`}
         >
           {item.label}
@@ -57,7 +57,7 @@ function KpiCard({ label, value, sub, change, icon: Icon, iconColor, iconBg }: K
   const up = (change ?? 0) >= 0;
 
   return (
-    <div className="bg-[#0f172a] rounded-xl border border-[#1e293b] p-4 flex flex-col gap-2 min-w-0">
+    <div className="bg-background rounded-xl border border-border p-4 flex flex-col gap-2 min-w-0">
       <div className="flex items-start justify-between gap-1">
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
           <Icon size={16} className={iconColor} weight="duotone" />
@@ -74,9 +74,9 @@ function KpiCard({ label, value, sub, change, icon: Icon, iconColor, iconBg }: K
         )}
       </div>
       <div className="min-w-0">
-        <p className="text-lg font-bold text-white leading-tight truncate">{value}</p>
-        {sub && <p className="text-[10px] text-gray-400 truncate">{sub}</p>}
-        <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">{label}</p>
+        <p className="text-lg font-bold text-foreground leading-tight truncate">{value}</p>
+        {sub && <p className="text-[10px] text-muted-foreground truncate">{sub}</p>}
+        <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{label}</p>
       </div>
     </div>
   );
@@ -150,13 +150,13 @@ export default function OverviewHeader({
       {/* Filter bar — một hàng gọn, nằm trực tiếp trên nền trang */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
         {/* Tìm kiếm */}
-        <div className="flex items-center gap-2 bg-[#0f172a] border border-[#1e293b] rounded-lg px-3 py-2 min-w-[200px] flex-1 max-w-[260px]">
-          <MagnifyingGlass size={16} className="text-gray-500 shrink-0" />
+        <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2 min-w-[200px] flex-1 max-w-[260px]">
+          <MagnifyingGlass size={16} className="text-muted-foreground shrink-0" />
           <input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Tìm chiến dịch, mã..."
-            className="bg-transparent text-sm text-gray-200 outline-none w-full placeholder:text-gray-500"
+            className="bg-transparent text-sm text-foreground outline-none w-full placeholder:text-muted-foreground"
           />
         </div>
 
@@ -167,12 +167,12 @@ export default function OverviewHeader({
 
         {/* Bên phải: khoảng thời gian + hành động */}
         <div className="ml-auto flex items-center gap-2">
-          <div className="flex items-center gap-2 bg-[#0f172a] border border-[#1e293b] rounded-lg px-3 py-2 text-xs">
+          <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2 text-xs">
             <CalendarBlank size={14} className="text-blue-400 shrink-0" />
             <select
               value={dateRange}
               onChange={(e) => onDateRangeChange(e.target.value)}
-              className="bg-[#0f172a] text-gray-200 outline-none cursor-pointer font-medium"
+              className="bg-background text-foreground outline-none cursor-pointer font-medium"
             >
               {DATE_OPTIONS.map((d) => (
                 <option key={d.id} value={d.id}>
@@ -185,7 +185,7 @@ export default function OverviewHeader({
           <button
             type="button"
             onClick={onExport}
-            className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-foreground text-sm font-medium rounded-lg transition-colors"
           >
             <Download size={16} />
             Xuất Excel
@@ -194,7 +194,7 @@ export default function OverviewHeader({
             type="button"
             onClick={onRefresh}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0f172a] border border-[#1e293b] hover:bg-[#1e293b] text-gray-200 text-sm font-medium rounded-lg transition-colors disabled:opacity-60"
+            className="flex items-center gap-2 px-4 py-2 bg-background border border-border hover:bg-card text-foreground text-sm font-medium rounded-lg transition-colors disabled:opacity-60"
           >
             {refreshing ? (
               <SpinnerGap size={16} className="animate-spin" />

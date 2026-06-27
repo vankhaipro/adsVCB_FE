@@ -7,13 +7,21 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --font-sans: var(--font-roboto);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  
+
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
@@ -21,22 +29,40 @@
   --radius-full: 9999px;
 }
 
+/* ===== LIGHT (default) ===== */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --background: oklch(0.985 0.002 247);      /* app background */
+  --foreground: oklch(0.21 0.03 256);        /* primary text */
+  --card: oklch(1 0 0);                      /* panels / surfaces */
+  --card-foreground: oklch(0.21 0.03 256);
+  --muted: oklch(0.96 0.005 247);            /* elevated/hover surface */
+  --muted-foreground: oklch(0.52 0.02 257);  /* secondary/muted text */
+  --secondary: oklch(0.96 0.005 247);
+  --secondary-foreground: oklch(0.21 0.03 256);
+  --accent: oklch(0.96 0.005 247);
+  --accent-foreground: oklch(0.21 0.03 256);
+  --primary: oklch(0.546 0.215 262.9);       /* blue */
   --primary-foreground: oklch(1 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.91 0.01 247);
+  --input: oklch(0.91 0.01 247);
+  --ring: oklch(0.546 0.215 262.9 / 50%);
 }
 
+/* ===== DARK ===== */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --primary: oklch(0.556 0.245 264.376); /* Blue theme matching the screenshot */
+  --background: oklch(0.145 0 0);            /* ~#0a0a0a app background */
+  --foreground: oklch(0.97 0.005 247);       /* primary text */
+  --card: oklch(0.21 0.02 256);              /* ~#111827 / #1e293b panels */
+  --card-foreground: oklch(0.97 0.005 247);
+  --muted: oklch(0.27 0.025 256);            /* ~#1f2937 elevated/hover */
+  --muted-foreground: oklch(0.7 0.02 257);   /* secondary/muted text */
+  --secondary: oklch(0.27 0.025 256);
+  --secondary-foreground: oklch(0.97 0.005 247);
+  --accent: oklch(0.27 0.025 256);
+  --accent-foreground: oklch(0.97 0.005 247);
+  --primary: oklch(0.556 0.245 264.376);     /* blue theme */
   --primary-foreground: oklch(1 0 0);
-  --border: oklch(1 0 0 / 10%);
+  --border: oklch(0.3 0.025 256);            /* ~#1f2937 borders */
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0.245 264.376 / 50%);
 }

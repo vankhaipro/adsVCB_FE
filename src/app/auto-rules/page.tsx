@@ -113,33 +113,33 @@ export default function AutoRulesPage() {
     <div className="flex flex-col gap-5 pb-10">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Quy tắc tự động</h1>
-          <p className="text-sm text-gray-400 mt-1">{rules.length} quy tắc. Engine chạy theo lịch (cron) ở backend.</p>
+          <h1 className="text-2xl font-bold text-foreground">Quy tắc tự động</h1>
+          <p className="text-sm text-muted-foreground mt-1">{rules.length} quy tắc. Engine chạy theo lịch (cron) ở backend.</p>
         </div>
         <button
           onClick={() => setShow(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-foreground text-sm font-medium rounded-md"
         >
           <Plus size={16} weight="bold" /> Tạo quy tắc
         </button>
       </div>
 
       {loading ? (
-        <div className="p-6 text-gray-400 text-sm flex items-center gap-2">
+        <div className="p-6 text-muted-foreground text-sm flex items-center gap-2">
           <SpinnerGap size={18} className="animate-spin" /> Đang tải…
         </div>
       ) : rules.length === 0 ? (
-        <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-6 text-center text-gray-500 text-sm">
+        <div className="bg-card border border-border rounded-xl p-6 text-center text-muted-foreground text-sm">
           Chưa có quy tắc nào. Bấm “Tạo quy tắc”.
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           {rules.map((r) => (
-            <div key={r.id} className="bg-[#111827] border border-[#1f2937] rounded-xl p-4 flex items-center gap-4">
+            <div key={r.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
               <GitBranch size={20} className="text-blue-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-white font-medium">{r.name}</div>
-                <div className="text-xs text-gray-500 mt-0.5">
+                <div className="text-foreground font-medium">{r.name}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
                   {r.platform ?? "Tất cả"} · NẾU {condLabel(r.condition)} → {actLabel(r.action)}
                   {r.action.execute ? " (tự thực thi)" : ""} · {CRON.find((c) => c.v === r.schedule)?.l ?? r.schedule ?? "thủ công"}
                 </div>
@@ -148,7 +148,7 @@ export default function AutoRulesPage() {
                 onClick={() => toggleActive(r)}
                 disabled={busy === r.id}
                 className={`text-xs px-3 py-1.5 rounded-md border ${
-                  r.isActive ? "border-green-900/50 text-green-400" : "border-[#374151] text-gray-400"
+                  r.isActive ? "border-green-900/50 text-green-400" : "border-border text-muted-foreground"
                 }`}
               >
                 {r.isActive ? "Đang bật" : "Tắt"}
@@ -157,11 +157,11 @@ export default function AutoRulesPage() {
                 onClick={() => runNow(r)}
                 disabled={busy === r.id}
                 title="Chạy thử"
-                className="text-gray-400 hover:text-white p-1.5"
+                className="text-muted-foreground hover:text-foreground p-1.5"
               >
                 {busy === r.id ? <SpinnerGap size={16} className="animate-spin" /> : <Play size={16} />}
               </button>
-              <button onClick={() => remove(r)} disabled={busy === r.id} title="Xoá" className="text-gray-500 hover:text-red-400 p-1.5">
+              <button onClick={() => remove(r)} disabled={busy === r.id} title="Xoá" className="text-muted-foreground hover:text-red-400 p-1.5">
                 <Trash size={16} />
               </button>
             </div>
@@ -172,10 +172,10 @@ export default function AutoRulesPage() {
       {/* Create modal */}
       {show && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#111827] border border-[#1f2937] rounded-xl w-full max-w-md p-5">
+          <div className="bg-card border border-border rounded-xl w-full max-w-md p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white font-semibold">Tạo quy tắc tự động</h3>
-              <button onClick={() => setShow(false)} className="text-gray-400 hover:text-white">
+              <h3 className="text-foreground font-semibold">Tạo quy tắc tự động</h3>
+              <button onClick={() => setShow(false)} className="text-muted-foreground hover:text-foreground">
                 <X size={18} />
               </button>
             </div>
@@ -184,15 +184,15 @@ export default function AutoRulesPage() {
                 value={f.name}
                 onChange={(e) => setF({ ...f, name: e.target.value })}
                 placeholder="Tên quy tắc"
-                className="bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-2 text-gray-200 outline-none"
+                className="bg-background border border-border rounded-md px-3 py-2 text-foreground outline-none"
               />
-              <select value={f.platform} onChange={(e) => setF({ ...f, platform: e.target.value })} className="bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-2 text-gray-200 outline-none">
+              <select value={f.platform} onChange={(e) => setF({ ...f, platform: e.target.value })} className="bg-background border border-border rounded-md px-3 py-2 text-foreground outline-none">
                 <option value="">Mọi nền tảng</option>
                 <option value="META">Meta</option>
                 <option value="TIKTOK">TikTok</option>
               </select>
               <div className="flex gap-2">
-                <select value={f.condMetric} onChange={(e) => setF({ ...f, condMetric: e.target.value })} className="bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-2 text-gray-200 outline-none flex-1">
+                <select value={f.condMetric} onChange={(e) => setF({ ...f, condMetric: e.target.value })} className="bg-background border border-border rounded-md px-3 py-2 text-foreground outline-none flex-1">
                   <option value="all">Mọi chiến dịch</option>
                   <option value="status">Theo trạng thái</option>
                   <option value="budget_gt">Ngân sách lớn hơn</option>
@@ -202,21 +202,21 @@ export default function AutoRulesPage() {
                     value={f.condValue}
                     onChange={(e) => setF({ ...f, condValue: e.target.value })}
                     placeholder={f.condMetric === "status" ? "ACTIVE / PAUSED" : "VD: 500000"}
-                    className="bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-2 text-gray-200 outline-none w-36"
+                    className="bg-background border border-border rounded-md px-3 py-2 text-foreground outline-none w-36"
                   />
                 )}
               </div>
-              <select value={f.actType} onChange={(e) => setF({ ...f, actType: e.target.value })} className="bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-2 text-gray-200 outline-none">
+              <select value={f.actType} onChange={(e) => setF({ ...f, actType: e.target.value })} className="bg-background border border-border rounded-md px-3 py-2 text-foreground outline-none">
                 <option value="notify">Chỉ cảnh báo (an toàn)</option>
                 <option value="pause">Tắt campaign (thực thi thật)</option>
                 <option value="enable">Bật campaign (thực thi thật)</option>
               </select>
-              <select value={f.schedule} onChange={(e) => setF({ ...f, schedule: e.target.value })} className="bg-[#0a0a0a] border border-[#1f2937] rounded-md px-3 py-2 text-gray-200 outline-none">
+              <select value={f.schedule} onChange={(e) => setF({ ...f, schedule: e.target.value })} className="bg-background border border-border rounded-md px-3 py-2 text-foreground outline-none">
                 {CRON.map((c) => (
                   <option key={c.v} value={c.v}>{c.l}</option>
                 ))}
               </select>
-              <label className="flex items-center gap-2 text-gray-300">
+              <label className="flex items-center gap-2 text-foreground">
                 <input type="checkbox" checked={f.isActive} onChange={(e) => setF({ ...f, isActive: e.target.checked })} />
                 Kích hoạt ngay
               </label>
@@ -226,7 +226,7 @@ export default function AutoRulesPage() {
               <button
                 onClick={create}
                 disabled={saving || !f.name}
-                className="mt-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-md"
+                className="mt-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-foreground font-medium rounded-md"
               >
                 {saving ? <SpinnerGap size={16} className="animate-spin" /> : <Plus size={16} weight="bold" />}
                 Tạo quy tắc

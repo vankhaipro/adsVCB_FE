@@ -31,32 +31,32 @@ export default function SchedulePage() {
   return (
     <div className="flex flex-col gap-5 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-white">Lịch trình</h1>
-        <p className="text-sm text-gray-400 mt-1">Các quy tắc tự động chạy theo lịch.</p>
+        <h1 className="text-2xl font-bold text-foreground">Lịch trình</h1>
+        <p className="text-sm text-muted-foreground mt-1">Các quy tắc tự động chạy theo lịch.</p>
       </div>
       {loading ? (
-        <div className="p-6 text-gray-400 text-sm flex items-center gap-2">
+        <div className="p-6 text-muted-foreground text-sm flex items-center gap-2">
           <SpinnerGap size={18} className="animate-spin" /> Đang tải…
         </div>
       ) : rules.length === 0 ? (
-        <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-6 text-center text-gray-500 text-sm">
-          Chưa có lịch trình. Tạo quy tắc có lịch ở tab <span className="text-gray-300">Quy tắc tự động</span>.
+        <div className="bg-card border border-border rounded-xl p-6 text-center text-muted-foreground text-sm">
+          Chưa có lịch trình. Tạo quy tắc có lịch ở tab <span className="text-foreground">Quy tắc tự động</span>.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {rules.map((r) => (
-            <div key={r.id} className="bg-[#111827] border border-[#1f2937] rounded-xl p-5 flex flex-col gap-3">
+            <div key={r.id} className="bg-card border border-border rounded-xl p-5 flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-2 text-white font-semibold">
+                <span className="inline-flex items-center gap-2 text-foreground font-semibold">
                   <Calendar size={18} className="text-blue-400" />
                   {r.name}
                 </span>
-                <span className={`text-xs ${r.isActive ? "text-green-500" : "text-gray-500"}`}>
+                <span className={`text-xs ${r.isActive ? "text-green-500" : "text-muted-foreground"}`}>
                   {r.isActive ? "Đang bật" : "Tắt"}
                 </span>
               </div>
-              <div className="text-sm text-gray-300">{CRON_LABEL[r.schedule ?? ""] ?? r.schedule}</div>
-              <div className="text-xs text-gray-500">
+              <div className="text-sm text-foreground">{CRON_LABEL[r.schedule ?? ""] ?? r.schedule}</div>
+              <div className="text-xs text-muted-foreground">
                 Nền tảng: {r.platform ?? "Tất cả"} · Lần chạy gần nhất:{" "}
                 {r.lastRunAt ? new Date(r.lastRunAt).toLocaleString("vi-VN") : "chưa chạy"}
               </div>

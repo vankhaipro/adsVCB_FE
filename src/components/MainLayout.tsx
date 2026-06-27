@@ -12,7 +12,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#0a0a0a]">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Sidebar for desktop */}
       <div className="hidden lg:block">
         <Sidebar />

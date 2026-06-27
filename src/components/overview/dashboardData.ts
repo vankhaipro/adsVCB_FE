@@ -200,7 +200,7 @@ export const CREATIVES: CreativeRow[] = [
 // ---- Bảng màu cho chip kênh / loại creative ----
 export const CHANNEL_STYLE: Record<Channel, string> = {
   Facebook: "text-blue-400",
-  TikTok: "text-gray-300",
+  TikTok: "text-foreground",
   Google: "text-red-400",
   Zalo: "text-cyan-400",
 };

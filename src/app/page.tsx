@@ -9,6 +9,7 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import { apiGet, fmtVnd } from "@/lib/api";
+import { useChartColors } from "@/lib/chartTheme";
 import OverviewHeader, { type KpiItem } from "@/components/overview/OverviewHeader";
 import OverviewBody from "@/components/overview/OverviewBody";
 import { KPIS, type Kpi } from "@/components/overview/dashboardData";
@@ -193,6 +194,7 @@ function parseCampaignName(name: string, id: string) {
 }
 
 function OverviewInner() {
+  const chart = useChartColors();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -341,9 +343,9 @@ function OverviewInner() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10 font-sans -m-4 sm:-m-5 p-4 sm:p-5 bg-[#0a0a0a] min-h-full">
+    <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10 font-sans -m-4 sm:-m-5 p-4 sm:p-5 bg-background min-h-full">
       {/* Navigation Tabs — URL query param: ?tab=overview|channel|mode */}
-      <div className="flex border-b border-[#1e293b] gap-1 bg-[#0f172a] rounded-t-xl px-2 pt-1">
+      <div className="flex border-b border-border gap-1 bg-background rounded-t-xl px-2 pt-1">
         {([
           { value: "overview", label: "Tổng quan" },
           { value: "channel", label: "Hiệu quả theo Kênh" },
@@ -355,7 +357,7 @@ function OverviewInner() {
             className={`px-5 py-3 text-sm font-medium border-b-2 transition-all ${
               selectedTab === t.value
                 ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-400 hover:text-gray-200"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             {t.label}
@@ -385,9 +387,9 @@ function OverviewInner() {
       />
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-20 gap-3 bg-[#0f172a] rounded-xl border border-[#1e293b]">
+        <div className="flex flex-col items-center justify-center p-20 gap-3 bg-background rounded-xl border border-border">
           <SpinnerGap size={36} className="animate-spin text-blue-600" />
-          <span className="text-sm text-gray-500">Đang tải và đồng bộ hóa báo cáo...</span>
+          <span className="text-sm text-muted-foreground">Đang tải và đồng bộ hóa báo cáo...</span>
         </div>
       ) : (
         <>
@@ -423,10 +425,10 @@ function OverviewInner() {
                   <div className="lg:col-span-4 flex flex-col gap-5">
 
                     {/* Platform Donut */}
-                    <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5">
-                      <h3 className="text-sm font-semibold text-white mb-3">Phân bổ ngân sách nền tảng</h3>
+                    <div className="bg-background border border-border rounded-xl p-5">
+                      <h3 className="text-sm font-semibold text-foreground mb-3">Phân bổ ngân sách nền tảng</h3>
                       {!adReal ? (
-                        <div className="h-[130px] flex flex-col items-center justify-center text-center gap-1 text-gray-600">
+                        <div className="h-[130px] flex flex-col items-center justify-center text-center gap-1 text-muted-foreground">
                           <Info size={20} />
                           <span className="text-[11px]">Cần đồng bộ chi phí QC<br />(insight Meta/TikTok)</span>
                         </div>
@@ -438,10 +440,10 @@ function OverviewInner() {
                                 <Pie data={platSpend} cx="50%" cy="50%" innerRadius={40} outerRadius={58}
                                   paddingAngle={3} dataKey="spend" stroke="none">
                                   {platSpend.map((p, i) => <Cell key={i} fill={p.platform === "TIKTOK" ? "#f472b6" : "#3b82f6"} />)}
-                                  <Label value={fmtVnd(adTotalSpend)} position="centerTop" dy={5} fill="#fff" fontSize={9} fontWeight="bold" />
+                                  <Label value={fmtVnd(adTotalSpend)} position="centerTop" dy={5} fill={chart.labelFill} fontSize={9} fontWeight="bold" />
                                   <Label value="Tổng" position="centerBottom" dy={-5} fill="#94a3b8" fontSize={9} />
                                 </Pie>
-                                <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', fontSize: 11 }} formatter={(v) => fmtVnd(Number(v))} />
+                                <RechartsTooltip contentStyle={chart.tooltip} formatter={(v) => fmtVnd(Number(v))} />
                               </PieChart>
                             </ResponsiveContainer>
                           </div>
@@ -449,8 +451,8 @@ function OverviewInner() {
                             {platSpend.map((p, i) => (
                               <div key={i} className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.platform === "TIKTOK" ? "#f472b6" : "#3b82f6" }} />
-                                <span className="text-gray-400">{p.platform === "TIKTOK" ? "TikTok Ads" : "Meta Ads"}</span>
-                                <span className="font-semibold text-white ml-1">
+                                <span className="text-muted-foreground">{p.platform === "TIKTOK" ? "TikTok Ads" : "Meta Ads"}</span>
+                                <span className="font-semibold text-foreground ml-1">
                                   {adTotalSpend > 0 ? ((p.spend / adTotalSpend) * 100).toFixed(1) : 0}%
                                 </span>
                               </div>
@@ -461,22 +463,22 @@ function OverviewInner() {
                     </div>
 
                     {/* Message Bar by Platform */}
-                    <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5">
-                      <h3 className="text-sm font-semibold text-white mb-3">Hiệu quả tin nhắn</h3>
+                    <div className="bg-background border border-border rounded-xl p-5">
+                      <h3 className="text-sm font-semibold text-foreground mb-3">Hiệu quả tin nhắn</h3>
                       <div className="h-44">
                         {!bdReal ? (
-                          <div className="h-full flex flex-col items-center justify-center text-center gap-1 text-gray-600">
+                          <div className="h-full flex flex-col items-center justify-center text-center gap-1 text-muted-foreground">
                             <Info size={20} />
                             <span className="text-[11px]">Cần đồng bộ insight Meta/TikTok</span>
                           </div>
                         ) : (
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={msgByPlatform} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                              <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
-                              <YAxis yAxisId="left" stroke="#64748b" fontSize={9} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                              <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={9} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                              <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', fontSize: 11 }} />
+                              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+                              <XAxis dataKey="name" stroke={chart.axis} fontSize={10} tickLine={false} />
+                              <YAxis yAxisId="left" stroke={chart.axis} fontSize={9} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                              <YAxis yAxisId="right" orientation="right" stroke={chart.axis} fontSize={9} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                              <RechartsTooltip contentStyle={chart.tooltip} />
                               <Legend wrapperStyle={{ fontSize: '10px' }} />
                               <Bar yAxisId="left" dataKey="Tin nhắn" fill="#10b981" radius={[3, 3, 0, 0]} />
                               <Bar yAxisId="right" dataKey="Chi phí/tin nhắn" fill="#f59e0b" radius={[3, 3, 0, 0]} />
@@ -487,22 +489,22 @@ function OverviewInner() {
                     </div>
 
                     {/* Like Bar by Platform */}
-                    <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5">
-                      <h3 className="text-sm font-semibold text-white mb-3">Hiệu quả like page</h3>
+                    <div className="bg-background border border-border rounded-xl p-5">
+                      <h3 className="text-sm font-semibold text-foreground mb-3">Hiệu quả like page</h3>
                       <div className="h-44">
                         {!bdReal ? (
-                          <div className="h-full flex flex-col items-center justify-center text-center gap-1 text-gray-600">
+                          <div className="h-full flex flex-col items-center justify-center text-center gap-1 text-muted-foreground">
                             <Info size={20} />
                             <span className="text-[11px]">Cần đồng bộ insight Meta/TikTok</span>
                           </div>
                         ) : (
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={likeByPlatform} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                              <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
-                              <YAxis yAxisId="left" stroke="#64748b" fontSize={9} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                              <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={9} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                              <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', fontSize: 11 }} />
+                              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+                              <XAxis dataKey="name" stroke={chart.axis} fontSize={10} tickLine={false} />
+                              <YAxis yAxisId="left" stroke={chart.axis} fontSize={9} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                              <YAxis yAxisId="right" orientation="right" stroke={chart.axis} fontSize={9} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                              <RechartsTooltip contentStyle={chart.tooltip} />
                               <Legend wrapperStyle={{ fontSize: '10px' }} />
                               <Bar yAxisId="left" dataKey="Like page" fill="#3b82f6" radius={[3, 3, 0, 0]} />
                               <Bar yAxisId="right" dataKey="Chi phí/like" fill="#06b6d4" radius={[3, 3, 0, 0]} />
@@ -517,14 +519,14 @@ function OverviewInner() {
                   <div className="lg:col-span-8 flex flex-col gap-5">
 
                     {/* SKU Detail Table */}
-                    <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl overflow-hidden">
-                      <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e293b]">
-                        <h3 className="text-sm font-semibold text-white">Doanh thu theo SKU (Sapo)</h3>
-                        <span className="text-xs text-gray-500">Theo doanh thu thật</span>
+                    <div className="bg-background border border-border rounded-xl overflow-hidden">
+                      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                        <h3 className="text-sm font-semibold text-foreground">Doanh thu theo SKU (Sapo)</h3>
+                        <span className="text-xs text-muted-foreground">Theo doanh thu thật</span>
                       </div>
                       <div className="overflow-x-auto">
                         <table className="w-full text-xs text-left whitespace-nowrap">
-                          <thead className="border-b border-[#1e293b]">
+                          <thead className="border-b border-border">
                             <tr>
                               <th className="px-4 py-3 font-medium text-blue-400">SKU</th>
                               <th className="px-4 py-3 font-medium text-blue-400 text-right">Số lượng bán</th>
@@ -532,24 +534,24 @@ function OverviewInner() {
                               <th className="px-4 py-3 font-medium text-blue-400 text-right">Doanh thu</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-[#1e293b]/60 text-gray-300">
+                          <tbody className="divide-y divide-border text-foreground">
                             {sapoSkus.length === 0 ? (
-                              <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">Chưa có dữ liệu SKU. Hãy đồng bộ Sapo.</td></tr>
+                              <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">Chưa có dữ liệu SKU. Hãy đồng bộ Sapo.</td></tr>
                             ) : (
                               sapoSkus.map((s, idx) => (
-                                <tr key={s.sku || idx} className="hover:bg-[#1e293b]/40">
-                                  <td className="px-4 py-2.5 font-semibold text-white">{s.sku}</td>
+                                <tr key={s.sku || idx} className="hover:bg-card/40">
+                                  <td className="px-4 py-2.5 font-semibold text-foreground">{s.sku}</td>
                                   <td className="px-4 py-2.5 text-right">{fmtNum(s.quantity)}</td>
-                                  <td className="px-4 py-2.5 text-right text-gray-400">{fmtNum(s.lines)}</td>
+                                  <td className="px-4 py-2.5 text-right text-muted-foreground">{fmtNum(s.lines)}</td>
                                   <td className="px-4 py-2.5 text-right font-medium text-green-400">{fmtVnd(s.revenue)}</td>
                                 </tr>
                               ))
                             )}
                           </tbody>
                           {sapoSkus.length > 0 && (
-                            <tfoot className="border-t border-[#1e293b]">
+                            <tfoot className="border-t border-border">
                               <tr>
-                                <td colSpan={4} className="px-4 py-2 text-right text-[11px] text-gray-500">Top {sapoSkus.length} SKU theo doanh thu</td>
+                                <td colSpan={4} className="px-4 py-2 text-right text-[11px] text-muted-foreground">Top {sapoSkus.length} SKU theo doanh thu</td>
                               </tr>
                             </tfoot>
                           )}
@@ -558,22 +560,22 @@ function OverviewInner() {
                     </div>
 
                     {/* Content Line Bar - full width */}
-                    <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5">
-                      <h3 className="text-sm font-semibold text-white mb-3">Hiệu quả theo tuyến nội dung</h3>
+                    <div className="bg-background border border-border rounded-xl p-5">
+                      <h3 className="text-sm font-semibold text-foreground mb-3">Hiệu quả theo tuyến nội dung</h3>
                       <div className="h-[140px]">
                         {!bdReal ? (
-                          <div className="h-full flex flex-col items-center justify-center text-center gap-1 text-gray-600">
+                          <div className="h-full flex flex-col items-center justify-center text-center gap-1 text-muted-foreground">
                             <Info size={20} />
                             <span className="text-[11px]">Cần đồng bộ chi phí QC theo tuyến nội dung</span>
                           </div>
                         ) : (
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={contentLineData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                              <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
-                              <YAxis yAxisId="left" stroke="#64748b" fontSize={9} tickLine={false} tickFormatter={(v) => `${v}M`} />
-                              <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={9} tickLine={false} />
-                              <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', fontSize: 11 }} />
+                              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+                              <XAxis dataKey="name" stroke={chart.axis} fontSize={10} tickLine={false} />
+                              <YAxis yAxisId="left" stroke={chart.axis} fontSize={9} tickLine={false} tickFormatter={(v) => `${v}M`} />
+                              <YAxis yAxisId="right" orientation="right" stroke={chart.axis} fontSize={9} tickLine={false} />
+                              <RechartsTooltip contentStyle={chart.tooltip} />
                               <Legend wrapperStyle={{ fontSize: '10px' }} />
                               <Bar yAxisId="left" dataKey="Ngân sách" fill="#10b981" radius={[3, 3, 0, 0]} />
                               <Bar yAxisId="right" dataKey="Số quảng cáo" fill="#3b82f6" radius={[3, 3, 0, 0]} />
@@ -584,20 +586,20 @@ function OverviewInner() {
                     </div>
 
                     {/* Channel Detail Table */}
-                    <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl overflow-hidden">
-                      <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e293b]">
-                        <h3 className="text-sm font-semibold text-white">Hiệu suất chi tiết theo Kênh</h3>
-                        <span className="text-xs text-gray-500">Sắp xếp theo chi tiêu</span>
+                    <div className="bg-background border border-border rounded-xl overflow-hidden">
+                      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                        <h3 className="text-sm font-semibold text-foreground">Hiệu suất chi tiết theo Kênh</h3>
+                        <span className="text-xs text-muted-foreground">Sắp xếp theo chi tiêu</span>
                       </div>
                       {!bdReal ? (
-                        <div className="px-5 py-10 flex flex-col items-center justify-center text-center gap-2 text-gray-600">
+                        <div className="px-5 py-10 flex flex-col items-center justify-center text-center gap-2 text-muted-foreground">
                           <Info size={22} />
                           <span className="text-[11px] max-w-[260px]">Chi tiêu/like/tin nhắn theo kênh cần đồng bộ insight Meta/TikTok.</span>
                         </div>
                       ) : (
                         <div className="overflow-x-auto">
                           <table className="w-full text-xs text-left whitespace-nowrap">
-                            <thead className="border-b border-[#1e293b]">
+                            <thead className="border-b border-border">
                               <tr>
                                 <th className="px-4 py-3 font-medium text-blue-400">Kênh</th>
                                 <th className="px-4 py-3 font-medium text-blue-400 text-center">Nền tảng</th>
@@ -607,9 +609,9 @@ function OverviewInner() {
                                 <th className="px-4 py-3 font-medium text-blue-400 text-right">Tin nhắn</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-[#1e293b]/60 text-gray-300">
+                            <tbody className="divide-y divide-border text-foreground">
                               {channelRows.slice(0, 14).map((ch, i) => (
-                                <tr key={i} className="hover:bg-[#1e293b]/40">
+                                <tr key={i} className="hover:bg-card/40">
                                   <td className="px-4 py-2.5 text-blue-400 font-medium max-w-[200px] truncate" title={ch.name}>{ch.name}</td>
                                   <td className="px-4 py-2.5 text-center">
                                     <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${ch.platform === "TIKTOK" ? "bg-pink-500/20 text-pink-400" : "bg-blue-500/20 text-blue-400"}`}>
@@ -624,9 +626,9 @@ function OverviewInner() {
                               ))}
                             </tbody>
                             {channelRows.length > 14 && (
-                              <tfoot className="border-t border-[#1e293b]">
+                              <tfoot className="border-t border-border">
                                 <tr>
-                                  <td colSpan={6} className="px-4 py-2 text-right text-[11px] text-gray-500">{channelRows.length} kênh</td>
+                                  <td colSpan={6} className="px-4 py-2 text-right text-[11px] text-muted-foreground">{channelRows.length} kênh</td>
                                 </tr>
                               </tfoot>
                             )}
@@ -701,20 +703,20 @@ function OverviewInner() {
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {[
                     { label: "Chi phí quảng cáo", value: adReal ? fmtVnd(totalSpend) : "—", color: "text-blue-400", trend: null },
-                    { label: "Like Page | Follows", value: adReal ? fmtNum(totalLikes) : "—", color: "text-white", trend: null },
-                    { label: "Tin nhắn", value: adReal ? fmtNum(totalMessages) : "—", color: "text-white", trend: null },
-                    { label: "Bình luận", value: adReal ? fmtNum(totalComments) : "—", color: adReal ? "text-white" : "text-gray-600", trend: null },
-                    { label: "Lượt tiếp cận", value: adReal ? fmtNum(totalReach) : "—", color: "text-white", trend: null },
-                    { label: "CPM", value: adReal ? fmtVnd(cpm) : "—", color: "text-white", trend: null },
-                    { label: "CPC", value: adReal ? fmtVnd(cpc) : "—", color: "text-white", trend: null },
-                    { label: "Chi phí/Like page", value: costPerLike > 0 ? fmtVnd(costPerLike) : "—", color: "text-white", trend: null },
-                    { label: "Chi phí/tin nhắn", value: costPerMess > 0 ? fmtVnd(costPerMess) : "—", color: "text-white", trend: null },
-                    { label: "Chi phí/bình luận", value: costPerComment > 0 ? fmtVnd(costPerComment) : "—", color: costPerComment > 0 ? "text-white" : "text-gray-600", trend: null },
-                    { label: "CTR", value: adReal ? `${ctr.toFixed(2)}%` : "—", color: "text-white", trend: null },
-                    { label: "Frequency", value: adReal ? freq.toFixed(2) : "—", color: "text-white", trend: null },
+                    { label: "Like Page | Follows", value: adReal ? fmtNum(totalLikes) : "—", color: "text-foreground", trend: null },
+                    { label: "Tin nhắn", value: adReal ? fmtNum(totalMessages) : "—", color: "text-foreground", trend: null },
+                    { label: "Bình luận", value: adReal ? fmtNum(totalComments) : "—", color: adReal ? "text-foreground" : "text-muted-foreground", trend: null },
+                    { label: "Lượt tiếp cận", value: adReal ? fmtNum(totalReach) : "—", color: "text-foreground", trend: null },
+                    { label: "CPM", value: adReal ? fmtVnd(cpm) : "—", color: "text-foreground", trend: null },
+                    { label: "CPC", value: adReal ? fmtVnd(cpc) : "—", color: "text-foreground", trend: null },
+                    { label: "Chi phí/Like page", value: costPerLike > 0 ? fmtVnd(costPerLike) : "—", color: "text-foreground", trend: null },
+                    { label: "Chi phí/tin nhắn", value: costPerMess > 0 ? fmtVnd(costPerMess) : "—", color: "text-foreground", trend: null },
+                    { label: "Chi phí/bình luận", value: costPerComment > 0 ? fmtVnd(costPerComment) : "—", color: costPerComment > 0 ? "text-foreground" : "text-muted-foreground", trend: null },
+                    { label: "CTR", value: adReal ? `${ctr.toFixed(2)}%` : "—", color: "text-foreground", trend: null },
+                    { label: "Frequency", value: adReal ? freq.toFixed(2) : "—", color: "text-foreground", trend: null },
                   ].map((k, i) => (
-                    <div key={i} className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-4 flex flex-col justify-between min-h-[90px]">
-                      <span className="text-[11px] font-medium text-gray-400 block mb-1">{k.label}</span>
+                    <div key={i} className="bg-background border border-border rounded-xl p-4 flex flex-col justify-between min-h-[90px]">
+                      <span className="text-[11px] font-medium text-muted-foreground block mb-1">{k.label}</span>
                       <div className={`text-lg font-bold leading-tight ${k.color}`}>{k.value}</div>
                     </div>
                   ))}
@@ -724,8 +726,8 @@ function OverviewInner() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
                   {/* Donut: Budget by Channel */}
-                  <div className="lg:col-span-4 bg-[#0f172a] border border-[#1e293b] rounded-xl p-5">
-                    <h3 className="text-sm font-semibold text-white mb-3">Phân bổ ngân sách theo kênh</h3>
+                  <div className="lg:col-span-4 bg-background border border-border rounded-xl p-5">
+                    <h3 className="text-sm font-semibold text-foreground mb-3">Phân bổ ngân sách theo kênh</h3>
                     <div className="flex gap-4 items-start">
                       {/* Donut */}
                       <div className="w-[160px] h-[160px] shrink-0">
@@ -734,9 +736,9 @@ function OverviewInner() {
                             <Pie data={donutData} cx="50%" cy="50%" innerRadius={45} outerRadius={70}
                               paddingAngle={1} dataKey="value" stroke="none">
                               {donutData.map((_, i) => <Cell key={i} fill={donutData[i].color} />)}
-                              <Label value={fmtVnd(totalSpend)} position="center" fill="#fff" fontSize={10} fontWeight="bold" />
+                              <Label value={fmtVnd(totalSpend)} position="center" fill={chart.labelFill} fontSize={10} fontWeight="bold" />
                             </Pie>
-                            <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', fontSize: 11 }} formatter={(v) => fmtVnd(Number(v))} />
+                            <RechartsTooltip contentStyle={chart.tooltip} formatter={(v) => fmtVnd(Number(v))} />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
@@ -746,9 +748,9 @@ function OverviewInner() {
                           <div key={i} className="flex items-center justify-between gap-1 min-w-0">
                             <div className="flex items-center gap-1 min-w-0">
                               <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.color }}/>
-                              <span className="text-gray-400 truncate" title={d.name}>{d.name}</span>
+                              <span className="text-muted-foreground truncate" title={d.name}>{d.name}</span>
                             </div>
-                            <span className="text-gray-300 shrink-0 ml-1">
+                            <span className="text-foreground shrink-0 ml-1">
                               {totalSpend > 0 ? ((d.value / totalSpend) * 100).toFixed(1) : 0}%
                             </span>
                           </div>
@@ -758,16 +760,16 @@ function OverviewInner() {
                   </div>
 
                   {/* Horizontal Bar: Budget by Objective */}
-                  <div className="lg:col-span-4 bg-[#0f172a] border border-[#1e293b] rounded-xl p-5 flex flex-col">
-                    <h3 className="text-sm font-semibold text-white mb-3">Phân bổ ngân sách theo mục tiêu</h3>
+                  <div className="lg:col-span-4 bg-background border border-border rounded-xl p-5 flex flex-col">
+                    <h3 className="text-sm font-semibold text-foreground mb-3">Phân bổ ngân sách theo mục tiêu</h3>
                     <div className="flex-1 flex flex-col justify-center gap-3">
                       {objBarData.map((obj, i) => (
                         <div key={i} className="flex flex-col gap-1">
                           <div className="flex justify-between text-[10px]">
-                            <span className="text-gray-400 font-medium">{obj.name}</span>
-                            <span className="text-gray-300">{fmtVnd(obj.value)}</span>
+                            <span className="text-muted-foreground font-medium">{obj.name}</span>
+                            <span className="text-foreground">{fmtVnd(obj.value)}</span>
                           </div>
-                          <div className="h-5 bg-[#1e293b] rounded overflow-hidden">
+                          <div className="h-5 bg-card rounded overflow-hidden">
                             <div
                               className="h-full rounded transition-all"
                               style={{
@@ -782,8 +784,8 @@ function OverviewInner() {
                   </div>
 
                   {/* Scatter/Dot: Top 30 channels by objective */}
-                  <div className="lg:col-span-4 bg-[#0f172a] border border-[#1e293b] rounded-xl p-5 flex flex-col">
-                    <h3 className="text-sm font-semibold text-white mb-3">Ngân sách top {Math.min(30, scatterData.length)} kênh</h3>
+                  <div className="lg:col-span-4 bg-background border border-border rounded-xl p-5 flex flex-col">
+                    <h3 className="text-sm font-semibold text-foreground mb-3">Ngân sách top {Math.min(30, scatterData.length)} kênh</h3>
                     <div className="text-[10px] flex gap-3 mb-2">
                       <span className="flex items-center gap-1"><Circle size={8} weight="fill" className="text-blue-400"/>Tin nhắn</span>
                       <span className="flex items-center gap-1"><Circle size={8} weight="fill" className="text-amber-400"/>Thích trang</span>
@@ -794,14 +796,14 @@ function OverviewInner() {
                         {scatterData.slice(0, 12).map((d, i) => {
                           return (
                             <div key={i} className="flex items-center gap-2 text-[10px]">
-                              <span className="text-gray-500 w-4 text-right shrink-0">{i + 1}</span>
-                              <span className="text-gray-300 w-28 truncate shrink-0" title={d.name}>{d.name}</span>
+                              <span className="text-muted-foreground w-4 text-right shrink-0">{i + 1}</span>
+                              <span className="text-foreground w-28 truncate shrink-0" title={d.name}>{d.name}</span>
                               <div className="flex-1 flex items-center gap-1 min-w-0">
                                 <div className="h-1.5 rounded bg-blue-500 shrink-0" style={{ width: `${Math.max(2, (d.messages / (scatterData[0]?.messages || 1)) * 60)}%` }} />
                                 <div className="h-1.5 rounded bg-amber-400 shrink-0" style={{ width: `${Math.max(2, (d.likes / (scatterData[0]?.likes || 1)) * 40)}%` }} />
                                 <div className="h-1.5 rounded bg-green-400 shrink-0" style={{ width: `${Math.max(2, (d.comments / (scatterData[0]?.comments || 1)) * 30)}%` }} />
                               </div>
-                              <span className="text-gray-400 shrink-0">{fmtVnd(d.spend).replace("đ", "")}</span>
+                              <span className="text-muted-foreground shrink-0">{fmtVnd(d.spend).replace("đ", "")}</span>
                             </div>
                           );
                         })}
@@ -814,14 +816,14 @@ function OverviewInner() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
                   {/* Table 1: Like Page Channel Ranking */}
-                  <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl overflow-hidden">
-                    <div className="flex items-center gap-2 px-5 py-4 border-b border-[#1e293b]">
+                  <div className="bg-background border border-border rounded-xl overflow-hidden">
+                    <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
                       <span className="text-lg">👍</span>
-                      <h3 className="text-sm font-bold text-white uppercase tracking-wide">Hiệu quả kênh chạy Like Page</h3>
+                      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Hiệu quả kênh chạy Like Page</h3>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs text-left">
-                        <thead className="text-gray-500 border-b border-[#1e293b]">
+                        <thead className="text-muted-foreground border-b border-border">
                           <tr>
                             <th className="px-4 py-2 font-medium w-8">#</th>
                             <th className="px-4 py-2 font-medium text-blue-400">Kênh</th>
@@ -829,25 +831,25 @@ function OverviewInner() {
                             <th className="px-4 py-2 font-medium text-right text-blue-400">Chi phí/like page</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#1e293b]/60">
+                        <tbody className="divide-y divide-border">
                           {likeRanking.filter(r => r.likes > 0).slice(0, 20).map((r, i) => {
                             const cpl = r.likes > 0 ? Math.round(r.spend / r.likes) : 0;
                             return (
-                              <tr key={i} className="hover:bg-[#1e293b]/40">
-                                <td className="px-4 py-2.5 text-gray-500">{i + 1}</td>
+                              <tr key={i} className="hover:bg-card/40">
+                                <td className="px-4 py-2.5 text-muted-foreground">{i + 1}</td>
                                 <td className="px-4 py-2.5 text-blue-400 font-medium max-w-[180px] truncate" title={r.name}>{r.name}</td>
-                                <td className="px-4 py-2.5 text-right text-gray-200">{fmtNum(r.likes)}</td>
+                                <td className="px-4 py-2.5 text-right text-foreground">{fmtNum(r.likes)}</td>
                                 <td className="px-4 py-2.5 text-right text-blue-400 font-medium">{cpl > 0 ? fmtVnd(cpl) : "—"}</td>
                               </tr>
                             );
                           })}
                           {likeRanking.filter(r => r.likes > 0).length === 0 && (
-                            <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">Không có dữ liệu</td></tr>
+                            <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">Không có dữ liệu</td></tr>
                           )}
                         </tbody>
-                        <tfoot className="border-t border-[#1e293b]">
+                        <tfoot className="border-t border-border">
                           <tr>
-                            <td colSpan={4} className="px-4 py-2 text-right text-[10px] text-gray-500">
+                            <td colSpan={4} className="px-4 py-2 text-right text-[10px] text-muted-foreground">
                               {likeRanking.filter(r => r.likes > 0).length} kênh
                             </td>
                           </tr>
@@ -857,14 +859,14 @@ function OverviewInner() {
                   </div>
 
                   {/* Table 2: Messenger Channel Ranking */}
-                  <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl overflow-hidden">
-                    <div className="flex items-center gap-2 px-5 py-4 border-b border-[#1e293b]">
+                  <div className="bg-background border border-border rounded-xl overflow-hidden">
+                    <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
                       <span className="text-lg">💬</span>
-                      <h3 className="text-sm font-bold text-white uppercase tracking-wide">Hiệu quả kênh chạy Mess</h3>
+                      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Hiệu quả kênh chạy Mess</h3>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs text-left">
-                        <thead className="text-gray-500 border-b border-[#1e293b]">
+                        <thead className="text-muted-foreground border-b border-border">
                           <tr>
                             <th className="px-4 py-2 font-medium w-8">#</th>
                             <th className="px-4 py-2 font-medium text-blue-400">Kênh</th>
@@ -872,25 +874,25 @@ function OverviewInner() {
                             <th className="px-4 py-2 font-medium text-right text-blue-400">Chi phí/tin nhắn</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#1e293b]/60">
+                        <tbody className="divide-y divide-border">
                           {messRanking.filter(r => r.messages > 0).slice(0, 20).map((r, i) => {
                             const cpm2 = r.messages > 0 ? Math.round(r.spend / r.messages) : 0;
                             return (
-                              <tr key={i} className="hover:bg-[#1e293b]/40">
-                                <td className="px-4 py-2.5 text-gray-500">{i + 1}</td>
+                              <tr key={i} className="hover:bg-card/40">
+                                <td className="px-4 py-2.5 text-muted-foreground">{i + 1}</td>
                                 <td className="px-4 py-2.5 text-blue-400 font-medium max-w-[180px] truncate" title={r.name}>{r.name}</td>
-                                <td className="px-4 py-2.5 text-right text-gray-200">{fmtNum(r.messages)}</td>
+                                <td className="px-4 py-2.5 text-right text-foreground">{fmtNum(r.messages)}</td>
                                 <td className="px-4 py-2.5 text-right text-blue-400 font-medium">{cpm2 > 0 ? fmtVnd(cpm2) : "—"}</td>
                               </tr>
                             );
                           })}
                           {messRanking.filter(r => r.messages > 0).length === 0 && (
-                            <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">Không có dữ liệu</td></tr>
+                            <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">Không có dữ liệu</td></tr>
                           )}
                         </tbody>
-                        <tfoot className="border-t border-[#1e293b]">
+                        <tfoot className="border-t border-border">
                           <tr>
-                            <td colSpan={4} className="px-4 py-2 text-right text-[10px] text-gray-500">
+                            <td colSpan={4} className="px-4 py-2 text-right text-[10px] text-muted-foreground">
                               {messRanking.filter(r => r.messages > 0).length} kênh
                             </td>
                           </tr>
@@ -909,11 +911,11 @@ function OverviewInner() {
           {selectedTab === "mode" && (
             <div className="flex flex-col gap-6">
               {/* Objective breakdown table */}
-              <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-white mb-4">Phân tích hiệu quả theo Mục tiêu (Objective Mode)</h3>
+              <div className="bg-background border border-border rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-foreground mb-4">Phân tích hiệu quả theo Mục tiêu (Objective Mode)</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left whitespace-nowrap">
-                    <thead className="text-gray-500 uppercase border-b border-[#1e293b]">
+                    <thead className="text-muted-foreground uppercase border-b border-border">
                       <tr>
                         <th className="px-4 py-3 font-medium">Mục tiêu tối ưu</th>
                         <th className="px-4 py-3 font-medium text-right">Chi tiêu</th>
@@ -924,17 +926,17 @@ function OverviewInner() {
                         <th className="px-4 py-3 font-medium text-right">Tin nhắn / Lượt chuyển đổi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#1e293b] text-gray-300">
+                    <tbody className="divide-y divide-border text-foreground">
                       {!breakdown?.hasData ? (
-                        <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-500">Chưa có dữ liệu insight. Hãy đồng bộ insight Meta/TikTok.</td></tr>
+                        <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Chưa có dữ liệu insight. Hãy đồng bộ insight Meta/TikTok.</td></tr>
                       ) : (
                         breakdown.byObjective.map((o, idx) => {
                           const ctr = o.impressions > 0 ? (o.clicks / o.impressions) * 100 : 0;
                           const cpc = o.clicks > 0 ? o.spend / o.clicks : 0;
                           const conv = o.messages + o.conversions;
                           return (
-                            <tr key={idx} className="hover:bg-[#1e293b]/40">
-                              <td className="px-4 py-3 font-semibold text-white">{o.objective}</td>
+                            <tr key={idx} className="hover:bg-card/40">
+                              <td className="px-4 py-3 font-semibold text-foreground">{o.objective}</td>
                               <td className="px-4 py-3 text-right">{fmtVnd(o.spend)}</td>
                               <td className="px-4 py-3 text-right">{fmtNum(o.impressions)}</td>
                               <td className="px-4 py-3 text-right">{fmtNum(o.clicks)}</td>
@@ -959,7 +961,7 @@ function OverviewInner() {
 
 export default function OverviewPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400 text-sm">Đang tải...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Đang tải...</div>}>
       <OverviewInner />
     </Suspense>
   );

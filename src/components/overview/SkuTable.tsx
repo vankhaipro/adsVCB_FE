@@ -9,10 +9,10 @@ function roasColor(v: number) {
   return v >= 3 ? "text-green-400" : "text-amber-400";
 }
 function returnColor(v: number) {
-  return v > 5 ? "text-red-400" : "text-gray-400";
+  return v > 5 ? "text-red-400" : "text-muted-foreground";
 }
 function stockColor(v: number) {
-  return v < 60 ? "text-red-400" : v < 100 ? "text-amber-400" : "text-gray-300";
+  return v < 60 ? "text-red-400" : v < 100 ? "text-amber-400" : "text-foreground";
 }
 
 export default function SkuTable() {
@@ -26,16 +26,16 @@ export default function SkuTable() {
       title="Hiệu quả theo SKU / Sản phẩm"
       right={
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 bg-[#1e293b] border border-[#334155] rounded-lg px-2.5 py-1.5">
-            <MagnifyingGlass size={14} className="text-gray-500" />
+          <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-2.5 py-1.5">
+            <MagnifyingGlass size={14} className="text-muted-foreground" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Tìm SKU..."
-              className="bg-transparent text-xs text-gray-200 outline-none w-28 placeholder:text-gray-500"
+              className="bg-transparent text-xs text-foreground outline-none w-28 placeholder:text-muted-foreground"
             />
           </div>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e293b] border border-[#334155] hover:bg-[#334155] text-gray-200 text-xs font-medium rounded-lg transition-colors">
+          <button className="flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border hover:bg-muted text-foreground text-xs font-medium rounded-lg transition-colors">
             <Download size={14} /> Xuất
           </button>
         </div>
@@ -47,7 +47,7 @@ export default function SkuTable() {
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs text-left whitespace-nowrap">
-          <thead className="border-y border-[#1e293b] bg-[#0d1424]">
+          <thead className="border-y border-border bg-card">
             <tr>
               <Th>SKU</Th>
               <Th>Tên sản phẩm</Th>
@@ -68,12 +68,12 @@ export default function SkuTable() {
               <Th align="right">Tồn kho</Th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#1e293b] text-gray-300">
+          <tbody className="divide-y divide-border text-foreground">
             {rows.map((s) => (
-              <tr key={s.sku} className="hover:bg-[#1e293b]/40">
+              <tr key={s.sku} className="hover:bg-card/40">
                 <td className="px-3 py-2.5 font-semibold text-blue-400">{s.sku}</td>
-                <td className="px-3 py-2.5 text-gray-200">{s.name}</td>
-                <td className="px-3 py-2.5 text-gray-400">{s.category}</td>
+                <td className="px-3 py-2.5 text-foreground">{s.name}</td>
+                <td className="px-3 py-2.5 text-muted-foreground">{s.category}</td>
                 <td className="px-3 py-2.5"><ChannelChip channel={s.channel} /></td>
                 <td className="px-3 py-2.5 text-right">{fmtNum(s.spendK)}</td>
                 <td className="px-3 py-2.5 text-right font-medium text-green-400">{fmtCompact(s.revenue)}</td>
@@ -91,10 +91,10 @@ export default function SkuTable() {
               </tr>
             ))}
           </tbody>
-          <tfoot className="border-t border-[#1e293b] bg-[#0d1424] font-semibold text-gray-200">
+          <tfoot className="border-t border-border bg-card font-semibold text-foreground">
             <tr>
               <td className="px-3 py-3" colSpan={4}>TỔNG ({SKUS.length} SKU)</td>
-              <td className="px-3 py-3 text-right text-white">{fmtNum(SKU_TOTALS.spendK)}</td>
+              <td className="px-3 py-3 text-right text-foreground">{fmtNum(SKU_TOTALS.spendK)}</td>
               <td className="px-3 py-3 text-right text-green-400">{SKU_TOTALS.revenueLabel}</td>
               <td className="px-3 py-3 text-right text-blue-400">{fmtNum(SKU_TOTALS.orders)}</td>
               <td className="px-3 py-3" colSpan={10} />

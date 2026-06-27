@@ -54,7 +54,7 @@ const mainNav: NavItem[] = [
 
 export default function Sidebar() {
   return (
-    <Suspense fallback={<div className="w-[210px] h-full flex flex-col bg-[#111827] text-gray-400 border-r border-[#1f2937] flex-shrink-0" />}>
+    <Suspense fallback={<div className="w-[210px] h-full flex flex-col bg-card text-muted-foreground border-r border-border flex-shrink-0" />}>
       <SidebarContent />
     </Suspense>
   );
@@ -129,9 +129,9 @@ function SidebarContent() {
   }
 
   return (
-    <div className="w-[210px] h-full flex flex-col bg-[#111827] text-gray-300 border-r border-[#1f2937] flex-shrink-0">
+    <div className="w-[210px] h-full flex flex-col bg-card text-foreground border-r border-border flex-shrink-0">
       {/* Logo */}
-      <div className="h-[52px] flex items-center px-4 font-bold text-white text-base border-b border-[#1f2937]">
+      <div className="h-[52px] flex items-center px-4 font-bold text-foreground text-base border-b border-border">
         <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center mr-2 text-xs">
           A
         </div>
@@ -154,8 +154,8 @@ function SidebarContent() {
                     onClick={() => toggle(item.label)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-left cursor-pointer ${
                       parentActive
-                        ? "text-white font-medium bg-[#1f2937]/30"
-                        : "text-gray-400 hover:text-white hover:bg-[#1f2937]"
+                        ? "text-foreground font-medium bg-muted/30"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     }`}
                   >
                     <Icon size={16} weight={parentActive ? "fill" : "regular"} />
@@ -167,7 +167,7 @@ function SidebarContent() {
                   </button>
 
                   {isOpen && (
-                    <div className="mt-1 ml-4 flex flex-col gap-1 border-l border-[#1f2937] pl-3">
+                    <div className="mt-1 ml-4 flex flex-col gap-1 border-l border-border pl-3">
                       {item.children.map((child) => {
                         // Nested Sub-dropdown (Level 2)
                         if ("children" in child) {
@@ -179,26 +179,26 @@ function SidebarContent() {
                                 onClick={() => toggle(child.label)}
                                 className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors text-left cursor-pointer ${
                                   subActive
-                                    ? "text-white font-medium"
-                                    : "text-gray-400 hover:text-white hover:bg-[#1f2937]/50"
+                                    ? "text-foreground font-medium"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                 }`}
                               >
                                 <span
                                   className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                    subActive ? "bg-blue-500" : "bg-gray-600"
+                                    subActive ? "bg-blue-500" : "bg-muted"
                                   }`}
                                 />
                                 {child.label}
                                 <CaretDown
                                   size={12}
-                                  className={`ml-auto text-gray-400 transition-transform ${
+                                  className={`ml-auto text-muted-foreground transition-transform ${
                                     isSubOpen ? "rotate-180" : ""
                                   }`}
                                 />
                               </button>
 
                               {isSubOpen && (
-                                <div className="mt-1 ml-3 flex flex-col gap-1 border-l border-[#1f2937]/60 pl-3">
+                                <div className="mt-1 ml-3 flex flex-col gap-1 border-l border-border pl-3">
                                   {child.children.map((subChild) => {
                                     const subChildActive = isLinkActive(subChild.href);
                                     return (
@@ -207,13 +207,13 @@ function SidebarContent() {
                                         href={subChild.href}
                                         className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
                                           subChildActive
-                                            ? "bg-[#1f2937]/80 text-[#3b82f6] font-semibold"
-                                            : "text-gray-400 hover:text-white hover:bg-[#1f2937]/20"
+                                            ? "bg-muted/80 text-primary font-semibold"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-muted/20"
                                         }`}
                                       >
                                         <span
                                           className={`w-1 h-1 rounded-full shrink-0 ${
-                                            subChildActive ? "bg-blue-500" : "bg-gray-700"
+                                            subChildActive ? "bg-blue-500" : "bg-muted"
                                           }`}
                                         />
                                         {subChild.label}
@@ -234,13 +234,13 @@ function SidebarContent() {
                             href={child.href}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${
                               childActive
-                                ? "bg-[#1f2937] text-white font-medium"
-                                : "text-gray-400 hover:text-white hover:bg-[#1f2937]"
+                                ? "bg-muted text-foreground font-medium"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted"
                             }`}
                           >
                             <span
                               className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                childActive ? "bg-blue-500" : "bg-gray-600"
+                                childActive ? "bg-blue-500" : "bg-muted"
                               }`}
                             />
                             {child.label}
@@ -261,8 +261,8 @@ function SidebarContent() {
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
                   active
-                    ? "bg-[#1f2937] text-white font-medium"
-                    : "text-gray-400 hover:text-white hover:bg-[#1f2937]"
+                    ? "bg-muted text-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
                 <Icon size={16} weight={active ? "fill" : "regular"} />
@@ -274,13 +274,13 @@ function SidebarContent() {
       </div>
 
       {/* Footer: version + logout */}
-      <div className="p-4 border-t border-[#1f2937] flex items-center justify-between">
-        <span className="text-xs text-gray-600">Phiên bản 1.0.0</span>
+      <div className="p-4 border-t border-border flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">Phiên bản 1.0.0</span>
         <button
           id="logout-btn"
           onClick={handleLogout}
           title="Đăng xuất"
-          className="text-gray-500 hover:text-red-400 transition-colors"
+          className="text-muted-foreground hover:text-red-400 transition-colors"
         >
           <SignOut size={16} />
         </button>

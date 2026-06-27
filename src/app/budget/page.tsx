@@ -63,25 +63,25 @@ export default function BudgetPage() {
     <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Ngân sách</h1>
-          <p className="text-sm text-gray-400 mt-1">
-            Tổng ngân sách campaign: <span className="text-gray-200 font-medium">{fmtVnd(totalBudget)}</span>
+          <h1 className="text-2xl font-bold text-foreground">Ngân sách</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Tổng ngân sách campaign: <span className="text-foreground font-medium">{fmtVnd(totalBudget)}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-[#111827] border border-[#1f2937] rounded-md px-3 py-1.5 w-full max-w-xs">
-          <MagnifyingGlass size={16} className="text-gray-500" />
+        <div className="flex items-center gap-2 bg-card border border-border rounded-md px-3 py-1.5 w-full max-w-xs">
+          <MagnifyingGlass size={16} className="text-muted-foreground" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Tìm chiến dịch…"
-            className="bg-transparent text-sm text-gray-200 outline-none w-full placeholder:text-gray-600"
+            className="bg-transparent text-sm text-foreground outline-none w-full placeholder:text-muted-foreground"
           />
         </div>
       </div>
 
-      <div className="bg-[#111827] border border-[#1f2937] rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         {loading ? (
-          <div className="flex items-center gap-2 text-gray-400 text-sm p-6">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm p-6">
             <SpinnerGap size={18} className="animate-spin" /> Đang tải…
           </div>
         ) : error ? (
@@ -90,7 +90,7 @@ export default function BudgetPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-500 text-xs uppercase border-b border-[#1f2937]">
+                <tr className="text-left text-muted-foreground text-xs uppercase border-b border-border">
                   <th className="px-4 py-3 font-medium">Chiến dịch</th>
                   <th className="px-4 py-3 font-medium">Tài khoản</th>
                   <th className="px-4 py-3 font-medium text-right">Ngân sách hiện tại</th>
@@ -99,8 +99,8 @@ export default function BudgetPage() {
               </thead>
               <tbody>
                 {shown.map((c) => (
-                  <tr key={c.id} className="border-b border-[#1f2937]/60 hover:bg-[#1f2937]/40">
-                    <td className="px-4 py-3 text-gray-200 max-w-[280px] truncate" title={c.name}>
+                  <tr key={c.id} className="border-b border-border hover:bg-muted/40">
+                    <td className="px-4 py-3 text-foreground max-w-[280px] truncate" title={c.name}>
                       <span className="inline-flex items-center gap-2">
                         {c.platform === "META" ? (
                           <MetaLogo size={14} weight="fill" className="text-blue-400" />
@@ -110,8 +110,8 @@ export default function BudgetPage() {
                         {c.name}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-400 max-w-[140px] truncate">{c.adAccount?.name ?? "—"}</td>
-                    <td className="px-4 py-3 text-gray-300 text-right">{c.budget > 0 ? fmtVnd(c.budget) : "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground max-w-[140px] truncate">{c.adAccount?.name ?? "—"}</td>
+                    <td className="px-4 py-3 text-foreground text-right">{c.budget > 0 ? fmtVnd(c.budget) : "—"}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <input
@@ -119,7 +119,7 @@ export default function BudgetPage() {
                           value={edits[c.id] ?? ""}
                           onChange={(e) => setEdits((x) => ({ ...x, [c.id]: e.target.value }))}
                           placeholder="VD: 200000"
-                          className="bg-[#0a0a0a] border border-[#1f2937] rounded-md px-2 py-1 text-sm text-gray-200 outline-none w-32"
+                          className="bg-background border border-border rounded-md px-2 py-1 text-sm text-foreground outline-none w-32"
                         />
                         <button
                           onClick={() => save(c)}
@@ -135,7 +135,7 @@ export default function BudgetPage() {
               </tbody>
             </table>
             {filtered.length > shown.length && (
-              <div className="text-xs text-gray-500 px-4 py-3">Hiển thị {shown.length} / {filtered.length}.</div>
+              <div className="text-xs text-muted-foreground px-4 py-3">Hiển thị {shown.length} / {filtered.length}.</div>
             )}
           </div>
         )}

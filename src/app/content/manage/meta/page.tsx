@@ -397,22 +397,22 @@ export default function MetaContentPage() {
   });
 
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in duration-300 w-full max-w-full text-gray-200">
+    <div className="flex flex-col gap-4 animate-in fade-in duration-300 w-full max-w-full text-foreground">
       
       {/* Sticky Filters Toolbar Row */}
-      <div className="sticky top-0 z-20 bg-[#0a0a0a] py-2 -mx-4 px-4 sm:-mx-5 sm:px-5 shrink-0">
-        <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-3 flex flex-wrap items-center justify-between gap-4 shadow-md">
+      <div className="sticky top-0 z-20 bg-background py-2 -mx-4 px-4 sm:-mx-5 sm:px-5 shrink-0">
+        <div className="bg-card border border-border rounded-xl p-3 flex flex-wrap items-center justify-between gap-4 shadow-md">
           {/* Left Side: Filter Tags */}
           <div className="flex flex-wrap items-center gap-2">
             {activeFilters.map((filter) => (
               <div
                 key={filter.id}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1f2937] border border-[#1f2937] hover:border-gray-700 rounded-lg text-xs text-gray-300 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border hover:border-border rounded-lg text-xs text-foreground transition-colors"
               >
                 <span>{filter.label}</span>
                 <button
                   onClick={() => removeFilter(filter.id)}
-                  className="text-gray-500 hover:text-red-400 transition-colors cursor-pointer"
+                  className="text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
                   title="Xóa bộ lọc"
                 >
                   <X size={12} weight="bold" />
@@ -431,19 +431,19 @@ export default function MetaContentPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Bộ lọc (/)"
-                className="bg-[#1f2937]/50 border border-[#1f2937] hover:border-gray-700 rounded-lg px-3 py-1.5 pl-9 text-xs focus:border-blue-500 focus:outline-none w-[180px] text-white transition-all font-medium"
+                className="bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-1.5 pl-9 text-xs focus:border-blue-500 focus:outline-none w-[180px] text-foreground transition-all font-medium"
               />
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
             </div>
 
             {/* Save Button */}
-            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1f2937]/80 hover:bg-[#1f2937] border border-[#1f2937] text-blue-400 rounded-lg text-xs font-semibold cursor-pointer transition-colors">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/80 hover:bg-muted border border-border text-blue-400 rounded-lg text-xs font-semibold cursor-pointer transition-colors">
               <FloppyDisk size={14} />
               Lưu
             </button>
 
             {/* Export Button */}
-            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1f2937]/80 hover:bg-[#1f2937] border border-[#1f2937] text-gray-300 rounded-lg text-xs font-semibold cursor-pointer transition-colors">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/80 hover:bg-muted border border-border text-foreground rounded-lg text-xs font-semibold cursor-pointer transition-colors">
               <DownloadSimple size={14} />
               Export
             </button>
@@ -452,14 +452,14 @@ export default function MetaContentPage() {
       </div>
 
       {/* Main Data Table */}
-      <div className="bg-[#111827] border border-[#1f2937] rounded-xl shadow-md overflow-hidden">
+      <div className="bg-card border border-border rounded-xl shadow-md overflow-hidden">
         <div className="overflow-auto w-full max-h-[calc(100vh-380px)] custom-scrollbar">
           <table className="w-full text-left text-xs border-collapse relative">
             <thead>
-              <tr className="border-b border-[#1f2937] text-gray-400 font-semibold select-none">
+              <tr className="border-b border-border text-muted-foreground font-semibold select-none">
                 
                 {/* Checkbox column */}
-                <th className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 w-12 text-center border-r border-[#1f2937]/40">
+                <th className="sticky top-0 z-10 bg-card py-3 px-4 w-12 text-center border-r border-border">
                   <input
                     type="checkbox"
                     checked={selectedIds.length === posts.length && posts.length > 0}
@@ -495,29 +495,29 @@ export default function MetaContentPage() {
                   <th
                     key={col.key}
                     onClick={() => col.key && requestSort(col.key)}
-                    className="sticky top-0 z-10 bg-[#1e293b] py-3 px-4 font-bold border-r border-[#1f2937]/40 cursor-pointer hover:bg-[#1f2937]/40 hover:text-white transition-colors"
+                    className="sticky top-0 z-10 bg-card py-3 px-4 font-bold border-r border-border cursor-pointer hover:bg-muted/40 hover:text-foreground transition-colors"
                   >
                     <div className="flex items-center gap-1.5 whitespace-nowrap">
                       <span>{col.label}</span>
-                      <ArrowsDownUp size={11} className="text-gray-500" />
+                      <ArrowsDownUp size={11} className="text-muted-foreground" />
                     </div>
                   </th>
                 ))}
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-[#1f2937]/40 text-gray-300">
+            <tbody className="divide-y divide-border text-foreground">
               {filteredPosts.map((post) => {
                 const isSelected = selectedIds.includes(post.id);
                 return (
                   <tr
                     key={post.id}
-                    className={`hover:bg-[#1f2937]/20 transition-all ${
+                    className={`hover:bg-muted/20 transition-all ${
                       isSelected ? "bg-blue-500/5" : ""
                     }`}
                   >
                     {/* Checkbox cell */}
-                    <td className="py-2.5 px-4 text-center border-r border-[#1f2937]/40">
+                    <td className="py-2.5 px-4 text-center border-r border-border">
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -527,21 +527,21 @@ export default function MetaContentPage() {
                     </td>
 
                     {/* Content cells */}
-                    <td className="py-2.5 px-4 max-w-[200px] truncate border-r border-[#1f2937]/40 font-medium text-white" title={post.caption}>
+                    <td className="py-2.5 px-4 max-w-[200px] truncate border-r border-border font-medium text-foreground" title={post.caption}>
                       {post.caption}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40">
+                    <td className="py-2.5 px-4 border-r border-border">
                       <a href={post.link} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">
                         https://www.fa...
                       </a>
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 font-medium text-gray-400">
+                    <td className="py-2.5 px-4 border-r border-border font-medium text-muted-foreground">
                       {post.channel}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 font-medium text-gray-400">
+                    <td className="py-2.5 px-4 border-r border-border font-medium text-muted-foreground">
                       <div className="flex items-center gap-1.5 capitalize">
                         {post.platform === "facebook" ? (
                           <FacebookLogo size={14} className="text-blue-500 fill-current" />
@@ -552,71 +552,71 @@ export default function MetaContentPage() {
                       </div>
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-gray-500">
+                    <td className="py-2.5 px-4 border-r border-border text-muted-foreground">
                       {post.date}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-gray-500">
+                    <td className="py-2.5 px-4 border-r border-border text-muted-foreground">
                       {post.productCode}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-gray-500">
+                    <td className="py-2.5 px-4 border-r border-border text-muted-foreground">
                       {post.productName}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 font-semibold text-gray-400">
+                    <td className="py-2.5 px-4 border-r border-border font-semibold text-muted-foreground">
                       {post.concept}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 font-bold text-gray-300">
+                    <td className="py-2.5 px-4 border-r border-border font-bold text-foreground">
                       {post.line}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 font-medium text-gray-400">
+                    <td className="py-2.5 px-4 border-r border-border font-medium text-muted-foreground">
                       {post.team}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 font-semibold text-[#a3a3a3]">
+                    <td className="py-2.5 px-4 border-r border-border font-semibold text-muted-foreground">
                       {post.staff}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono">
+                    <td className="py-2.5 px-4 border-r border-border text-right font-semibold font-mono">
                       {post.totalViews.toLocaleString("vi-VN")}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-400">
+                    <td className="py-2.5 px-4 border-r border-border text-right font-semibold font-mono text-muted-foreground">
                       {post.totalReach.toLocaleString("vi-VN")}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-400">
+                    <td className="py-2.5 px-4 border-r border-border text-right font-semibold font-mono text-muted-foreground">
                       {post.totalLikes.toLocaleString("vi-VN")}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-500">
+                    <td className="py-2.5 px-4 border-r border-border text-right font-semibold font-mono text-muted-foreground">
                       {post.totalComments.toLocaleString("vi-VN")}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-400">
+                    <td className="py-2.5 px-4 border-r border-border text-right font-semibold font-mono text-muted-foreground">
                       {post.totalShares.toLocaleString("vi-VN")}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono">
+                    <td className="py-2.5 px-4 border-r border-border text-right font-semibold font-mono">
                       {post.views.toLocaleString("vi-VN")}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-400">
+                    <td className="py-2.5 px-4 border-r border-border text-right font-semibold font-mono text-muted-foreground">
                       {post.reach.toLocaleString("vi-VN")}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-400">
+                    <td className="py-2.5 px-4 border-r border-border text-right font-semibold font-mono text-muted-foreground">
                       {post.likes.toLocaleString("vi-VN")}
                     </td>
 
-                    <td className="py-2.5 px-4 border-r border-[#1f2937]/40 text-right font-semibold font-mono text-gray-500">
+                    <td className="py-2.5 px-4 border-r border-border text-right font-semibold font-mono text-muted-foreground">
                       {post.comments.toLocaleString("vi-VN")}
                     </td>
 
-                    <td className="py-2.5 px-4 font-semibold text-[#d4d4d8]">
+                    <td className="py-2.5 px-4 font-semibold text-foreground">
                       {post.productLine}
                     </td>
 
@@ -627,50 +627,50 @@ export default function MetaContentPage() {
 
             {/* Total Footer matching user screenshot sums exactly */}
             <tfoot>
-              <tr className="bg-[#111827] text-white font-bold">
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-center"></td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] font-black">
+              <tr className="bg-card text-foreground font-bold">
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-center"></td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border font-black">
                   TỔNG (2000)
                 </td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937]"></td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
                 {/* Total sums matched exactly to screenshot 2 & 3 */}
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono">
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
                   3.233.633
                 </td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono text-blue-400">
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-blue-400">
                   2.546.044
                 </td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono">
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
                   42.563
                 </td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono text-gray-400">
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
                   1.784
                 </td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono">
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
                   5.760
                 </td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono text-[#a3a3a3]">
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
                   59.144.201
                 </td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono text-[#a3a3a3]">
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
                   45.838.152
                 </td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono text-[#3b82f6]">
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-primary">
                   601.894
                 </td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-r border-[#1f2937]/40 border-t-2 border-[#1f2937] text-right font-black font-mono">
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
                   31.594
                 </td>
-                <td className="sticky bottom-0 z-10 bg-[#111827] py-3 px-4 border-t-2 border-[#1f2937]"></td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-t-2 border-border"></td>
               </tr>
             </tfoot>
           </table>

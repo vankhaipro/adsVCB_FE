@@ -36,7 +36,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1117] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-card flex items-center justify-center p-4">
       {/* Background gradient glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-3xl" />
@@ -47,22 +47,22 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 mb-4 shadow-lg shadow-blue-600/30">
-            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-7 h-7 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">Auto Ads Facebook</h1>
-          <p className="text-sm text-gray-500 mt-1">Hệ thống quản lý quảng cáo tự động</p>
+          <h1 className="text-2xl font-bold text-foreground">Auto Ads Facebook</h1>
+          <p className="text-sm text-muted-foreground mt-1">Hệ thống quản lý quảng cáo tự động</p>
         </div>
 
         {/* Card */}
-        <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-8 shadow-2xl">
-          <h2 className="text-lg font-semibold text-white mb-6">Đăng nhập</h2>
+        <div className="bg-card border border-border rounded-2xl p-8 shadow-2xl">
+          <h2 className="text-lg font-semibold text-foreground mb-6">Đăng nhập</h2>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {/* Email */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-gray-400 font-medium">Email</label>
+              <label className="text-sm text-muted-foreground font-medium">Email</label>
               <input
                 id="login-email"
                 type="email"
@@ -71,13 +71,13 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@adsvcb.com"
-                className="bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                className="bg-card border border-border rounded-lg px-4 py-2.5 text-foreground text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               />
             </div>
 
             {/* Password */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-gray-400 font-medium">Mật khẩu</label>
+              <label className="text-sm text-muted-foreground font-medium">Mật khẩu</label>
               <input
                 id="login-password"
                 type="password"
@@ -86,7 +86,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                className="bg-card border border-border rounded-lg px-4 py-2.5 text-foreground text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               />
             </div>
 
@@ -105,7 +105,7 @@ export default function LoginPage() {
               id="login-submit"
               type="submit"
               disabled={loading}
-              className="mt-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
+              className="mt-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-foreground font-medium rounded-lg px-4 py-2.5 text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
             >
               {loading ? (
                 <>
@@ -122,12 +122,12 @@ export default function LoginPage() {
           </form>
 
           {/* Hint */}
-          <p className="text-xs text-gray-600 text-center mt-6">
-            Tài khoản mặc định: <span className="text-gray-500">admin@adsvcb.com / Admin@123</span>
+          <p className="text-xs text-muted-foreground text-center mt-6">
+            Tài khoản mặc định: <span className="text-muted-foreground">admin@adsvcb.com / Admin@123</span>
           </p>
         </div>
 
-        <p className="text-center text-xs text-gray-700 mt-6">
+        <p className="text-center text-xs text-muted-foreground mt-6">
           © 2026 Auto Ads VCB. All rights reserved.
         </p>
       </div>

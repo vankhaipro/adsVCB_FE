@@ -21,7 +21,7 @@ const options = [
 
 export default function ContentManageLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-500 py-20">Đang tải bố cục trang...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground py-20">Đang tải bố cục trang...</div>}>
       <ContentManageLayoutContent>{children}</ContentManageLayoutContent>
     </Suspense>
   );
@@ -32,17 +32,17 @@ function ContentManageLayoutContent({ children }: { children: React.ReactNode })
   const selectedOption = options.find((o) => pathname === o.href || pathname.startsWith(o.href + "/")) || options[0];
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-full overflow-x-hidden pb-10 text-gray-200">
+    <div className="flex flex-col gap-6 w-full max-w-full overflow-x-hidden pb-10 text-foreground">
       {/* Header Title and Description */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Quản lý content</h1>
-        <p className="text-sm text-gray-400 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Quản lý content</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Quản lý nội dung organic: kênh, video, lịch đăng và phân công nhân sự.
         </p>
       </div>
 
       {/* Horizontal Tabs with Underline Indicator & Search/Filter on the right */}
-      <div className="border-b border-[#1e293b] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* Left Side: Tabs */}
         <div className="flex items-center gap-8">
           {options.map((option) => {
@@ -53,13 +53,13 @@ function ContentManageLayoutContent({ children }: { children: React.ReactNode })
                 key={option.id}
                 href={option.href}
                 className={`flex items-center gap-2 pb-3 text-xs font-semibold relative transition-all duration-200 cursor-pointer ${
-                  isActive ? "text-[#3b82f6]" : "text-gray-400 hover:text-white"
+                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Icon size={14} className={isActive ? "text-[#3b82f6]" : "text-gray-500"} />
+                <Icon size={14} className={isActive ? "text-primary" : "text-muted-foreground"} />
                 <span>{option.label}</span>
                 {isActive && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#3b82f6]" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
                 )}
               </Link>
             );
@@ -79,11 +79,11 @@ function ContentManageLayoutContent({ children }: { children: React.ReactNode })
                     ? "Tìm kiếm video TikTok..."
                     : "Tìm kiếm video YouTube..."
                 }
-                className="bg-[#111827] border border-[#1f2937] hover:border-gray-700 rounded-lg px-3 py-1.5 pl-9 text-xs focus:border-blue-500 focus:outline-none w-[200px] text-white"
+                className="bg-card border border-border hover:border-border rounded-lg px-3 py-1.5 pl-9 text-xs focus:border-blue-500 focus:outline-none w-[200px] text-foreground"
               />
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
             </div>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#111827] hover:bg-[#1f2937] border border-[#1f2937] rounded-lg text-xs text-gray-300 cursor-pointer">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-card hover:bg-muted border border-border rounded-lg text-xs text-foreground cursor-pointer">
               <Funnel size={14} />
               Bộ lọc
             </button>
