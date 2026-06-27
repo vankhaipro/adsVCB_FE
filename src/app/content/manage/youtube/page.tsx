@@ -9,6 +9,7 @@ import {
   ArrowsDownUp,
   YoutubeLogo
 } from "@phosphor-icons/react";
+import { apiGet } from "@/lib/api";
 
 // Mock data based on YouTube content screenshots
 const initialVideos = [
@@ -305,6 +306,18 @@ const initialVideos = [
 export default function YoutubeContentPage() {
   const [videos, setVideos] = useState(initialVideos);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Nạp data thật từ BE (YouTube organic).
+  useEffect(() => {
+    apiGet("/content/list?platform=YOUTUBE")
+      .then((rows: any[]) => setVideos(rows.map((r) => ({
+        id: r.videoId, caption: r.caption ?? "", link: r.link ?? "#", channel: r.channel ?? "", platform: "youtube", date: r.date ?? "",
+        productCode: r.productCode ?? "", productName: r.productName ?? "", concept: r.concept ?? "-", line: r.line ?? "-", team: r.team ?? "-", staff: r.staff ?? "-",
+        totalViews: r.views ?? 0, totalReach: r.reach ?? 0, totalLikes: r.likes ?? 0, totalComments: r.comments ?? 0, totalShares: r.shares ?? 0,
+        views: r.views ?? 0, reach: r.reach ?? 0, likes: r.likes ?? 0, comments: r.comments ?? 0, productLine: "-",
+      }))))
+      .catch(() => {});
+  }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
 

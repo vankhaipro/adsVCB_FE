@@ -9,6 +9,7 @@ import {
   ArrowsDownUp,
   TiktokLogo
 } from "@phosphor-icons/react";
+import { apiGet } from "@/lib/api";
 
 // Mock data based on TikTok content screenshots
 const initialVideos = [
@@ -353,6 +354,18 @@ const initialVideos = [
 export default function TiktokContentPage() {
   const [videos, setVideos] = useState(initialVideos);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Nạp data thật từ BE (TikTok organic).
+  useEffect(() => {
+    apiGet("/content/list?platform=TIKTOK")
+      .then((rows: any[]) => setVideos(rows.map((r) => ({
+        id: r.videoId, caption: r.caption ?? "", permalink: r.link ?? "#", channel: r.channel ?? "", format: "VIDEO", date: r.date ?? "",
+        staff: r.staff ?? "-", concept: r.concept ?? "-", line: r.line ?? "-", productCode: r.productCode ?? "", productName: r.productName ?? "",
+        totalViews: r.views ?? 0, totalViewsPaid: 0, totalViewsOrganic: r.views ?? 0, totalReach: r.reach ?? 0, totalLikes: r.likes ?? 0, totalComments: r.comments ?? 0, totalShares: r.shares ?? 0,
+        views: r.views ?? 0, viewsPaid: 0, viewsOrganic: r.views ?? 0, reach: r.reach ?? 0, likes: r.likes ?? 0, comments: r.comments ?? 0, shares: r.shares ?? 0, avgWatchTime: 0,
+      }))))
+      .catch(() => {});
+  }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { apiGet } from "@/lib/api";
 import {
   CaretDown,
   FacebookLogo,
@@ -30,25 +32,13 @@ import {
   Bar
 } from "recharts";
 import {
-  viewsPlatformData,
-  kpiStats,
-  postContentData,
   productionContentData,
-  viewsTrendData,
-  channelsDistributionData,
-  viewsByTeamData,
-  contentByTeamData,
-  contentLineDistributionData,
-  conceptDistributionData,
   topProductionContent,
   topSkuDataRecord,
   topSkuCreateRecord,
   linePerformanceDataRecord,
   linePerformanceCreateRecord,
   contentStylePerformance,
-  topChannelsByView,
-  topVideosByView,
-  topStaffByView,
   detailChannelPerformance,
   detailStaffPerformance,
   staffKpiBarData,
@@ -58,7 +48,87 @@ import {
   youtubeRawContentList
 } from "../manage/mockData";
 
+// Báo cáo content thật từ BE (/content/report). Các khối chưa có nguồn thật vẫn dùng mock.
+type Grp = { name: string; views: number; count: number };
+type Report = {
+  kpis: { views: number; interactions: number; likes: number; comments: number; shares: number; followers: number; videoCount: number };
+  byPlatform: Grp[];
+  byConcept: Grp[];
+  byLine: Grp[];
+  byTeam: Grp[];
+  winRate: { win: number; notWin: number; total: number };
+  channelsByPlatform: { name: string; count: number }[];
+  trendByPlatform: { date: string; FACEBOOK: number; TIKTOK: number; INSTAGRAM: number; YOUTUBE: number }[];
+  topVideos: { videoId: string; platform: string; caption: string | null; postUrl: string | null; views: number; likes: number; channelName: string | null; staffName: string | null }[];
+  topChannels: { name: string; platform: string; views: number; followers: number; count: number }[];
+  topStaff: { name: string; team: string | null; views: number; count: number }[];
+};
+const PLATFORM_COLORS: Record<string, string> = {
+  FACEBOOK: "#3b82f6", TIKTOK: "#db2777", INSTAGRAM: "#e1306c", YOUTUBE: "#dc2626",
+};
+const CONCEPT_COLORS: Record<string, string> = { "Mới": "#10b981", "Cũ": "#3b82f6", "Khác": "#f59e0b" };
+const LINE_COLORS: Record<string, string> = { A4: "#ef4444", A1: "#10b981", A2: "#3b82f6", A3: "#8b5cf6", A5: "#f59e0b", "Khác": "#6b7280" };
+const PLATFORM_LABEL: Record<string, string> = { FACEBOOK: "Facebook", TIKTOK: "TikTok", INSTAGRAM: "Instagram", YOUTUBE: "YouTube" };
+const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n || 0));
+const fmtCompact = (n: number) => {
+  const a = Math.abs(n || 0);
+  if (a >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
+  if (a >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  if (a >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return fmtNum(n);
+};
+
 export default function ContentOverviewPage() {
+  const [report, setReport] = useState<Report | null>(null);
+  useEffect(() => {
+    apiGet("/content/report").then(setReport).catch(() => {});
+  }, []);
+
+  const k = report?.kpis;
+  // KPI thật (định dạng chuỗi như mock cũ); fallback "—" khi chưa tải xong.
+  const kpi = k
+    ? { views: fmtNum(k.views), interactions: fmtNum(k.interactions), likes: fmtNum(k.likes), comments: fmtNum(k.comments), followers: fmtNum(k.followers) }
+    : { views: "—", interactions: "—", likes: "—", comments: "—", followers: "—" };
+  const totalViewsLabel = k ? fmtCompact(k.views) : "—";
+  // Donut nền tảng thật (% theo views).
+  const platformData = report?.byPlatform?.length
+    ? (() => {
+        const tot = report.byPlatform.reduce((s, p) => s + p.views, 0) || 1;
+        return report.byPlatform.map((p) => ({
+          name: p.name,
+          value: Number(((p.views / tot) * 100).toFixed(2)),
+          color: PLATFORM_COLORS[p.name] || "#64748b",
+        }));
+      })()
+    : [];
+
+  // ===== Map data thật → đúng shape các khối mock (giữ nguyên JSX) =====
+  const toDonut = (arr: Grp[] | undefined, colors: Record<string, string>) => {
+    if (!arr?.length) return [];
+    const tot = arr.reduce((s, x) => s + x.views, 0) || 1;
+    return arr.map((x) => ({ name: x.name, value: Number(((x.views / tot) * 100).toFixed(2)), color: colors[x.name] || "#64748b" }));
+  };
+  const conceptDistributionData = toDonut(report?.byConcept, CONCEPT_COLORS);
+  const contentLineDistributionData = toDonut(report?.byLine, LINE_COLORS);
+  const postContentData = report?.winRate
+    ? (() => { const t = report.winRate.total || 1; return [
+        { name: "Win", value: Number(((report.winRate.win / t) * 100).toFixed(1)), color: "#10b981" },
+        { name: "Not Win", value: Number(((report.winRate.notWin / t) * 100).toFixed(1)), color: "#ef4444" },
+      ]; })()
+    : [];
+  const channelsDistributionData = report?.channelsByPlatform?.length
+    ? (() => { const t = report.channelsByPlatform.reduce((s, x) => s + x.count, 0) || 1;
+        return report.channelsByPlatform.map((x) => ({ name: PLATFORM_LABEL[x.name] || x.name, value: Number(((x.count / t) * 100).toFixed(1)), color: PLATFORM_COLORS[x.name] || "#64748b" })); })()
+    : [];
+  const viewsByTeamData = report?.byTeam ? report.byTeam.map((x) => ({ name: x.name, views: x.views })) : [];
+  const contentByTeamData = report?.byTeam ? [...report.byTeam].sort((a, b) => b.count - a.count).map((x) => ({ name: x.name, count: x.count })) : [];
+  const viewsTrendData = report?.trendByPlatform
+    ? report.trendByPlatform.map((d) => ({ name: d.date.slice(5).replace("-", "/"), Facebook: d.FACEBOOK, Instagram: d.INSTAGRAM, TikTok: d.TIKTOK, YouTube: d.YOUTUBE }))
+    : [];
+  const topVideosByView = report?.topVideos ? report.topVideos.map((v, i) => ({ id: i + 1, caption: v.caption || "", link: v.postUrl || "#", views: fmtNum(v.views) })) : [];
+  const topChannelsByView = report?.topChannels ? report.topChannels.map((c) => ({ platform: PLATFORM_LABEL[c.platform] || c.platform, name: c.name, views: fmtNum(c.views), follows: fmtNum(c.followers) })) : [];
+  const topStaffByView = report?.topStaff ? report.topStaff.map((s, i) => ({ id: i + 1, name: s.name, team: s.team || "-", views: fmtNum(s.views) })) : [];
+
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       
@@ -112,7 +182,7 @@ export default function ContentOverviewPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={viewsPlatformData}
+                    data={platformData}
                     cx="50%"
                     cy="50%"
                     innerRadius={50}
@@ -120,7 +190,7 @@ export default function ContentOverviewPage() {
                     paddingAngle={3}
                     dataKey="value"
                   >
-                    {viewsPlatformData.map((entry, index) => (
+                    {platformData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -128,13 +198,13 @@ export default function ContentOverviewPage() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute flex flex-col items-center justify-center">
-                <span className="text-xl font-bold text-white">255.7M</span>
+                <span className="text-xl font-bold text-white">{totalViewsLabel}</span>
                 <span className="text-[10px] text-gray-500">Tổng</span>
               </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
-            {viewsPlatformData.map((item, idx) => (
+            {platformData.map((item, idx) => (
               <div key={idx} className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                 <span className="text-gray-400 capitalize">{item.name}:</span>
@@ -152,27 +222,27 @@ export default function ContentOverviewPage() {
               
               <div className="bg-[#1f2937]/30 border border-[#1f2937] rounded-lg p-3.5 col-span-2">
                 <p className="text-[10px] text-gray-400 font-medium">Tổng Lượt Xem</p>
-                <p className="text-2xl font-black text-white mt-1">{kpiStats.views}</p>
+                <p className="text-2xl font-black text-white mt-1">{kpi.views}</p>
               </div>
               
               <div className="bg-[#1f2937]/30 border border-[#1f2937] rounded-lg p-3">
                 <p className="text-[10px] text-gray-400 font-medium">Tổng Tương Tác</p>
-                <p className="text-lg font-bold text-white mt-1">{kpiStats.interactions}</p>
+                <p className="text-lg font-bold text-white mt-1">{kpi.interactions}</p>
               </div>
               
               <div className="bg-[#1f2937]/30 border border-[#1f2937] rounded-lg p-3">
                 <p className="text-[10px] text-gray-400 font-medium">Lượt Thích</p>
-                <p className="text-lg font-bold text-white mt-1">{kpiStats.likes}</p>
+                <p className="text-lg font-bold text-white mt-1">{kpi.likes}</p>
               </div>
               
               <div className="bg-[#1f2937]/30 border border-[#1f2937] rounded-lg p-3">
                 <p className="text-[10px] text-gray-400 font-medium">Bình Luận</p>
-                <p className="text-lg font-bold text-white mt-1">{kpiStats.comments}</p>
+                <p className="text-lg font-bold text-white mt-1">{kpi.comments}</p>
               </div>
               
               <div className="bg-[#1f2937]/30 border border-[#1f2937] rounded-lg p-3">
                 <p className="text-[10px] text-gray-400 font-medium">Tổng Followers</p>
-                <p className="text-lg font-bold text-white mt-1">{kpiStats.followers}</p>
+                <p className="text-lg font-bold text-white mt-1">{kpi.followers}</p>
               </div>
 
             </div>
