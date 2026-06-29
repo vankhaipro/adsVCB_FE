@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowsClockwise, SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple,
+  ArrowsClockwise, SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight
 } from "@phosphor-icons/react";
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api";
 
@@ -45,6 +45,10 @@ export default function ChannelsPage() {
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+
+  // Phân trang
+  const [page, setPage] = useState(0);
+  const PER_PAGE = 10;
 
   // Form thêm kênh
   const [url, setUrl] = useState("");
@@ -97,6 +101,21 @@ export default function ChannelsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const pages = Math.max(1, Math.ceil(channels.length / PER_PAGE));
+  const start = page * PER_PAGE;
+  const rows = channels.slice(start, start + PER_PAGE);
+
+  // Compute sliding window of pagination buttons
+  const pageRange = [...Array(pages).keys()].filter(i => {
+    const maxVisible = 5;
+    let startPage = Math.max(0, page - 2);
+    let endPage = Math.min(pages - 1, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) {
+      startPage = Math.max(0, endPage - maxVisible + 1);
+    }
+    return i >= startPage && i <= endPage;
+  });
 
   const addChannel = async () => {
     if (!url.trim()) {
@@ -347,7 +366,7 @@ export default function ChannelsPage() {
                 {channels.length === 0 ? (
                   <tr><td colSpan={12} className="px-4 py-10 text-center text-muted-foreground">Chưa có kênh nào. Thêm kênh bằng URL ở trên.</td></tr>
                 ) : (
-                  channels.map((c) => {
+                  rows.map((c) => {
                     const channelTeam = teamList.find((t) => t.name === c.team);
                     const displayIndustry = channelTeam?.industry ?? c.industry ?? "—";
                     const displayMarket = channelTeam?.market ?? c.market ?? "—";
@@ -414,6 +433,46 @@ export default function ChannelsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Phân trang */}
+          {channels.length > PER_PAGE && (
+            <div className="flex items-center justify-between px-5 py-3 border-t border-border">
+              <span className="text-[11px] text-muted-foreground">
+                Hiển thị {start + 1}–{Math.min(start + PER_PAGE, channels.length)} trong {channels.length} kênh
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(p => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors"
+                >
+                  <CaretLeft size={14} weight="bold" />
+                </button>
+                
+                {pageRange.map(i => (
+                  <button
+                    key={i}
+                    onClick={() => setPage(i)}
+                    className={`w-6 h-6 flex items-center justify-center rounded text-[11px] font-medium transition-colors ${
+                      page === i 
+                        ? "bg-blue-600 text-white" 
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => setPage(p => Math.min(pages - 1, p + 1))}
+                  disabled={page === pages - 1}
+                  className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors"
+                >
+                  <CaretRight size={14} weight="bold" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
