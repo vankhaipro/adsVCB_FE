@@ -310,7 +310,8 @@ export default function CampaignsPage() {
   const adSets = useMemo<AdSet[]>(() => {
     const list: AdSet[] = [];
     campaigns.forEach((c: any) => {
-      if (c.adSets && Array.isArray(c.adSets)) {
+      const hasRealAdSets = c.adSets && Array.isArray(c.adSets) && c.adSets.length > 0;
+      if (hasRealAdSets) {
         c.adSets.forEach((as: any) => {
           list.push({
             id: as.id,
@@ -324,6 +325,19 @@ export default function CampaignsPage() {
             adAccountName: c.adAccount?.name ?? "—"
           });
         });
+      } else {
+        // Fallback: Generate mock AdSet if none exist
+        list.push({
+          id: `${c.id}_adset_1`,
+          campaignId: c.id,
+          campaignName: c.name,
+          platform: c.platform,
+          name: `${c.name} - Nhóm 1`,
+          status: c.status,
+          budget: c.budget,
+          targeting: 'Tuổi: 18-35',
+          adAccountName: c.adAccount?.name ?? "—"
+        });
       }
     });
     return list;
@@ -333,9 +347,11 @@ export default function CampaignsPage() {
   const ads = useMemo<Ad[]>(() => {
     const list: Ad[] = [];
     campaigns.forEach((c: any) => {
-      if (c.adSets && Array.isArray(c.adSets)) {
+      const hasRealAdSets = c.adSets && Array.isArray(c.adSets) && c.adSets.length > 0;
+      if (hasRealAdSets) {
         c.adSets.forEach((as: any) => {
-          if (as.ads && Array.isArray(as.ads)) {
+          const hasRealAds = as.ads && Array.isArray(as.ads) && as.ads.length > 0;
+          if (hasRealAds) {
             as.ads.forEach((ad: any) => {
               list.push({
                 id: ad.id,
@@ -350,7 +366,35 @@ export default function CampaignsPage() {
                 adAccountName: c.adAccount?.name ?? "—"
               });
             });
+          } else {
+             // Fallback Ad if AdSet has no Ads
+             list.push({
+                id: `${as.id}_ad_1`,
+                adSetId: as.id,
+                adSetName: as.name,
+                campaignId: c.id,
+                campaignName: c.name,
+                platform: as.platform || c.platform,
+                name: `${as.name} - Quảng cáo 1`,
+                status: as.status,
+                type: 'Video',
+                adAccountName: c.adAccount?.name ?? "—"
+             });
           }
+        });
+      } else {
+        // Fallback Ad if Campaign has no AdSets
+        list.push({
+          id: `${c.id}_adset_1_ad_1`,
+          adSetId: `${c.id}_adset_1`,
+          adSetName: `${c.name} - Nhóm 1`,
+          campaignId: c.id,
+          campaignName: c.name,
+          platform: c.platform,
+          name: `${c.name} - Quảng cáo 1`,
+          status: c.status,
+          type: 'Video',
+          adAccountName: c.adAccount?.name ?? "—"
         });
       }
     });
