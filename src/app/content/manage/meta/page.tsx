@@ -396,6 +396,20 @@ export default function MetaContentPage() {
     );
   });
 
+  const totals = filteredPosts.reduce((acc, curr) => {
+    acc.totalViews += curr.totalViews || 0;
+    acc.totalReach += curr.totalReach || 0;
+    acc.totalLikes += curr.totalLikes || 0;
+    acc.totalComments += curr.totalComments || 0;
+    acc.totalShares += curr.totalShares || 0;
+    acc.views += curr.views || 0;
+    acc.reach += curr.reach || 0;
+    acc.likes += curr.likes || 0;
+    acc.comments += curr.comments || 0;
+    return acc;
+  }, { totalViews: 0, totalReach: 0, totalLikes: 0, totalComments: 0, totalShares: 0, views: 0, reach: 0, likes: 0, comments: 0 });
+
+
   return (
     <div className="flex flex-col gap-4 animate-in fade-in duration-300 w-full max-w-full text-foreground">
       
@@ -625,12 +639,12 @@ export default function MetaContentPage() {
               })}
             </tbody>
 
-            {/* Total Footer matching user screenshot sums exactly */}
+            {/* Total Footer */}
             <tfoot>
               <tr className="bg-card text-foreground font-bold">
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-center"></td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border font-black">
-                  TỔNG (2000)
+                  TỔNG ({filteredPosts.length})
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
@@ -641,34 +655,33 @@ export default function MetaContentPage() {
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
-                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
-                {/* Total sums matched exactly to screenshot 2 & 3 */}
+                
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
-                  3.233.633
-                </td>
-                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-blue-400">
-                  2.546.044
-                </td>
-                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
-                  42.563
+                  {totals.totalViews.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
-                  1.784
+                  {totals.totalReach.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
-                  5.760
+                  {totals.totalLikes.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
-                  59.144.201
+                  {totals.totalComments.toLocaleString("vi-VN")}
+                </td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
+                  {totals.totalShares.toLocaleString("vi-VN")}
+                </td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
+                  {totals.views.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
-                  45.838.152
+                  {totals.reach.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-primary">
-                  601.894
+                  {totals.likes.toLocaleString("vi-VN")}
                 </td>
-                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
-                  31.594
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
+                  {totals.comments.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-t-2 border-border"></td>
               </tr>

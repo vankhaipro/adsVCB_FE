@@ -306,63 +306,56 @@ export default function CampaignsPage() {
   }, []);
 
 
-  // Generate AdSets deterministically from Campaigns
+  // Generate AdSets from Campaigns
   const adSets = useMemo<AdSet[]>(() => {
     const list: AdSet[] = [];
-    campaigns.forEach((c) => {
-      const hash = hashString(c.id);
-      const targets = [
-        "18-35, Nữ, Quan tâm Trang sức & Thời trang",
-        "25-45, Nam/Nữ, Quan tâm Phụ kiện cao cấp",
-        "20-40, Nữ, Hành vi mua sắm tương tác",
-        "Mọi đối tượng, Việt Nam, Tự động tối ưu"
-      ];
-      
-      // Generate 1-2 adsets per campaign
-      const count = (hash % 2) + 1;
-      for (let i = 1; i <= count; i++) {
-        list.push({
-          id: `${c.id}-as-${i}`,
-          campaignId: c.id,
-          campaignName: c.name,
-          platform: c.platform,
-          name: `${c.name} -- Nhóm ${i} (${targets[(hash + i) % targets.length].split(",")[0]})`,
-          status: c.status,
-          budget: c.budget > 0 ? Math.round(c.budget / count) : 100000 + ((hash + i) % 5) * 50000,
-          targeting: targets[(hash + i) % targets.length],
-          adAccountName: c.adAccount?.name ?? "—"
+    campaigns.forEach((c: any) => {
+      if (c.adSets && Array.isArray(c.adSets)) {
+        c.adSets.forEach((as: any) => {
+          list.push({
+            id: as.id,
+            campaignId: c.id,
+            campaignName: c.name,
+            platform: as.platform || c.platform,
+            name: as.name,
+            status: as.status,
+            budget: as.budget,
+            targeting: as.targeting || '—',
+            adAccountName: c.adAccount?.name ?? "—"
+          });
         });
       }
     });
     return list;
   }, [campaigns]);
 
-  // Generate Ads deterministically from AdSets
+  // Generate Ads from Campaigns (via AdSets)
   const ads = useMemo<Ad[]>(() => {
     const list: Ad[] = [];
-    adSets.forEach((as) => {
-      const hash = hashString(as.id);
-      const formats: ("Video" | "Hình ảnh" | "Carousel")[] = ["Video", "Hình ảnh", "Carousel"];
-      
-      // Generate 1-2 ads per adset
-      const count = (hash % 2) + 1;
-      for (let i = 1; i <= count; i++) {
-        list.push({
-          id: `${as.id}-ad-${i}`,
-          adSetId: as.id,
-          adSetName: as.name,
-          campaignId: as.campaignId,
-          campaignName: as.campaignName,
-          platform: as.platform,
-          name: `${as.name} -- Ad ${i} [${formats[(hash + i) % formats.length]}]`,
-          status: as.status,
-          type: formats[(hash + i) % formats.length],
-          adAccountName: as.adAccountName
+    campaigns.forEach((c: any) => {
+      if (c.adSets && Array.isArray(c.adSets)) {
+        c.adSets.forEach((as: any) => {
+          if (as.ads && Array.isArray(as.ads)) {
+            as.ads.forEach((ad: any) => {
+              list.push({
+                id: ad.id,
+                adSetId: as.id,
+                adSetName: as.name,
+                campaignId: c.id,
+                campaignName: c.name,
+                platform: ad.platform || c.platform,
+                name: ad.name,
+                status: ad.status,
+                type: (ad.type as any) || 'Hình ảnh',
+                adAccountName: c.adAccount?.name ?? "—"
+              });
+            });
+          }
         });
       }
     });
     return list;
-  }, [adSets]);
+  }, [campaigns]);
 
   // Extract SKU helper matching overview tab extraction logic
   const getSku = useCallback((name: string, id: string) => {
