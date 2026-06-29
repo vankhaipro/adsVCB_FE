@@ -207,6 +207,8 @@ function OverviewInner() {
   const [sapoSkus, setSapoSkus] = useState<SapoSku[]>([]);
   const [insights, setInsights] = useState<InsightData | null>(null);
   const [breakdown, setBreakdown] = useState<BreakdownData | null>(null);
+  const [campaignsInsights, setCampaignsInsights] = useState<any[]>([]);
+  const [trendData, setTrendData] = useState<any[]>([]);
 
   // Tab từ query param ?tab=overview|channel|mode
   const TAB_VALUES = ["overview", "channel", "mode"] as const;
@@ -257,7 +259,7 @@ function OverviewInner() {
     try {
       const [rev, skus] = await Promise.all([
         apiGet(`/sapo/revenue?${q}`),
-        apiGet(`/sapo/revenue/by-sku?${q}&limit=12`),
+        apiGet(`/sapo/revenue/by-sku?${q}&limit=50`),
       ]);
       setSapo(rev);
       setSapoSkus(skus);
@@ -277,15 +279,21 @@ function OverviewInner() {
     if (staff !== "ALL") params.set("staff", staff);
     const q = params.toString();
     try {
-      const [ins, brk] = await Promise.all([
+      const [ins, brk, trend, camps] = await Promise.all([
         apiGet(`/ads/insights?${q}`),
         apiGet(`/ads/insights/breakdown?${q}`),
+        apiGet(`/ads/insights/trend?${q}`),
+        apiGet(`/ads/campaigns/insights?${q}`)
       ]);
       setInsights(ins);
       setBreakdown(brk);
+      setTrendData(trend);
+      setCampaignsInsights(camps);
     } catch {
       setInsights(null);
       setBreakdown(null);
+      setTrendData([]);
+      setCampaignsInsights([]);
     }
   }, [dateRange, platform, objective, accountId, channel, staff]);
 
@@ -320,8 +328,7 @@ function OverviewInner() {
   };
 
   const overviewKpis = useMemo((): KpiItem[] => {
-    // KPI khớp thiết kế Figma (dữ liệu mẫu — xem dashboardData.ts).
-    const ICONS: Record<Kpi["icon"], Icon> = {
+    const ICONS: Record<string, Icon> = {
       spend: CurrencyDollar,
       revenue: TrendUp,
       reach: Eye,
@@ -331,16 +338,38 @@ function OverviewInner() {
       ctr: Lightning,
       roas: ChartBar,
     };
-    return KPIS.map((k) => ({
+
+    const hasData = !!insights?.hasData;
+    const spend = insights?.totalSpend ?? 0;
+    const revenue = sapo?.totalRevenue ?? 0;
+    const impressions = insights?.impressions ?? 0;
+    const reach = insights?.reach ?? 0;
+    const clicks = insights?.clicks ?? 0;
+    const orders = sapo?.orderCount ?? 0;
+    const ctr = insights?.ctr ?? 0;
+    const roas = spend > 0 ? revenue / spend : 0;
+
+    const data = [
+      { key: "spend", label: "Chi phí quảng cáo", value: `${fmtNum(spend)}đ`, sub: `Tổng ngân sách chi tiêu`, change: undefined, color: "text-blue-400", bg: "bg-blue-500/10" },
+      { key: "revenue", label: "Doanh thu (Sapo)", value: `${fmtNum(revenue)}đ`, sub: `Từ các đơn hàng thực tế`, change: undefined, color: "text-green-400", bg: "bg-green-500/10" },
+      { key: "impressions", label: "Lượt hiển thị", value: fmtNum(impressions), sub: `Tổng số lần quảng cáo hiện`, change: undefined, color: "text-purple-400", bg: "bg-purple-500/10" },
+      { key: "reach", label: "Số người tiếp cận", value: fmtNum(reach), sub: `Số người xem quảng cáo`, change: undefined, color: "text-indigo-400", bg: "bg-indigo-500/10" },
+      { key: "clicks", label: "Lượt nhấp liên kết", value: fmtNum(clicks), sub: `Tổng click vào QC`, change: undefined, color: "text-orange-400", bg: "bg-orange-500/10" },
+      { key: "orders", label: "Số đơn hàng", value: fmtNum(orders), sub: `Tổng số đơn từ Sapo`, change: undefined, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+      { key: "ctr", label: "Tỷ lệ nhấp (CTR)", value: `${ctr.toFixed(2)}%`, sub: `Tỷ lệ CTR trung bình`, change: undefined, color: "text-yellow-400", bg: "bg-yellow-500/10" },
+      { key: "roas", label: "Chỉ số ROAS", value: `${roas.toFixed(2)}x`, sub: `Doanh thu / Chi phí`, change: undefined, color: "text-pink-400", bg: "bg-pink-500/10" }
+    ];
+
+    return data.map((k) => ({
       label: k.label,
-      value: k.value,
+      value: hasData || revenue > 0 ? k.value : "—",
       sub: k.sub,
       change: k.change,
-      icon: ICONS[k.icon],
+      icon: ICONS[k.key],
       iconColor: k.color,
       iconBg: k.bg,
     }));
-  }, []);
+  }, [insights, sapo]);
 
   return (
     <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10 font-sans -m-4 sm:-m-5 p-4 sm:p-5 bg-background min-h-full">
@@ -393,8 +422,15 @@ function OverviewInner() {
         </div>
       ) : (
         <>
-          {/* TAB 1: OVERVIEW — dựng lại theo Figma (dữ liệu mẫu, xem dashboardData.ts) */}
-          {selectedTab === "overview" && <OverviewBody />}
+          {/* TAB 1: OVERVIEW — dựng lại theo Figma */}
+          {selectedTab === "overview" && (
+            <OverviewBody 
+              campaigns={campaignsInsights}
+              sapoSkus={sapoSkus}
+              trend={trendData}
+              breakdown={breakdown}
+            />
+          )}
           {LEGACY_OVERVIEW && (() => {
             const adReal = !!insights?.hasData;
             const platSpend = insights?.byPlatform ?? [];

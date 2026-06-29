@@ -108,6 +108,40 @@ function getDaysCount(range: string): number {
   }
 }
 
+function rangeToQuery(range: string): string {
+  const now = new Date();
+  const end = new Date(now);
+  let start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  switch (range) {
+    case "today":
+      break;
+    case "yesterday":
+      start.setDate(start.getDate() - 1);
+      end.setTime(start.getTime());
+      end.setHours(23, 59, 59, 999);
+      break;
+    case "last7days":
+      start.setDate(start.getDate() - 6);
+      break;
+    case "last30days":
+      start.setDate(start.getDate() - 29);
+      break;
+    case "thisMonth":
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+    case "lastMonth": {
+      start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const e = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      return `from=${start.toISOString()}&to=${e.toISOString()}`;
+    }
+    default:
+      start.setDate(start.getDate() - 29);
+  }
+  return `from=${start.toISOString()}&to=${end.toISOString()}`;
+}
+
+
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -134,8 +168,14 @@ export default function CampaignsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    const params = new URLSearchParams(rangeToQuery(dateRange));
+    if (platform !== "ALL") params.set("platform", platform);
+    const qStr = params.toString();
     try {
-      const [c, a] = await Promise.all([apiGet("/ads/campaigns"), apiGet("/ads/accounts")]);
+      const [c, a] = await Promise.all([
+        apiGet(`/ads/campaigns/insights?${qStr}`),
+        apiGet("/ads/accounts")
+      ]);
       setCampaigns(c);
       setAccounts(a);
     } catch (e) {
@@ -143,7 +183,7 @@ export default function CampaignsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [dateRange, platform]);
 
   useEffect(() => {
     load();
@@ -406,40 +446,111 @@ export default function CampaignsPage() {
 
   // Compute metrics for the rendered lists
   const campaignsWithMetrics = useMemo(() => {
-    return filteredCampaigns.map((c) => {
-      const hash = hashString(c.id);
-      const baseSpend = c.budget > 0 ? c.budget : 150000 + (hash % 650000);
+    return filteredCampaigns.map((c: any) => {
       return {
         ...c,
-        sku: getSku(c.name, c.id),
-        metrics: getMetrics(c.id, baseSpend, isRunning(c.status), c.objective, c.name, dateRange)
+        sku: c.sku || getSku(c.name, c.id),
+        metrics: {
+          spend: c.spend || 0,
+          impressions: c.impressions || 0,
+          reach: c.reach || 0,
+          clicks: c.clicks || 0,
+          results: c.conversions || 0,
+          messages: c.messages || 0,
+          rateMess: c.clicks > 0 ? ((c.messages || 0) / c.clicks) * 100 : 0,
+          ctr: c.ctr || 0,
+          cpc: c.cpc || 0,
+          cpm: c.cpm || 0,
+          costPerResult: c.cpa || 0
+        }
       };
     });
-  }, [filteredCampaigns, getSku, getMetrics, dateRange]);
+  }, [filteredCampaigns, getSku]);
 
   const adSetsWithMetrics = useMemo(() => {
+    const adSetsCountMap = new Map<string, number>();
+    filteredAdSets.forEach((as) => {
+      adSetsCountMap.set(as.campaignId, (adSetsCountMap.get(as.campaignId) || 0) + 1);
+    });
+
     return filteredAdSets.map((as) => {
-      const hash = hashString(as.id);
-      const baseSpend = as.budget > 0 ? as.budget : 120000 + (hash % 500000);
+      const camp = campaigns.find((c) => c.id === as.campaignId) as any;
+      const count = adSetsCountMap.get(as.campaignId) || 1;
+      
+      const spend = (camp?.spend || 0) / count;
+      const impressions = (camp?.impressions || 0) / count;
+      const reach = (camp?.reach || 0) / count;
+      const clicks = (camp?.clicks || 0) / count;
+      const conversions = (camp?.conversions || 0) / count;
+      const messages = (camp?.messages || 0) / count;
+      
+      const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+      const cpc = clicks > 0 ? spend / clicks : 0;
+      const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0;
+      const cpa = conversions > 0 ? spend / conversions : 0;
+
       return {
         ...as,
         sku: getSku(as.name, as.id),
-        metrics: getMetrics(as.id, baseSpend, isRunning(as.status), null, as.name, dateRange)
+        metrics: {
+          spend,
+          impressions,
+          reach,
+          clicks,
+          results: conversions,
+          messages,
+          rateMess: clicks > 0 ? (messages / clicks) * 100 : 0,
+          ctr,
+          cpc,
+          cpm,
+          costPerResult: cpa
+        }
       };
     });
-  }, [filteredAdSets, getSku, getMetrics, dateRange]);
+  }, [filteredAdSets, campaigns, getSku]);
 
   const adsWithMetrics = useMemo(() => {
+    const adsCountMap = new Map<string, number>();
+    filteredAds.forEach((ad) => {
+      adsCountMap.set(ad.adSetId, (adsCountMap.get(ad.adSetId) || 0) + 1);
+    });
+
     return filteredAds.map((ad) => {
-      const hash = hashString(ad.id);
-      const baseSpend = 80000 + (hash % 300000);
+      const parentAdSet = adSetsWithMetrics.find((as) => as.id === ad.adSetId);
+      const count = adsCountMap.get(ad.adSetId) || 1;
+
+      const parentMetrics = parentAdSet?.metrics || { spend: 0, impressions: 0, reach: 0, clicks: 0, results: 0, messages: 0 };
+      const spend = parentMetrics.spend / count;
+      const impressions = parentMetrics.impressions / count;
+      const reach = parentMetrics.reach / count;
+      const clicks = parentMetrics.clicks / count;
+      const conversions = parentMetrics.results / count;
+      const messages = parentMetrics.messages / count;
+
+      const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+      const cpc = clicks > 0 ? spend / clicks : 0;
+      const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0;
+      const cpa = conversions > 0 ? spend / conversions : 0;
+
       return {
         ...ad,
         sku: getSku(ad.name, ad.id),
-        metrics: getMetrics(ad.id, baseSpend, isRunning(ad.status), null, ad.name, dateRange)
+        metrics: {
+          spend,
+          impressions,
+          reach,
+          clicks,
+          results: conversions,
+          messages,
+          rateMess: clicks > 0 ? (messages / clicks) * 100 : 0,
+          ctr,
+          cpc,
+          cpm,
+          costPerResult: cpa
+        }
       };
     });
-  }, [filteredAds, getSku, getMetrics, dateRange]);
+  }, [filteredAds, adSetsWithMetrics, getSku]);
 
   const selectedAccount = accounts.find((a) => a.id === form.accountId);
 
