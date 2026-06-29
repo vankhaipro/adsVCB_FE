@@ -1,39 +1,17 @@
 "use client";
 
 import { Download } from "@phosphor-icons/react";
-import { Panel, Th, StatusPill, ChannelChip, ScoreBar } from "./parts";
-import {
-  CREATIVES, CREATIVE_TYPE_STYLE,
-  fmtNum, fmtCompact,
-} from "./dashboardData";
-
-const dash = (v: number | null, fmt: (n: number) => string) => (v == null ? "—" : fmt(v));
-
-const LEGEND: { label: string; color: string }[] = [
-  { label: "Video", color: "#8b5cf6" },
-  { label: "Image", color: "#3b82f6" },
-  { label: "Carousel", color: "#10b981" },
-  { label: "Banner", color: "#f59e0b" },
-];
+import { Panel, Th, StatusPill } from "./parts";
+import { CREATIVES, fmtNum, fmtVndShort } from "./dashboardData";
 
 export default function CreativeTable() {
   return (
     <Panel
       title="Hiệu quả Creative / Mẫu quảng cáo"
       right={
-        <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-3 text-[11px] text-gray-400">
-            {LEGEND.map((l) => (
-              <span key={l.label} className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ background: l.color }} />
-                {l.label}
-              </span>
-            ))}
-          </div>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e293b] border border-[#334155] hover:bg-[#334155] text-gray-200 text-xs font-medium rounded-lg transition-colors">
-            <Download size={14} /> Xuất
-          </button>
-        </div>
+        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e293b] border border-[#334155] hover:bg-[#334155] text-gray-200 text-xs font-medium rounded-lg transition-colors">
+          <Download size={14} /> Xuất
+        </button>
       }
       bodyClassName="px-0 pb-0"
     >
@@ -44,69 +22,55 @@ export default function CreativeTable() {
         <table className="w-full text-xs text-left whitespace-nowrap">
           <thead className="border-y border-[#1e293b] bg-[#0d1424]">
             <tr>
-              <Th>Creative ID</Th>
               <Th>Tên mẫu</Th>
-              <Th>Loại</Th>
-              <Th>Định dạng</Th>
-              <Th>Kênh</Th>
-              <Th>Chiến dịch</Th>
-              <Th>Trạng thái</Th>
-              <Th align="right">Chi tiêu (K)</Th>
-              <Th align="right">Hiển thị</Th>
+              <Th>Ngày bắt đầu</Th>
+              <Th>Trạng thái phân phối</Th>
+              <Th>SKU</Th>
+              <Th align="right">Tổng chi tiêu</Th>
+              <Th align="right">Lượt hiển thị</Th>
               <Th align="right">Tiếp cận</Th>
-              <Th align="right">Lượt nhấp</Th>
+              <Th align="right">Click</Th>
+              <Th align="right">Kết quả</Th>
+              <Th align="right">Chi phí/kết quả</Th>
+              <Th align="right">Tin nhắn</Th>
+              <Th align="right">Tỉ lệ ra mess</Th>
               <Th align="right">CTR</Th>
-              <Th align="right">CPC (đ)</Th>
-              <Th align="right">CPM (đ)</Th>
-              <Th align="right">Thumb stop %</Th>
-              <Th align="right">View 3s</Th>
-              <Th align="right">View 25%</Th>
-              <Th align="right">View 100%</Th>
-              <Th align="right">Tương tác</Th>
-              <Th align="right">Chuyển đổi</Th>
-              <Th align="right">CPA (đ)</Th>
-              <Th align="right">Frequency</Th>
-              <Th align="right">Score</Th>
+              <Th align="right">CPC</Th>
+              <Th align="right">CPM</Th>
+              <Th align="right">Lượt thích Trang</Th>
+              <Th align="right">Lượt thích bài viết</Th>
+              <Th align="right">Tổng tương tác</Th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1e293b] text-gray-300">
-            {CREATIVES.map((c) => (
-              <tr key={c.id} className="hover:bg-[#1e293b]/40">
-                <td className="px-3 py-2.5 font-semibold text-blue-400">{c.id}</td>
-                <td className="px-3 py-2.5 text-gray-200 max-w-[170px] truncate" title={c.name}>{c.name}</td>
-                <td className="px-3 py-2.5">
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${CREATIVE_TYPE_STYLE[c.type]}`}>{c.type}</span>
-                </td>
-                <td className="px-3 py-2.5 text-gray-400">{c.format}</td>
-                <td className="px-3 py-2.5"><ChannelChip channel={c.channel} /></td>
-                <td className="px-3 py-2.5">
-                  <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-[#1e293b] text-gray-300">{c.campaign}</span>
-                </td>
-                <td className="px-3 py-2.5"><StatusPill status={c.status} /></td>
-                <td className="px-3 py-2.5 text-right font-semibold text-white">{fmtNum(c.spendK)}</td>
-                <td className="px-3 py-2.5 text-right">{fmtCompact(c.impressions)}</td>
-                <td className="px-3 py-2.5 text-right">{fmtCompact(c.reach)}</td>
-                <td className="px-3 py-2.5 text-right">{fmtNum(c.clicks)}</td>
-                <td className="px-3 py-2.5 text-right font-medium text-green-400">{c.ctr.toFixed(2)}%</td>
-                <td className="px-3 py-2.5 text-right">{fmtNum(c.cpc)}</td>
-                <td className="px-3 py-2.5 text-right">{c.cpm.toFixed(1)}</td>
-                <td className="px-3 py-2.5 text-right text-amber-400">{dash(c.thumbStop, (v) => `${v.toFixed(1)}%`)}</td>
-                <td className="px-3 py-2.5 text-right text-gray-400">{dash(c.view3s, fmtCompact)}</td>
-                <td className="px-3 py-2.5 text-right text-gray-400">{dash(c.view25, fmtCompact)}</td>
-                <td className="px-3 py-2.5 text-right text-gray-400">{dash(c.view100, fmtCompact)}</td>
-                <td className="px-3 py-2.5 text-right">{fmtCompact(c.engagement)}</td>
-                <td className="px-3 py-2.5 text-right font-medium text-blue-400">{fmtNum(c.conversions)}</td>
-                <td className="px-3 py-2.5 text-right">{fmtNum(c.cpa)}</td>
-                <td className="px-3 py-2.5 text-right text-gray-400">{c.frequency.toFixed(2)}</td>
-                <td className="px-3 py-2.5 text-right"><ScoreBar score={c.score} /></td>
-              </tr>
-            ))}
+            {CREATIVES.map((c) => {
+              const rateMess = c.clicks > 0 ? (c.messages / c.clicks) * 100 : 0;
+              return (
+                <tr key={c.id} className="hover:bg-[#1e293b]/40">
+                  <td className="px-3 py-2.5 text-gray-200 max-w-[200px] truncate" title={c.name}>{c.name}</td>
+                  <td className="px-3 py-2.5 text-gray-400">{c.startDate}</td>
+                  <td className="px-3 py-2.5"><StatusPill status={c.status} /></td>
+                  <td className="px-3 py-2.5 font-mono text-yellow-500/90">{c.sku}</td>
+                  <td className="px-3 py-2.5 text-right font-semibold text-white">{fmtVndShort(c.spendK * 1000)}</td>
+                  <td className="px-3 py-2.5 text-right">{fmtNum(c.impressions)}</td>
+                  <td className="px-3 py-2.5 text-right">{fmtNum(c.reach)}</td>
+                  <td className="px-3 py-2.5 text-right">{fmtNum(c.clicks)}</td>
+                  <td className="px-3 py-2.5 text-right font-medium text-blue-400">{fmtNum(c.conversions)}</td>
+                  <td className="px-3 py-2.5 text-right">{c.conversions > 0 ? fmtVndShort(c.cpa) : "—"}</td>
+                  <td className="px-3 py-2.5 text-right text-green-400">{fmtNum(c.messages)}</td>
+                  <td className="px-3 py-2.5 text-right text-gray-400">{rateMess > 0 ? `${rateMess.toFixed(1)}%` : "0%"}</td>
+                  <td className="px-3 py-2.5 text-right font-medium text-emerald-400">{c.ctr.toFixed(2)}%</td>
+                  <td className="px-3 py-2.5 text-right">{fmtVndShort(c.cpc)}</td>
+                  <td className="px-3 py-2.5 text-right">{fmtVndShort(c.cpm)}</td>
+                  <td className="px-3 py-2.5 text-right text-gray-400">{fmtNum(c.pageLikes)}</td>
+                  <td className="px-3 py-2.5 text-right text-gray-400">{fmtNum(c.postLikes)}</td>
+                  <td className="px-3 py-2.5 text-right">{fmtNum(c.engagement)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
-      <p className="px-5 py-3 text-[11px] text-gray-500 border-t border-[#1e293b]">
-        * Thumb Stop Rate: % người dừng lại xem sau 1s · View 3s/25%/100%: chỉ áp dụng cho Video · Relevance Score: điểm liên quan 1–10
-      </p>
     </Panel>
   );
 }

@@ -159,42 +159,38 @@ export const SKUS: SkuRow[] = [
 
 export const SKU_TOTALS = { spendK: 13880, revenueLabel: "47.2M", orders: 979 };
 
-// ---- Bảng hiệu quả Creative ----
-export type CreativeType = "Video" | "Image" | "Carousel" | "Banner";
+// ---- Bảng hiệu quả Creative / Mẫu quảng cáo ----
+// Các trường khớp với bảng quản lý quảng cáo: thao tác, tên mẫu, ngày bắt đầu,
+// trạng thái phân phối, SKU, các chỉ số hiệu suất + tương tác (like trang/bài, tổng tương tác).
 export type CreativeRow = {
   id: string;
-  name: string;
-  type: CreativeType;
-  format: string;
-  channel: Channel;
-  campaign: string;
-  status: CampaignStatus;
-  spendK: number;
-  impressions: number;
-  reach: number;
-  clicks: number;
-  ctr: number;
-  cpc: number;
-  cpm: number;
-  thumbStop: number | null; // % — chỉ video
-  view3s: number | null;
-  view25: number | null;
-  view100: number | null;
-  engagement: number;
-  conversions: number;
-  cpa: number;
-  frequency: number;
-  score: number; // 1-10
+  name: string;          // Tên mẫu / Mẫu quảng cáo
+  startDate: string;     // Ngày bắt đầu (dd/mm/yyyy)
+  status: CampaignStatus; // Trạng thái phân phối
+  sku: string;
+  spendK: number;        // Tổng chi tiêu (nghìn đồng)
+  impressions: number;   // Lượt hiển thị
+  reach: number;         // Tiếp cận
+  clicks: number;        // Click
+  conversions: number;   // Kết quả
+  cpa: number;           // Chi phí/kết quả (đồng)
+  messages: number;      // Tin nhắn
+  ctr: number;           // CTR (%)
+  cpc: number;           // CPC (đồng)
+  cpm: number;           // CPM (đồng)
+  pageLikes: number;     // Lượt thích Trang
+  postLikes: number;     // Lượt thích bài viết
+  engagement: number;    // Tổng tương tác
 };
 
 export const CREATIVES: CreativeRow[] = [
-  { id: "CRE-T002", name: "TikTok ASMR unbox 30s", type: "Video", format: "TopView", channel: "TikTok", campaign: "TK0019", status: "Đang chạy", spendK: 3800, impressions: 24_000_000, reach: 18_000_000, clicks: 48000, ctr: 2.0, cpc: 79, cpm: 15.8, thumbStop: 74.8, view3s: 19_200_000, view25: 14_400_000, view100: 4_800_000, engagement: 480_000, conversions: 96, cpa: 39583, frequency: 1.33, score: 8.7 },
-  { id: "CRE-T001", name: "TikTok challenge SP-003", type: "Video", format: "In-Feed", channel: "TikTok", campaign: "TK0023", status: "Đang chạy", spendK: 2100, impressions: 12_400_000, reach: 8_200_000, clicks: 24800, ctr: 2.0, cpc: 85, cpm: 16.9, thumbStop: 81.4, view3s: 9_900_000, view25: 7_400_000, view100: 2_500_000, engagement: 186_000, conversions: 248, cpa: 8468, frequency: 1.51, score: 9.1 },
-  { id: "CRE-F001", name: "Video unboxing SP-001 15s", type: "Video", format: "Reels/Story", channel: "Facebook", campaign: "BA0015", status: "Đang chạy", spendK: 3200, impressions: 8_200_000, reach: 4_100_000, clicks: 18400, ctr: 2.24, cpc: 174, cpm: 39.0, thumbStop: 68.2, view3s: 5_700_000, view25: 4_100_000, view100: 820_000, engagement: 92_000, conversions: 184, cpa: 17391, frequency: 2.0, score: 8.2 },
-  { id: "CRE-G001", name: "Google Display Banner 300x250", type: "Banner", format: "Display", channel: "Google", campaign: "GG0018", status: "Tạm dừng", spendK: 920, impressions: 4_800_000, reach: 3_600_000, clicks: 5760, ctr: 12.0, cpc: 160, cpm: 19.2, thumbStop: null, view3s: null, view25: null, view100: null, engagement: 11_500, conversions: 192, cpa: 4792, frequency: 1.33, score: 7.9 },
-  { id: "CRE-F002", name: "Ảnh tĩnh lookbook hè", type: "Image", format: "Feed", channel: "Facebook", campaign: "BA0012", status: "Đang chạy", spendK: 1840, impressions: 3_100_000, reach: 2_500_000, clicks: 9300, ctr: 3.0, cpc: 198, cpm: 59.4, thumbStop: 42.1, view3s: null, view25: null, view100: null, engagement: 46_500, conversions: 93, cpa: 19785, frequency: 1.25, score: 7.4 },
-  { id: "CRE-F003", name: "Carousel sản phẩm mới", type: "Carousel", format: "Feed", channel: "Facebook", campaign: "BA0031", status: "Đang chạy", spendK: 1560, impressions: 2_800_000, reach: 2_000_000, clicks: 11200, ctr: 4.0, cpc: 139, cpm: 55.7, thumbStop: 55.3, view3s: null, view25: null, view100: null, engagement: 33_600, conversions: 168, cpa: 9286, frequency: 1.43, score: 8.5 },
-  { id: "CRE-Z001", name: "Zalo message + banner", type: "Banner", format: "Message", channel: "Zalo", campaign: "ZL0005", status: "Đang chạy", spendK: 430, impressions: 1_200_000, reach: 980_000, clicks: 3600, ctr: 3.0, cpc: 119, cpm: 35.8, thumbStop: null, view3s: null, view25: null, view100: null, engagement: 7_200, conversions: 72, cpa: 5972, frequency: 1.22, score: 7.1 },
+  { id: "CRE-T002", name: "TikTok ASMR unbox 30s", startDate: "02/06/2026", status: "Đang chạy", sku: "SP-001", spendK: 3800, impressions: 24_000_000, reach: 18_000_000, clicks: 48000, conversions: 96, cpa: 39583, messages: 4300, ctr: 2.0, cpc: 79, cpm: 158, pageLikes: 7800, postLikes: 86000, engagement: 480_000 },
+  { id: "CRE-T001", name: "TikTok challenge SP-003", startDate: "04/06/2026", status: "Đang chạy", sku: "SP-003", spendK: 2100, impressions: 12_400_000, reach: 8_200_000, clicks: 24800, conversions: 248, cpa: 8468, messages: 2480, ctr: 2.0, cpc: 85, cpm: 169, pageLikes: 3600, postLikes: 38000, engagement: 186_000 },
+  { id: "CRE-F001", name: "Video unboxing SP-001 15s", startDate: "01/06/2026", status: "Đang chạy", sku: "SP-001", spendK: 3200, impressions: 8_200_000, reach: 4_100_000, clicks: 18400, conversions: 184, cpa: 17391, messages: 1840, ctr: 2.24, cpc: 174, cpm: 390, pageLikes: 2400, postLikes: 21000, engagement: 92_000 },
+  { id: "CRE-G001", name: "Google Display Banner 300x250", startDate: "03/06/2026", status: "Tạm dừng", sku: "SP-004", spendK: 920, impressions: 4_800_000, reach: 3_600_000, clicks: 5760, conversions: 192, cpa: 4792, messages: 0, ctr: 12.0, cpc: 160, cpm: 192, pageLikes: 0, postLikes: 0, engagement: 11_500 },
+  { id: "CRE-F002", name: "Ảnh tĩnh lookbook hè", startDate: "05/06/2026", status: "Đang chạy", sku: "SP-005", spendK: 1840, impressions: 3_100_000, reach: 2_500_000, clicks: 9300, conversions: 93, cpa: 19785, messages: 930, ctr: 3.0, cpc: 198, cpm: 594, pageLikes: 1860, postLikes: 18600, engagement: 46_500 },
+  { id: "CRE-F003", name: "Carousel sản phẩm mới", startDate: "06/06/2026", status: "Đang chạy", sku: "SP-002", spendK: 1560, impressions: 2_800_000, reach: 2_000_000, clicks: 11200, conversions: 168, cpa: 9286, messages: 1120, ctr: 4.0, cpc: 139, cpm: 557, pageLikes: 2200, postLikes: 11200, engagement: 33_600 },
+  { id: "CRE-Z001", name: "Zalo message + banner", startDate: "07/06/2026", status: "Đang chạy", sku: "SP-008", spendK: 430, impressions: 1_200_000, reach: 980_000, clicks: 3600, conversions: 72, cpa: 5972, messages: 1800, ctr: 3.0, cpc: 119, cpm: 358, pageLikes: 0, postLikes: 0, engagement: 7_200 },
 ];
 
 // ---- Bảng màu cho chip kênh / loại creative ----
@@ -203,11 +199,4 @@ export const CHANNEL_STYLE: Record<Channel, string> = {
   TikTok: "text-gray-300",
   Google: "text-red-400",
   Zalo: "text-cyan-400",
-};
-
-export const CREATIVE_TYPE_STYLE: Record<CreativeType, string> = {
-  Video: "bg-violet-500/15 text-violet-400",
-  Image: "bg-blue-500/15 text-blue-400",
-  Carousel: "bg-green-500/15 text-green-400",
-  Banner: "bg-orange-500/15 text-orange-400",
 };
