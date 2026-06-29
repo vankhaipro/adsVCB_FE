@@ -35,8 +35,8 @@ import {
 import {
   productionContentData,
   topProductionContent,
-  topSkuDataRecord,
-  topSkuCreateRecord,
+  topSkuDataRecord as mockTopSkuDataRecord,
+  topSkuCreateRecord as mockTopSkuCreateRecord,
   linePerformanceDataRecord,
   linePerformanceCreateRecord,
   contentStylePerformance,
@@ -57,6 +57,7 @@ type Report = {
   byConcept: Grp[];
   byLine: Grp[];
   byTeam: Grp[];
+  byProduct: Grp[];
   winRate: { win: number; notWin: number; total: number };
   channelsByPlatform: { name: string; count: number }[];
   trendByPlatform: { date: string; FACEBOOK: number; TIKTOK: number; INSTAGRAM: number; YOUTUBE: number }[];
@@ -130,6 +131,9 @@ export default function ContentOverviewPage() {
   const topVideosByView = report?.topVideos ? report.topVideos.map((v, i) => ({ id: i + 1, caption: v.caption || "", link: v.postUrl || "#", views: fmtNum(v.views) })) : [];
   const topChannelsByView = report?.topChannels ? report.topChannels.map((c) => ({ platform: PLATFORM_LABEL[c.platform] || c.platform, name: c.name, views: fmtNum(c.views), follows: fmtNum(c.followers) })) : [];
   const topStaffByView = report?.topStaff ? report.topStaff.map((s, i) => ({ id: i + 1, name: s.name, team: s.team || "-", views: fmtNum(s.views) })) : [];
+  const realTopSkuData = report?.byProduct ? report.byProduct.filter(x => x.name !== 'Khác').map(x => ({ sku: x.name, count: x.count, views: fmtNum(x.views) })).slice(0, 10) : [];
+  const topSkuDataRecord = realTopSkuData.length ? realTopSkuData : mockTopSkuDataRecord;
+  const topSkuCreateRecord = realTopSkuData.length ? realTopSkuData : mockTopSkuCreateRecord;
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">

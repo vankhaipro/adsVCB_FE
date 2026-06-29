@@ -201,9 +201,6 @@ export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
               <Th>Danh mục</Th>
               <Th>Kênh</Th>
               <Th align="right">Chi tiêu</Th>
-              <Th align="right">Doanh thu (Sapo)</Th>
-              <Th align="right">Đơn hàng (Sapo)</Th>
-              <Th align="right">SL bán</Th>
               <Th align="right">CPA</Th>
               <Th align="right">ROAS</Th>
               <Th align="right">CTR</Th>
@@ -219,9 +216,6 @@ export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
                 <td className="px-3 py-2.5 text-muted-foreground">{s.category}</td>
                 <td className="px-3 py-2.5"><ChannelChip channel={s.channel as any} /></td>
                 <td className="px-3 py-2.5 text-right font-medium text-foreground">{fmtVndShort(s.spend)}</td>
-                <td className="px-3 py-2.5 text-right font-medium text-green-400">{fmtVndShort(s.revenue)}</td>
-                <td className="px-3 py-2.5 text-right text-blue-400">{fmtNum(s.orders)}</td>
-                <td className="px-3 py-2.5 text-right">{fmtNum(s.sold)}</td>
                 <td className="px-3 py-2.5 text-right">{s.cpa > 0 ? fmtVndShort(s.cpa) : "—"}</td>
                 <td className={`px-3 py-2.5 text-right font-semibold ${roasColor(s.roas)}`}>{fmtRoas(s.roas)}</td>
                 <td className="px-3 py-2.5 text-right">{s.ctr.toFixed(2)}%</td>
@@ -231,7 +225,7 @@ export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
             ))}
             {filteredRows.length === 0 && (
               <tr>
-                <td colSpan={13} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                   Không tìm thấy SKU nào.
                 </td>
               </tr>
@@ -242,9 +236,7 @@ export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
               <tr>
                 <td className="px-3 py-3" colSpan={4}>TỔNG ({filteredRows.length} SKU)</td>
                 <td className="px-3 py-3 text-right text-foreground">{fmtVndShort(totals.spend)}</td>
-                <td className="px-3 py-3 text-right text-green-400">{fmtVndShort(totals.revenue)}</td>
-                <td className="px-3 py-3 text-right text-blue-400">{fmtNum(totals.orders)}</td>
-                <td className="px-3 py-3" colSpan={6} />
+                <td className="px-3 py-3" colSpan={5} />
               </tr>
             </tfoot>
           )}

@@ -81,8 +81,8 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
         <table className="w-full text-xs text-left whitespace-nowrap">
           <thead className="border-y border-border bg-card">
             <tr>
-              <Th>Mã CL</Th>
               <Th>Tên chiến dịch</Th>
+              <Th>Tuyến ND</Th>
               <Th>Kênh</Th>
               <Th>Mục tiêu</Th>
               <Th>Trạng thái</Th>
@@ -95,7 +95,6 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
               <Th align="right">CPC</Th>
               <Th align="right">CPM</Th>
               <Th align="right">Chuyển đổi</Th>
-              <Th align="right">Doanh thu (Sapo)</Th>
               <Th align="right">ROAS</Th>
               <Th align="right">Frequency</Th>
             </tr>
@@ -103,11 +102,18 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
           <tbody className="divide-y divide-border text-foreground">
             {rows.map((c) => (
               <tr key={c.id} className="hover:bg-card/40">
-                <td className="px-3 py-2.5 font-semibold text-blue-400">{c.contentLine}</td>
                 <td className="px-3 py-2.5 text-foreground max-w-[280px] truncate" title={c.name}>
                   {c.name}
                 </td>
-                <td className="px-3 py-2.5"><ChannelChip channel={c.channel} /></td>
+                <td className="px-3 py-2.5 font-semibold text-blue-400 text-center">{c.contentLine}</td>
+                <td className="px-3 py-2.5">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-medium text-foreground max-w-[160px] truncate" title={c.pageName || c.channel}>
+                      {c.pageName || c.channel}
+                    </span>
+                    <span className="scale-90 origin-left"><ChannelChip channel={c.channel} /></span>
+                  </div>
+                </td>
                 <td className="px-3 py-2.5 text-muted-foreground">{c.objective}</td>
                 <td className="px-3 py-2.5"><StatusPill status={c.status} /></td>
                 <td className="px-3 py-2.5 text-right text-muted-foreground">
@@ -121,14 +127,13 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
                 <td className="px-3 py-2.5 text-right">{c.cpc > 0 ? fmtVndShort(c.cpc) : "—"}</td>
                 <td className="px-3 py-2.5 text-right">{c.cpm > 0 ? fmtVndShort(c.cpm) : "—"}</td>
                 <td className="px-3 py-2.5 text-right font-medium text-blue-400">{fmtNum(c.conversions)}</td>
-                <td className="px-3 py-2.5 text-right font-medium text-green-400">{fmtVndShort(c.revenue)}</td>
                 <td className={`px-3 py-2.5 text-right font-semibold ${roasColor(c.roas)}`}>{fmtRoas(c.roas)}</td>
                 <td className="px-3 py-2.5 text-right text-muted-foreground">{c.frequency.toFixed(2)}</td>
               </tr>
             ))}
             {campaigns.length === 0 && (
               <tr>
-                <td colSpan={17} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={16} className="px-4 py-8 text-center text-muted-foreground">
                   Không tìm thấy chiến dịch nào trong khoảng thời gian này.
                 </td>
               </tr>
@@ -147,7 +152,6 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
                 <td className="px-3 py-3 text-right">{totals.cpc > 0 ? fmtVndShort(totals.cpc) : "—"}</td>
                 <td className="px-3 py-3 text-right text-muted-foreground">—</td>
                 <td className="px-3 py-3 text-right text-blue-400">{fmtNum(totals.conversions)}</td>
-                <td className="px-3 py-3 text-right text-green-400">{fmtVndShort(totals.revenue)}</td>
                 <td className="px-3 py-3 text-right text-green-400">{fmtRoas(totals.roas)}</td>
                 <td className="px-3 py-3 text-right text-muted-foreground">—</td>
               </tr>
