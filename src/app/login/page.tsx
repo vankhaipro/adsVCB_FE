@@ -123,12 +123,8 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Hint */}
-          <p className="text-xs text-muted-foreground text-center mt-6">
-            Tài khoản mặc định: <span className="text-muted-foreground">admin@adsvcb.com / Admin@123</span>
-          </p>
         </div>
-
+        
         <p className="text-center text-xs text-muted-foreground mt-6">
           © 2026 Viễn Chí Bảo Manager. All rights reserved.
         </p>
