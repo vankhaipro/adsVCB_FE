@@ -69,17 +69,33 @@ export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
       return Math.abs(hash);
     }
 
-    // 1. Group ads metrics by SKU
-    const adsBySku: Record<string, { spend: number; clicks: number; impressions: number; conversions: number; channel: string }> = {};
+    const adsBySku: Record<string, { spend: number; clicks: number; impressions: number; conversions: number; channel: string; adsCount: number; likes: number; messages: number }> = {};
     for (const c of campaigns) {
       const sku = getSkuFromCampaign(c.name, c.id);
       if (!adsBySku[sku]) {
-        adsBySku[sku] = { spend: 0, clicks: 0, impressions: 0, conversions: 0, channel: c.channel || "Facebook" };
+        adsBySku[sku] = { spend: 0, clicks: 0, impressions: 0, conversions: 0, channel: c.pageName || c.channel || "Facebook", adsCount: 0, likes: 0, messages: 0 };
       }
-      adsBySku[sku].spend += c.spend;
-      adsBySku[sku].clicks += c.clicks;
-      adsBySku[sku].impressions += c.impressions;
-      adsBySku[sku].conversions += c.conversions;
+      
+      let adsCount = 0;
+      if (c.adSets && Array.isArray(c.adSets) && c.adSets.length > 0) {
+        c.adSets.forEach((as: any) => {
+          if (as.ads && Array.isArray(as.ads) && as.ads.length > 0) {
+            adsCount += as.ads.length;
+          } else {
+            adsCount += 1;
+          }
+        });
+      } else {
+        adsCount = Math.max(1, Math.floor(c.spend / 2000000));
+      }
+
+      adsBySku[sku].spend += c.spend || 0;
+      adsBySku[sku].clicks += c.clicks || 0;
+      adsBySku[sku].impressions += c.impressions || 0;
+      adsBySku[sku].conversions += c.conversions || 0;
+      adsBySku[sku].likes += c.likes || 0;
+      adsBySku[sku].messages += c.messages || 0;
+      adsBySku[sku].adsCount += adsCount;
     }
 
     // 2. Build map of Sapo SKUs
@@ -93,36 +109,25 @@ export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
 
     const result = Array.from(allSkus).map((sku) => {
       const sapoItem = sapoMap.get(sku) || { revenue: 0, quantity: 0, lines: 0 };
-      const adsItem = adsBySku[sku] || { spend: 0, clicks: 0, impressions: 0, conversions: 0, channel: "Facebook" };
+      const adsItem = adsBySku[sku] || { spend: 0, clicks: 0, impressions: 0, conversions: 0, channel: "Facebook", adsCount: 0, likes: 0, messages: 0 };
 
       const spend = adsItem.spend;
-      const revenue = sapoItem.revenue;
-      const orders = sapoItem.lines;
-      const sold = sapoItem.quantity;
-      const cpa = adsItem.conversions > 0 ? spend / adsItem.conversions : 0;
-      const roas = spend > 0 ? revenue / spend : 0;
-      const ctr = adsItem.impressions > 0 ? (adsItem.clicks / adsItem.impressions) * 100 : 0;
-      const cpc = adsItem.clicks > 0 ? spend / adsItem.clicks : 0;
-      const aov = orders > 0 ? revenue / orders : 0;
+      const adsCount = adsItem.adsCount;
+      const likes = adsItem.likes;
+      const messages = adsItem.messages;
+
+      const costPerLike = likes > 0 ? spend / likes : 0;
+      const costPerMess = messages > 0 ? spend / messages : 0;
 
       return {
         sku,
         name: getProductName(sku),
-        category: sku.startsWith("B") ? "Bạc Chế Tác" : sku.startsWith("N") ? "Moissanite" : "Trang sức bạc",
-        channel: adsItem.channel,
+        adsCount,
         spend,
-        revenue,
-        orders,
-        sold,
-        cpa,
-        roas,
-        ctr,
-        cpc,
-        aov,
-        addToCart: Math.round(adsItem.clicks * 0.15),
-        checkout: 15.4,
-        returnRate: 2.1,
-        stock: 120
+        likes,
+        costPerLike,
+        messages,
+        costPerMess
       };
     });
 
@@ -140,11 +145,12 @@ export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
   const rows = filteredRows.slice(start, start + PER_PAGE);
 
   const totals = useMemo(() => {
-    const t = { spend: 0, revenue: 0, orders: 0 };
+    const t = { spend: 0, adsCount: 0, likes: 0, messages: 0 };
     for (const s of filteredRows) {
       t.spend += s.spend;
-      t.revenue += s.revenue;
-      t.orders += s.orders;
+      t.adsCount += s.adsCount;
+      t.likes += s.likes;
+      t.messages += s.messages;
     }
     return t;
   }, [filteredRows]);
@@ -198,14 +204,12 @@ export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
             <tr>
               <Th>SKU</Th>
               <Th>Tên sản phẩm</Th>
-              <Th>Danh mục</Th>
-              <Th>Kênh</Th>
-              <Th align="right">Chi tiêu</Th>
-              <Th align="right">CPA</Th>
-              <Th align="right">ROAS</Th>
-              <Th align="right">CTR</Th>
-              <Th align="right">CPC</Th>
-              <Th align="right">AOV</Th>
+              <Th align="right">Số quảng cáo</Th>
+              <Th align="right">Tổng chi tiêu</Th>
+              <Th align="right">Lượt thích Trang</Th>
+              <Th align="right">Chi phí/Like page</Th>
+              <Th align="right">Tin nhắn</Th>
+              <Th align="right">Chi phí/mess</Th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border text-foreground">
@@ -213,19 +217,17 @@ export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
               <tr key={s.sku} className="hover:bg-card/40">
                 <td className="px-3 py-2.5 font-semibold text-blue-400">{s.sku}</td>
                 <td className="px-3 py-2.5 text-foreground">{s.name}</td>
-                <td className="px-3 py-2.5 text-muted-foreground">{s.category}</td>
-                <td className="px-3 py-2.5"><ChannelChip channel={s.channel as any} /></td>
+                <td className="px-3 py-2.5 text-right font-medium">{fmtNum(s.adsCount)}</td>
                 <td className="px-3 py-2.5 text-right font-medium text-foreground">{fmtVndShort(s.spend)}</td>
-                <td className="px-3 py-2.5 text-right">{s.cpa > 0 ? fmtVndShort(s.cpa) : "—"}</td>
-                <td className={`px-3 py-2.5 text-right font-semibold ${roasColor(s.roas)}`}>{fmtRoas(s.roas)}</td>
-                <td className="px-3 py-2.5 text-right">{s.ctr.toFixed(2)}%</td>
-                <td className="px-3 py-2.5 text-right">{s.cpc > 0 ? fmtVndShort(s.cpc) : "—"}</td>
-                <td className="px-3 py-2.5 text-right">{s.aov > 0 ? fmtVndShort(s.aov) : "—"}</td>
+                <td className="px-3 py-2.5 text-right">{fmtNum(s.likes)}</td>
+                <td className="px-3 py-2.5 text-right font-medium">{s.costPerLike > 0 ? fmtVndShort(s.costPerLike) : "—"}</td>
+                <td className="px-3 py-2.5 text-right">{fmtNum(s.messages)}</td>
+                <td className="px-3 py-2.5 text-right font-medium">{s.costPerMess > 0 ? fmtVndShort(s.costPerMess) : "—"}</td>
               </tr>
             ))}
             {filteredRows.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                   Không tìm thấy SKU nào.
                 </td>
               </tr>
@@ -234,9 +236,13 @@ export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
           {filteredRows.length > 0 && (
             <tfoot className="border-t border-border bg-card font-semibold text-foreground">
               <tr>
-                <td className="px-3 py-3" colSpan={4}>TỔNG ({filteredRows.length} SKU)</td>
+                <td className="px-3 py-3" colSpan={2}>TỔNG ({filteredRows.length} SKU)</td>
+                <td className="px-3 py-3 text-right">{fmtNum(totals.adsCount)}</td>
                 <td className="px-3 py-3 text-right text-foreground">{fmtVndShort(totals.spend)}</td>
-                <td className="px-3 py-3" colSpan={5} />
+                <td className="px-3 py-3 text-right">{fmtNum(totals.likes)}</td>
+                <td className="px-3 py-3 text-right"></td>
+                <td className="px-3 py-3 text-right">{fmtNum(totals.messages)}</td>
+                <td className="px-3 py-3 text-right"></td>
               </tr>
             </tfoot>
           )}
