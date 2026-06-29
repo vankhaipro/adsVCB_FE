@@ -764,29 +764,29 @@ function OverviewInner() {
                   {/* Donut: Budget by Channel */}
                   <div className="lg:col-span-4 bg-background border border-border rounded-xl p-5">
                     <h3 className="text-sm font-semibold text-foreground mb-3">Phân bổ ngân sách theo kênh</h3>
-                    <div className="flex gap-4 items-start">
+                    <div className="flex flex-col gap-5 items-center">
                       {/* Donut */}
-                      <div className="w-[160px] h-[160px] shrink-0">
+                      <div className="w-[200px] h-[200px] shrink-0">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                            <Pie data={donutData} cx="50%" cy="50%" innerRadius={45} outerRadius={70}
+                            <Pie data={donutData} cx="50%" cy="50%" innerRadius={65} outerRadius={95}
                               paddingAngle={1} dataKey="value" stroke="none">
                               {donutData.map((_, i) => <Cell key={i} fill={donutData[i].color} />)}
-                              <Label value={fmtVnd(totalSpend)} position="center" fill={chart.labelFill} fontSize={10} fontWeight="bold" />
+                              <Label value={fmtVnd(totalSpend)} position="center" fill={chart.labelFill} fontSize={11} fontWeight="bold" />
                             </Pie>
                             <RechartsTooltip contentStyle={chart.tooltip} formatter={(v) => fmtVnd(Number(v))} />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
                       {/* Legend */}
-                      <div className="flex flex-col gap-1 text-[10px] overflow-y-auto max-h-[160px] flex-1">
+                      <div className="flex flex-col gap-2 text-[11px] overflow-y-auto max-h-[140px] w-full px-2 custom-scrollbar">
                         {donutData.map((d, i) => (
-                          <div key={i} className="flex items-center justify-between gap-1 min-w-0">
-                            <div className="flex items-center gap-1 min-w-0">
-                              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.color }}/>
+                          <div key={i} className="flex items-center justify-between gap-2 min-w-0">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: d.color }}/>
                               <span className="text-muted-foreground truncate" title={d.name}>{d.name}</span>
                             </div>
-                            <span className="text-foreground shrink-0 ml-1">
+                            <span className="text-foreground shrink-0 font-medium ml-1">
                               {totalSpend > 0 ? ((d.value / totalSpend) * 100).toFixed(1) : 0}%
                             </span>
                           </div>
