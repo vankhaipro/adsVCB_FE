@@ -45,16 +45,17 @@ export function Th({
   align?: "left" | "right" | "center";
   className?: string;
 }) {
-  const a = align === "right" ? "text-right justify-end" : align === "center" ? "text-center justify-center" : "text-left";
+  const a = align === "right" ? "justify-end" : align === "center" ? "justify-center" : "justify-start";
+  const thAlign = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
   return (
-    <th className={`px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap ${className}`}>
-      <span className={`inline-flex items-center gap-1 ${a}`}>
+    <th className={`px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap ${thAlign} ${className}`}>
+      <div className={`flex items-center gap-1 ${a} w-full`}>
         {children}
         <span className="flex flex-col -space-y-1 text-muted-foreground">
           <CaretUp size={8} weight="fill" />
           <CaretDown size={8} weight="fill" />
         </span>
-      </span>
+      </div>
     </th>
   );
 }
