@@ -323,6 +323,10 @@ export default function MetaContentPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+
   // Active filters list
   const [activeFilters, setActiveFilters] = useState([
     { id: "date", label: "date trong khoảng thời gian: 30 ngày qua" },
@@ -408,6 +412,15 @@ export default function MetaContentPage() {
     acc.comments += curr.comments || 0;
     return acc;
   }, { totalViews: 0, totalReach: 0, totalLikes: 0, totalComments: 0, totalShares: 0, views: 0, reach: 0, likes: 0, comments: 0 });
+
+  // Reset page when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeFilters]);
+
+  // Pagination logic
+  const totalPages = Math.max(1, Math.ceil(filteredPosts.length / itemsPerPage));
+  const paginatedPosts = filteredPosts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
 
   return (
@@ -521,7 +534,7 @@ export default function MetaContentPage() {
             </thead>
 
             <tbody className="divide-y divide-border text-foreground">
-              {filteredPosts.map((post) => {
+              {paginatedPosts.map((post) => {
                 const isSelected = selectedIds.includes(post.id);
                 return (
                   <tr
@@ -687,6 +700,48 @@ export default function MetaContentPage() {
               </tr>
             </tfoot>
           </table>
+        </div>
+      </div>
+      
+      {/* Pagination Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground bg-card border border-border rounded-xl p-3 shadow-sm">
+        <div className="flex items-center gap-2">
+          <span>Hiển thị</span>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="bg-background border border-border rounded px-2 py-1 outline-none focus:border-blue-500 text-foreground"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={500}>500</option>
+          </select>
+          <span>bản ghi / trang</span>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <span>Trang {currentPage} / {totalPages} (Tổng số {filteredPosts.length} bản ghi)</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded bg-muted/80 border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-foreground font-medium"
+            >
+              Trước
+            </button>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded bg-muted/80 border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-foreground font-medium"
+            >
+              Sau
+            </button>
+          </div>
         </div>
       </div>
       

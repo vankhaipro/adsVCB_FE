@@ -369,6 +369,10 @@ export default function TiktokContentPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+
   // Active filters list
   const [activeFilters, setActiveFilters] = useState([
     { id: "date", label: "date trong khoảng thời gian: 30 ngày qua" },
@@ -440,6 +444,38 @@ export default function TiktokContentPage() {
       vid.staff.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
+
+  const totals = filteredVideos.reduce((acc, curr) => {
+    acc.totalViews += curr.totalViews || 0;
+    acc.totalViewsPaid += curr.totalViewsPaid || 0;
+    acc.totalViewsOrganic += curr.totalViewsOrganic || 0;
+    acc.totalReach += curr.totalReach || 0;
+    acc.totalLikes += curr.totalLikes || 0;
+    acc.totalComments += curr.totalComments || 0;
+    acc.totalShares += curr.totalShares || 0;
+    acc.views += curr.views || 0;
+    acc.viewsPaid += curr.viewsPaid || 0;
+    acc.viewsOrganic += curr.viewsOrganic || 0;
+    acc.reach += curr.reach || 0;
+    acc.likes += curr.likes || 0;
+    acc.comments += curr.comments || 0;
+    acc.shares += curr.shares || 0;
+    return acc;
+  }, {
+    totalViews: 0, totalViewsPaid: 0, totalViewsOrganic: 0, totalReach: 0, totalLikes: 0, totalComments: 0, totalShares: 0,
+    views: 0, viewsPaid: 0, viewsOrganic: 0, reach: 0, likes: 0, comments: 0, shares: 0
+  });
+
+  const avgWatchTimeTotal = filteredVideos.length > 0 ? filteredVideos.reduce((sum, v) => sum + (v.avgWatchTime || 0), 0) / filteredVideos.length : 0;
+
+  // Reset page when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeFilters]);
+
+  // Pagination logic
+  const totalPages = Math.max(1, Math.ceil(filteredVideos.length / itemsPerPage));
+  const paginatedVideos = filteredVideos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="flex flex-col gap-4 animate-in fade-in duration-300 w-full max-w-full text-foreground">
@@ -556,7 +592,7 @@ export default function TiktokContentPage() {
             </thead>
 
             <tbody className="divide-y divide-border text-foreground">
-              {filteredVideos.map((vid) => {
+              {paginatedVideos.map((vid) => {
                 const isSelected = selectedIds.includes(vid.id);
                 return (
                   <tr
@@ -686,12 +722,12 @@ export default function TiktokContentPage() {
               })}
             </tbody>
 
-            {/* Total Footer matching user screenshot sums exactly */}
+            {/* Total Footer */}
             <tfoot>
               <tr className="bg-card text-foreground font-bold">
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-center"></td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border font-black">
-                  TỔNG (1844)
+                  TỔNG ({filteredVideos.length})
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
@@ -703,55 +739,96 @@ export default function TiktokContentPage() {
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border"></td>
                 
-                {/* Sums matched exactly to TikTok screenshots */}
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
-                  1.018.122
+                  {totals.totalViews.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
-                  0
+                  {totals.totalViewsPaid.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
-                  0
+                  {totals.totalViewsOrganic.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
-                  0
-                </td>
-                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
-                  23.563
+                  {totals.totalReach.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
-                  2.049
-                </td>
-                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
-                  8.107
+                  {totals.totalLikes.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
-                  16.042.176
+                  {totals.totalComments.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
-                  0
+                  {totals.totalShares.toLocaleString("vi-VN")}
+                </td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono">
+                  {totals.views.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
-                  0
+                  {totals.viewsPaid.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
-                  0
+                  {totals.viewsOrganic.toLocaleString("vi-VN")}
+                </td>
+                <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
+                  {totals.reach.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-primary">
-                  298.974
+                  {totals.likes.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
-                  21.027
+                  {totals.comments.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-r border-border border-t-2 border-border text-right font-black font-mono text-muted-foreground">
-                  44.930
+                  {totals.shares.toLocaleString("vi-VN")}
                 </td>
                 <td className="sticky bottom-0 z-10 bg-card py-3 px-4 border-t-2 border-border text-right font-black font-mono text-amber-500">
-                  8,51
+                  {avgWatchTimeTotal.toLocaleString("vi-VN", { minimumFractionDigits: 2 })}
                 </td>
               </tr>
             </tfoot>
           </table>
+        </div>
+      </div>
+      
+      {/* Pagination Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground bg-card border border-border rounded-xl p-3 shadow-sm">
+        <div className="flex items-center gap-2">
+          <span>Hiển thị</span>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="bg-background border border-border rounded px-2 py-1 outline-none focus:border-blue-500 text-foreground"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={500}>500</option>
+          </select>
+          <span>bản ghi / trang</span>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <span>Trang {currentPage} / {totalPages} (Tổng số {filteredVideos.length} bản ghi)</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded bg-muted/80 border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-foreground font-medium"
+            >
+              Trước
+            </button>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded bg-muted/80 border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-foreground font-medium"
+            >
+              Sau
+            </button>
+          </div>
         </div>
       </div>
       
