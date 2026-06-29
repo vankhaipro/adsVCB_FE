@@ -23,31 +23,30 @@ export type KpiItem = {
   iconBg: string;
 };
 
-type PillGroupProps = {
+type FilterSelectProps = {
   label: string;
   items: FilterPill[];
   value: string;
   onChange: (v: string) => void;
 };
 
-function PillGroup({ label, items, value, onChange }: PillGroupProps) {
+function FilterSelect({ label, items, value, onChange }: FilterSelectProps) {
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-xs text-muted-foreground font-medium shrink-0">{label}</span>
-      {items.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => onChange(value === item.id ? "ALL" : item.id)}
-          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-            value === item.id
-              ? "bg-blue-600 text-foreground"
-              : "bg-card text-muted-foreground hover:bg-muted"
-          }`}
-        >
-          {item.label}
-        </button>
-      ))}
+    <div className="flex items-center gap-1.5 bg-background border border-border hover:bg-card transition-colors rounded-lg px-3 py-2 text-xs">
+      <span className="text-muted-foreground font-medium shrink-0">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-transparent text-foreground outline-none cursor-pointer font-medium pr-1 appearance-none"
+      >
+        <option value="ALL">Tất cả</option>
+        {items.map((item) => (
+          <option key={item.id} value={item.id}>
+            {item.label}
+          </option>
+        ))}
+      </select>
+      <CaretDown size={12} className="text-muted-foreground shrink-0 pointer-events-none" />
     </div>
   );
 }
@@ -160,10 +159,10 @@ export default function OverviewHeader({
           />
         </div>
 
-        {/* Nhóm bộ lọc inline */}
-        <PillGroup label="Kênh:" items={CHANNELS} value={platform} onChange={onPlatformChange} />
-        <PillGroup label="Trạng thái:" items={STATUSES} value={status} onChange={onStatusChange} />
-        <PillGroup label="Mục tiêu:" items={OBJECTIVES} value={objective} onChange={onObjectiveChange} />
+        {/* Nhóm bộ lọc dạng Select (Compact) */}
+        <FilterSelect label="Kênh:" items={CHANNELS} value={platform} onChange={onPlatformChange} />
+        <FilterSelect label="Trạng thái:" items={STATUSES} value={status} onChange={onStatusChange} />
+        <FilterSelect label="Mục tiêu:" items={OBJECTIVES} value={objective} onChange={onObjectiveChange} />
 
         {/* Bên phải: khoảng thời gian + hành động */}
         <div className="ml-auto flex items-center gap-2">
