@@ -238,7 +238,7 @@ export default function ChannelsPage() {
             <Broadcast size={24} className="text-blue-400" /> Kênh organic
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {channels.length} kênh — kênh BẬT sẽ được lấy dữ liệu qua RapidAPI.
+            {channels.length} kênh
           </p>
         </div>
         <button
