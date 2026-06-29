@@ -132,10 +132,12 @@ function SidebarContent() {
     <div className="w-[210px] h-full flex flex-col bg-card text-foreground border-r border-border flex-shrink-0">
       {/* Logo */}
       <div className="h-[52px] flex items-center px-4 font-bold text-foreground text-base border-b border-border">
-        <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center mr-2 text-xs">
-          A
-        </div>
-        Auto Ads Facebook
+        <img
+          src="/logoN-VienChiBao.png"
+          alt="Viễn Chí Bảo Manager Logo"
+          className="w-6 h-6 object-contain mr-2 rounded-full"
+        />
+        Viễn Chí Bảo Manager
       </div>
 
       <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-6">

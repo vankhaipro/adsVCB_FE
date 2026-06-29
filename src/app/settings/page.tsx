@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Trash, SpinnerGap, UsersThree, User, Trophy, Key, FloppyDisk } from "@phosphor-icons/react";
+import { Plus, Trash, SpinnerGap, UsersThree, User, Trophy, Key, FloppyDisk, Tag } from "@phosphor-icons/react";
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api";
 
-type Team = { id: string; name: string; _count: { employees: number } };
+type Team = { id: string; name: string; industry: string | null; market: string | null; _count: { employees: number } };
 type Employee = { id: string; name: string; code: string | null; team: { id: string; name: string } | null };
 type Account = { id: string; email: string; name: string; role: string };
 
-type Tab = "employees" | "win" | "accounts";
+type Tab = "employees" | "win" | "accounts" | "industry_market";
 
 const inputCls =
   "bg-card border border-border rounded-md px-3 py-2 text-sm text-foreground outline-none focus:border-blue-500 placeholder:text-muted-foreground";
@@ -22,6 +22,8 @@ export default function SettingsPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [teamName, setTeamName] = useState("");
+  const [teamIndustry, setTeamIndustry] = useState("");
+  const [teamMarket, setTeamMarket] = useState("");
   const [empName, setEmpName] = useState("");
   const [empCode, setEmpCode] = useState("");
   const [empTeamId, setEmpTeamId] = useState("");
@@ -38,6 +40,12 @@ export default function SettingsPage() {
   const [accPass, setAccPass] = useState("");
   const [accRole, setAccRole] = useState("ADMIN");
 
+  // --- Ngành / Thị trường ---
+  const [industries, setIndustries] = useState<string[]>([]);
+  const [markets, setMarkets] = useState<string[]>([]);
+  const [newIndustry, setNewIndustry] = useState("");
+  const [newMarket, setNewMarket] = useState("");
+ 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -47,6 +55,10 @@ export default function SettingsPage() {
       ]);
       setTeams(t); setEmployees(e); setAccounts(u);
       setWinViews(String(s.win_min_views ?? "")); setWinEng(String(s.win_min_engagement_rate ?? ""));
+      const industriesData = s.industries ? JSON.parse(s.industries) : [];
+      const marketsData = s.markets ? JSON.parse(s.markets) : [];
+      setIndustries(industriesData);
+      setMarkets(marketsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Lỗi tải dữ liệu");
     } finally {
@@ -62,7 +74,15 @@ export default function SettingsPage() {
 
   const addTeam = guard(async () => {
     if (!teamName.trim()) return;
-    await apiPost("/teams", { name: teamName.trim() }); setTeamName(""); await load();
+    await apiPost("/teams", {
+      name: teamName.trim(),
+      industry: teamIndustry || undefined,
+      market: teamMarket || undefined,
+    });
+    setTeamName("");
+    setTeamIndustry("");
+    setTeamMarket("");
+    await load();
   }, "Thêm team lỗi");
 
   const addEmployee = guard(async () => {
@@ -103,8 +123,65 @@ export default function SettingsPage() {
     await apiDelete(`/users/${a.id}`); await load();
   }, "Xóa tài khoản lỗi")();
 
+  const addIndustry = async () => {
+    const val = newIndustry.trim();
+    if (!val) return;
+    if (industries.includes(val)) {
+      setError("Ngành này đã tồn tại");
+      return;
+    }
+    const updated = [...industries, val];
+    try {
+      await apiPatch("/settings", { industries: JSON.stringify(updated) });
+      setIndustries(updated);
+      setNewIndustry("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lỗi thêm ngành");
+    }
+  };
+
+  const delIndustry = async (name: string) => {
+    if (!confirm(`Xóa ngành "${name}"?`)) return;
+    const updated = industries.filter((x) => x !== name);
+    try {
+      await apiPatch("/settings", { industries: JSON.stringify(updated) });
+      setIndustries(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lỗi xóa ngành");
+    }
+  };
+
+  const addMarket = async () => {
+    const val = newMarket.trim();
+    if (!val) return;
+    if (markets.includes(val)) {
+      setError("Thị trường này đã tồn tại");
+      return;
+    }
+    const updated = [...markets, val];
+    try {
+      await apiPatch("/settings", { markets: JSON.stringify(updated) });
+      setMarkets(updated);
+      setNewMarket("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lỗi thêm thị trường");
+    }
+  };
+
+  const delMarket = async (name: string) => {
+    if (!confirm(`Xóa thị trường "${name}"?`)) return;
+    const updated = markets.filter((x) => x !== name);
+    try {
+      await apiPatch("/settings", { markets: JSON.stringify(updated) });
+      setMarkets(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lỗi xóa thị trường");
+    }
+  };
+ 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "employees", label: "Nhân viên", icon: <User size={16} /> },
+    { id: "industry_market", label: "Ngành & Thị trường", icon: <Tag size={16} /> },
     { id: "win", label: "Ngưỡng Win", icon: <Trophy size={16} /> },
     { id: "accounts", label: "Tài khoản", icon: <Key size={16} /> },
   ];
@@ -144,20 +221,86 @@ export default function SettingsPage() {
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <UsersThree size={18} className="text-blue-400" /> Team ({teams.length})
             </h3>
-            <div className="flex gap-2 mb-4">
-              <input className={`${inputCls} flex-1`} placeholder="Tên team (vd: K4)" value={teamName}
-                onChange={(e) => setTeamName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addTeam()} />
-              <button onClick={addTeam} className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-foreground text-sm rounded-md">
-                <Plus size={16} /> Thêm
-              </button>
+            <div className="flex flex-col gap-2 mb-4">
+              <div className="flex gap-2">
+                <input className={`${inputCls} flex-1`} placeholder="Tên team (vd: K4)" value={teamName}
+                  onChange={(e) => setTeamName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addTeam()} />
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={teamIndustry}
+                  onChange={(e) => setTeamIndustry(e.target.value)}
+                  className={`${inputCls} flex-1`}
+                >
+                  <option value="">— Ngành mặc định —</option>
+                  {industries.map((ind) => (
+                    <option key={ind} value={ind}>{ind}</option>
+                  ))}
+                </select>
+                <select
+                  value={teamMarket}
+                  onChange={(e) => setTeamMarket(e.target.value)}
+                  className={`${inputCls} flex-1`}
+                >
+                  <option value="">— Thị trường mặc định —</option>
+                  {markets.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <button onClick={addTeam} className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-foreground text-sm rounded-md shrink-0 cursor-pointer">
+                  <Plus size={16} /> Thêm
+                </button>
+              </div>
             </div>
             <div className="flex flex-col divide-y divide-border">
               {teams.length === 0 ? (
                 <span className="text-xs text-muted-foreground py-4 text-center">Chưa có team nào.</span>
               ) : teams.map((t) => (
-                <div key={t.id} className="flex items-center justify-between py-2.5 text-sm">
-                  <span className="text-foreground">{t.name} <span className="text-muted-foreground text-xs">({t._count.employees} nv)</span></span>
-                  <button onClick={() => delTeam(t)} className="text-muted-foreground hover:text-red-400"><Trash size={16} /></button>
+                <div key={t.id} className="flex items-center justify-between py-2.5 text-sm gap-2">
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
+                    <span className="text-foreground font-medium shrink-0">{t.name} <span className="text-muted-foreground text-xs">({t._count.employees} nv)</span></span>
+                    
+                    {/* Select Ngành */}
+                    <select
+                      value={t.industry ?? ""}
+                      onChange={async (e) => {
+                        const val = e.target.value || null;
+                        try {
+                          await apiPatch(`/teams/${t.id}`, { industry: val });
+                          await load();
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : "Lỗi đổi ngành");
+                        }
+                      }}
+                      className="bg-card border border-border rounded px-1.5 py-0.5 text-[11px] text-muted-foreground focus:text-foreground outline-none focus:border-blue-500"
+                    >
+                      <option value="">— Ngành mặc định —</option>
+                      {industries.map((ind) => (
+                        <option key={ind} value={ind}>{ind}</option>
+                      ))}
+                    </select>
+
+                    {/* Select Thị trường */}
+                    <select
+                      value={t.market ?? ""}
+                      onChange={async (e) => {
+                        const val = e.target.value || null;
+                        try {
+                          await apiPatch(`/teams/${t.id}`, { market: val });
+                          await load();
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : "Lỗi đổi thị trường");
+                        }
+                      }}
+                      className="bg-card border border-border rounded px-1.5 py-0.5 text-[11px] text-muted-foreground focus:text-foreground outline-none focus:border-blue-500"
+                    >
+                      <option value="">— Thị trường mặc định —</option>
+                      {markets.map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button onClick={() => delTeam(t)} className="text-muted-foreground hover:text-red-400 shrink-0"><Trash size={16} /></button>
                 </div>
               ))}
             </div>
@@ -198,6 +341,86 @@ export default function SettingsPage() {
                   <button onClick={() => delEmployee(e)} className="text-muted-foreground hover:text-red-400 shrink-0"><Trash size={16} /></button>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      ) : tab === "industry_market" ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Ngành */}
+          <div className="bg-background border border-border rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Tag size={18} className="text-blue-400" /> Danh sách Ngành ({industries.length})
+            </h3>
+            <div className="flex gap-2 mb-4">
+              <input
+                className={`${inputCls} flex-1`}
+                placeholder="Tên ngành (vd: Đá quý)"
+                value={newIndustry}
+                onChange={(e) => setNewIndustry(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addIndustry()}
+              />
+              <button
+                onClick={addIndustry}
+                className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-foreground text-sm rounded-md cursor-pointer transition-colors"
+              >
+                <Plus size={16} /> Thêm
+              </button>
+            </div>
+            <div className="flex flex-col divide-y divide-border max-h-[400px] overflow-y-auto pr-1">
+              {industries.length === 0 ? (
+                <span className="text-xs text-muted-foreground py-4 text-center">Chưa có ngành nào.</span>
+              ) : (
+                industries.map((ind) => (
+                  <div key={ind} className="flex items-center justify-between py-2.5 text-sm">
+                    <span className="text-foreground font-medium">{ind}</span>
+                    <button
+                      onClick={() => delIndustry(ind)}
+                      className="text-muted-foreground hover:text-red-400 cursor-pointer transition-colors"
+                    >
+                      <Trash size={16} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Thị trường */}
+          <div className="bg-background border border-border rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Tag size={18} className="text-blue-400" /> Danh sách Thị trường ({markets.length})
+            </h3>
+            <div className="flex gap-2 mb-4">
+              <input
+                className={`${inputCls} flex-1`}
+                placeholder="Tên thị trường (vd: US)"
+                value={newMarket}
+                onChange={(e) => setNewMarket(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addMarket()}
+              />
+              <button
+                onClick={addMarket}
+                className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-foreground text-sm rounded-md cursor-pointer transition-colors"
+              >
+                <Plus size={16} /> Thêm
+              </button>
+            </div>
+            <div className="flex flex-col divide-y divide-border max-h-[400px] overflow-y-auto pr-1">
+              {markets.length === 0 ? (
+                <span className="text-xs text-muted-foreground py-4 text-center">Chưa có thị trường nào.</span>
+              ) : (
+                markets.map((m) => (
+                  <div key={m} className="flex items-center justify-between py-2.5 text-sm">
+                    <span className="text-foreground font-medium">{m}</span>
+                    <button
+                      onClick={() => delMarket(m)}
+                      className="text-muted-foreground hover:text-red-400 cursor-pointer transition-colors"
+                    >
+                      <Trash size={16} />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

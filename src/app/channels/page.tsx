@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowsClockwise, SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass,
+  ArrowsClockwise, SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple,
 } from "@phosphor-icons/react";
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api";
 
@@ -19,6 +19,8 @@ type Channel = {
   createdAt: string;
   followers: number;
   lastSyncAt: string | null;
+  industry: string | null;
+  market: string | null;
 };
 
 const PLATFORM_LABEL: Record<string, string> = {
@@ -49,23 +51,42 @@ export default function ChannelsPage() {
   const [staff, setStaff] = useState("");
   const [team, setTeam] = useState("");
   const [channelName, setChannelName] = useState("");
+  const [industry, setIndustry] = useState("");
+  const [market, setMarket] = useState("");
 
-  // Master data nhân sự (gợi ý) — quản lý ở trang Cài đặt
-  const [teamList, setTeamList] = useState<{ id: string; name: string }[]>([]);
+  // Form chỉnh sửa kênh
+  const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
+  const [editUrl, setEditUrl] = useState("");
+  const [editStaff, setEditStaff] = useState("");
+  const [editTeam, setEditTeam] = useState("");
+  const [editChannelName, setEditChannelName] = useState("");
+  const [editIndustry, setEditIndustry] = useState("");
+  const [editMarket, setEditMarket] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Master data nhân sự & cài đặt (gợi ý)
+  const [teamList, setTeamList] = useState<{ id: string; name: string; industry?: string | null; market?: string | null }[]>([]);
   const [empList, setEmpList] = useState<{ id: string; name: string; team: { name: string } | null }[]>([]);
+  const [industryList, setIndustryList] = useState<string[]>([]);
+  const [marketList, setMarketList] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [chs, teams, emps] = await Promise.all([
+      const [chs, teams, emps, settings] = await Promise.all([
         apiGet("/channels"),
         apiGet("/teams"),
         apiGet("/employees"),
+        apiGet("/settings"),
       ]);
       setChannels(chs);
       setTeamList(teams);
       setEmpList(emps);
+      const industriesData = settings.industries ? JSON.parse(settings.industries) : [];
+      const marketsData = settings.markets ? JSON.parse(settings.markets) : [];
+      setIndustryList(industriesData);
+      setMarketList(marketsData);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
     } finally {
@@ -85,13 +106,16 @@ export default function ChannelsPage() {
     setAdding(true);
     setError(null);
     try {
+      const selectedTeam = teamList.find((t) => t.name === team.trim());
       await apiPost("/channels", {
         url: url.trim(),
         staff: staff.trim() || undefined,
         team: team.trim() || undefined,
         channelName: channelName.trim() || undefined,
+        industry: selectedTeam?.industry || undefined,
+        market: selectedTeam?.market || undefined,
       });
-      setUrl(""); setStaff(""); setTeam(""); setChannelName("");
+      setUrl(""); setStaff(""); setTeam(""); setChannelName(""); setIndustry(""); setMarket("");
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Thêm kênh lỗi");
@@ -145,6 +169,63 @@ export default function ChannelsPage() {
     }
   };
 
+  const startEdit = (c: Channel) => {
+    setEditingChannel(c);
+    setEditUrl(c.url ?? "");
+    setEditStaff(c.staff ?? "");
+    setEditTeam(c.team ?? "");
+    setEditChannelName(c.channelName ?? "");
+    setEditIndustry(c.industry ?? "");
+    setEditMarket(c.market ?? "");
+  };
+
+  const saveEdit = async () => {
+    if (!editingChannel) return;
+    if (!editUrl.trim()) {
+      setError("Vui lòng nhập URL kênh");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const selectedTeam = teamList.find((t) => t.name === editTeam.trim());
+      await apiPatch(`/channels/${editingChannel.id}`, {
+        url: editUrl.trim(),
+        staff: editStaff.trim() || null,
+        team: editTeam.trim() || null,
+        channelName: editChannelName.trim() || null,
+        industry: selectedTeam?.industry || null,
+        market: selectedTeam?.market || null,
+      });
+      setEditingChannel(null);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Cập nhật kênh lỗi");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleStaffSelect = (staffName: string) => {
+    setStaff(staffName);
+    if (staffName) {
+      const emp = empList.find((e) => e.name === staffName);
+      if (emp && emp.team?.name) {
+        setTeam(emp.team.name);
+      }
+    }
+  };
+
+  const handleEditStaffSelect = (staffName: string) => {
+    setEditStaff(staffName);
+    if (staffName) {
+      const emp = empList.find((e) => e.name === staffName);
+      if (emp && emp.team?.name) {
+        setEditTeam(emp.team.name);
+      }
+    }
+  };
+
   const inputCls =
     "bg-card border border-border rounded-md px-3 py-2 text-sm text-foreground outline-none focus:border-blue-500 placeholder:text-muted-foreground";
 
@@ -195,31 +276,34 @@ export default function ChannelsPage() {
           </div>
           <div className="flex flex-col gap-1 w-[140px]">
             <label className="text-xs text-muted-foreground">Team</label>
-            <input
+            <select
               className={inputCls}
-              list="team-suggestions"
-              placeholder="Chọn / gõ team"
               value={team}
-              onChange={(e) => setTeam(e.target.value)}
-            />
-            <datalist id="team-suggestions">
-              {teamList.map((t) => <option key={t.id} value={t.name} />)}
-            </datalist>
+              onChange={(e) => {
+                setTeam(e.target.value);
+                setStaff("");
+              }}
+            >
+              <option value="" className="bg-background">— Chọn Team —</option>
+              {teamList.map((t) => (
+                <option key={t.id} value={t.name} className="bg-background">{t.name}</option>
+              ))}
+            </select>
           </div>
           <div className="flex flex-col gap-1 w-[160px]">
             <label className="text-xs text-muted-foreground">Nhân viên</label>
-            <input
+            <select
               className={inputCls}
-              list="staff-suggestions"
-              placeholder="Chọn / gõ nhân viên"
               value={staff}
-              onChange={(e) => setStaff(e.target.value)}
-            />
-            <datalist id="staff-suggestions">
+              onChange={(e) => handleStaffSelect(e.target.value)}
+            >
+              <option value="" className="bg-background">— Chọn Nhân viên —</option>
               {empList
                 .filter((e) => !team.trim() || e.team?.name === team.trim())
-                .map((e) => <option key={e.id} value={e.name} />)}
-            </datalist>
+                .map((e) => (
+                  <option key={e.id} value={e.name} className="bg-background">{e.name}</option>
+                ))}
+            </select>
           </div>
           <button
             onClick={addChannel}
@@ -247,6 +331,8 @@ export default function ChannelsPage() {
                 <tr>
                   <th className="px-4 py-3 font-medium">Nhân viên</th>
                   <th className="px-4 py-3 font-medium">Team</th>
+                  <th className="px-4 py-3 font-medium">Ngành</th>
+                  <th className="px-4 py-3 font-medium">Thị trường</th>
                   <th className="px-4 py-3 font-medium">Tên kênh</th>
                   <th className="px-4 py-3 font-medium">Nền tảng</th>
                   <th className="px-4 py-3 font-medium">ID kênh</th>
@@ -259,13 +345,19 @@ export default function ChannelsPage() {
               </thead>
               <tbody className="divide-y divide-border text-foreground">
                 {channels.length === 0 ? (
-                  <tr><td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">Chưa có kênh nào. Thêm kênh bằng URL ở trên.</td></tr>
+                  <tr><td colSpan={12} className="px-4 py-10 text-center text-muted-foreground">Chưa có kênh nào. Thêm kênh bằng URL ở trên.</td></tr>
                 ) : (
-                  channels.map((c) => (
-                    <tr key={c.id} className="hover:bg-card/40">
-                      <td className="px-4 py-2.5">{c.staff || "—"}</td>
-                      <td className="px-4 py-2.5">{c.team || "—"}</td>
-                      <td className="px-4 py-2.5 font-medium text-foreground max-w-[200px] truncate" title={c.channelName}>{c.channelName}</td>
+                  channels.map((c) => {
+                    const channelTeam = teamList.find((t) => t.name === c.team);
+                    const displayIndustry = channelTeam?.industry ?? c.industry ?? "—";
+                    const displayMarket = channelTeam?.market ?? c.market ?? "—";
+                    return (
+                      <tr key={c.id} className="hover:bg-card/40">
+                        <td className="px-4 py-2.5">{c.staff || "—"}</td>
+                        <td className="px-4 py-2.5">{c.team || "—"}</td>
+                        <td className="px-4 py-2.5">{displayIndustry}</td>
+                        <td className="px-4 py-2.5">{displayMarket}</td>
+                        <td className="px-4 py-2.5 font-medium text-foreground max-w-[200px] truncate" title={c.channelName}>{c.channelName}</td>
                       <td className="px-4 py-2.5">
                         <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${PLATFORM_COLOR[c.platform] || "bg-muted/20 text-muted-foreground"}`}>
                           {PLATFORM_LABEL[c.platform] || c.platform}
@@ -303,16 +395,118 @@ export default function ChannelsPage() {
                           >
                             {syncingId === c.id ? <SpinnerGap size={16} className="animate-spin" /> : <ArrowsClockwise size={16} />}
                           </button>
+                          <button
+                            onClick={() => startEdit(c)}
+                            title="Chỉnh sửa"
+                            className="text-muted-foreground hover:text-yellow-400"
+                          >
+                            <PencilSimple size={16} />
+                          </button>
                           <button onClick={() => remove(c)} title="Xóa kênh" className="text-muted-foreground hover:text-red-400">
                             <Trash size={16} />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal chỉnh sửa */}
+      {editingChannel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-lg bg-card border border-border rounded-xl shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-base font-semibold text-foreground">Chỉnh sửa kênh</h3>
+              <button
+                onClick={() => setEditingChannel(null)}
+                className="text-muted-foreground hover:text-foreground transition-colors text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-muted-foreground font-medium">Tên kênh</label>
+                <input
+                  className={inputCls}
+                  placeholder="Tên kênh"
+                  value={editChannelName}
+                  onChange={(e) => setEditChannelName(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-muted-foreground font-medium">URL kênh *</label>
+                <input
+                  className={inputCls}
+                  placeholder="https://www.tiktok.com/@tenkenh"
+                  value={editUrl}
+                  onChange={(e) => setEditUrl(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-muted-foreground font-medium">Team</label>
+                  <select
+                    className={inputCls}
+                    value={editTeam}
+                    onChange={(e) => {
+                      setEditTeam(e.target.value);
+                      setEditStaff("");
+                    }}
+                  >
+                    <option value="" className="bg-background">— Chọn Team —</option>
+                    {teamList.map((t) => (
+                      <option key={t.id} value={t.name} className="bg-background">{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-muted-foreground font-medium">Nhân viên</label>
+                  <select
+                    className={inputCls}
+                    value={editStaff}
+                    onChange={(e) => handleEditStaffSelect(e.target.value)}
+                  >
+                    <option value="" className="bg-background">— Chọn Nhân viên —</option>
+                    {empList
+                      .filter((e) => !editTeam.trim() || e.team?.name === editTeam.trim())
+                      .map((e) => (
+                        <option key={e.id} value={e.name} className="bg-background">{e.name}</option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-border bg-muted/20">
+              <button
+                onClick={() => setEditingChannel(null)}
+                className="px-4 py-2 border border-border hover:bg-muted text-muted-foreground hover:text-foreground text-sm font-medium rounded-md transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-foreground text-sm font-medium rounded-md transition-colors"
+              >
+                {saving ? <SpinnerGap size={16} className="animate-spin" /> : "Lưu thay đổi"}
+              </button>
+            </div>
           </div>
         </div>
       )}
