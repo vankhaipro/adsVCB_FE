@@ -8,7 +8,7 @@ import {
   CursorClick, ShoppingCart, Lightning, ChartBar,
   type Icon,
 } from "@phosphor-icons/react";
-import { apiGet, fmtVnd } from "@/lib/api";
+import { apiGet, apiPost, fmtVnd } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
 import OverviewHeader, { type KpiItem } from "@/components/overview/OverviewHeader";
 import OverviewBody from "@/components/overview/OverviewBody";
@@ -201,6 +201,7 @@ function OverviewInner() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncingData, setSyncingData] = useState(false);
 
   // Dữ liệu doanh thu thật từ Sapo (theo khoảng thời gian đang chọn)
   const [sapo, setSapo] = useState<SapoData | null>(null);
@@ -307,14 +308,49 @@ function OverviewInner() {
     loadInsights();
   }, [loadInsights]);
 
+  // "Làm mới": chỉ tải lại dữ liệu từ DB (không gọi sync).
   const refresh = async () => {
     setSyncing(true);
     try {
-      await apiGet("/ads/sync");
       await Promise.all([load(), loadSapo(), loadInsights()]);
     } finally {
       setSyncing(false);
     }
+  };
+
+  // "Đồng bộ dữ liệu": kéo dữ liệu mới từ các nguồn (Pipeboard + Sapo).
+  // Chạy tuần tự /ads/sync trước (bước insight/sapo map theo campaign),
+  // mỗi bước chịu lỗi riêng để 1 lỗi không chặn các bước còn lại.
+  const syncData = async () => {
+    setSyncingData(true);
+    const summarize = (r: any) => {
+      if (r == null || typeof r !== "object") return "xong";
+      if (typeof r.rows === "number") return `${r.rows} dòng`;
+      if (typeof r.saved === "number") return `${r.saved} đơn`;
+      if (typeof r.campaigns === "number") return `${r.campaigns} chiến dịch`;
+      return "xong";
+    };
+    const steps: { name: string; ok: boolean; detail: string }[] = [];
+    const run = async (name: string, fn: () => Promise<unknown>) => {
+      try {
+        const r = await fn();
+        steps.push({ name, ok: true, detail: summarize(r) });
+      } catch (e) {
+        steps.push({ name, ok: false, detail: e instanceof Error ? e.message : "lỗi" });
+      }
+    };
+    await run("Chiến dịch & quảng cáo", () => apiGet("/ads/sync"));
+    await run("Chỉ số quảng cáo", () => apiGet("/ads/sync-insights?days=30"));
+    await run("Đơn hàng Sapo", () => apiPost("/sapo/sync?days=30"));
+    try {
+      await Promise.all([load(), loadSapo(), loadInsights()]);
+    } finally {
+      setSyncingData(false);
+    }
+    alert(
+      "Kết quả đồng bộ:\n" +
+        steps.map((s) => `${s.ok ? "✅" : "❌"} ${s.name}: ${s.detail}`).join("\n")
+    );
   };
 
   // Format Helper for numbers
@@ -411,8 +447,10 @@ function OverviewInner() {
         kpis={overviewKpis}
         showKpis={selectedTab === "overview"}
         onRefresh={refresh}
+        onSync={syncData}
         onExport={() => alert("Bắt đầu xuất dữ liệu báo cáo...")}
         refreshing={syncing || loading}
+        syncing={syncingData}
       />
 
       {loading ? (

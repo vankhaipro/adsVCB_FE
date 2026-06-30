@@ -3,6 +3,7 @@
 import {
   MagnifyingGlass,
   ArrowsClockwise,
+  CloudArrowDown,
   Download,
   CaretUp,
   CaretDown,
@@ -122,8 +123,10 @@ type Props = {
   onDateRangeChange: (v: string) => void;
   kpis?: KpiItem[];
   onRefresh?: () => void;
+  onSync?: () => void;
   onExport?: () => void;
   refreshing?: boolean;
+  syncing?: boolean;
   showKpis?: boolean;
 };
 
@@ -140,8 +143,10 @@ export default function OverviewHeader({
   onDateRangeChange,
   kpis = [],
   onRefresh,
+  onSync,
   onExport,
   refreshing,
+  syncing,
   showKpis = true,
 }: Props) {
   return (
@@ -181,6 +186,19 @@ export default function OverviewHeader({
             </select>
           </div>
 
+          <button
+            type="button"
+            onClick={onSync}
+            disabled={syncing}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60"
+          >
+            {syncing ? (
+              <SpinnerGap size={16} className="animate-spin" />
+            ) : (
+              <CloudArrowDown size={16} />
+            )}
+            Đồng bộ dữ liệu
+          </button>
           <button
             type="button"
             onClick={onExport}
