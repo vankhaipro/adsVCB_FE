@@ -3,19 +3,17 @@
 import { useEffect, useState } from "react";
 import { apiGet } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
+import Pagination from "@/components/Pagination";
 import {
   CaretDown,
   FacebookLogo,
   TiktokLogo,
   YoutubeLogo,
-  InstagramLogo,
-  Eye,
   TrendUp,
   Info,
   Calendar,
   Tag,
   Star,
-  FileText,
   Funnel
 } from "@phosphor-icons/react";
 import {
@@ -32,38 +30,33 @@ import {
   BarChart,
   Bar
 } from "recharts";
-import {
-  productionContentData,
-  topProductionContent,
-  topSkuDataRecord as mockTopSkuDataRecord,
-  topSkuCreateRecord as mockTopSkuCreateRecord,
-  linePerformanceDataRecord,
-  linePerformanceCreateRecord,
-  contentStylePerformance,
-  detailChannelPerformance,
-  detailStaffPerformance,
-  staffKpiBarData,
-  staffTaskCompletionData,
-  metaRawContentList,
-  tiktokRawContentList,
-  youtubeRawContentList
-} from "../manage/mockData";
-
-// Báo cáo content thật từ BE (/content/report). Các khối chưa có nguồn thật vẫn dùng mock.
+// Báo cáo content thật từ BE (/content/report) + danh sách nội dung (/content/list).
 type Grp = { name: string; views: number; count: number };
+type GrpRich = Grp & { interactions: number; likes: number; comments: number; shares: number };
+type ChannelDetail = { name: string; platform: string; views: number; followers: number; likes: number; comments: number; shares: number; count: number };
+type StaffDetail = { name: string; team: string | null; views: number; likes: number; comments: number; shares: number; count: number };
+type ListItem = {
+  videoId: string; caption: string | null; link: string | null; channel: string | null;
+  platform: string; date: string | null; productCode: string | null; concept: string | null;
+  line: string | null; team: string | null; staff: string | null;
+  views: number; reach: number | null; likes: number; comments: number;
+};
 type Report = {
   kpis: { views: number; interactions: number; likes: number; comments: number; shares: number; followers: number; videoCount: number };
   byPlatform: Grp[];
   byConcept: Grp[];
-  byLine: Grp[];
+  byLine: GrpRich[];
   byTeam: Grp[];
-  byProduct: Grp[];
+  byProduct: GrpRich[];
   winRate: { win: number; notWin: number; total: number };
   channelsByPlatform: { name: string; count: number }[];
   trendByPlatform: { date: string; FACEBOOK: number; TIKTOK: number; INSTAGRAM: number; YOUTUBE: number }[];
   topVideos: { videoId: string; platform: string; caption: string | null; postUrl: string | null; views: number; likes: number; channelName: string | null; staffName: string | null }[];
   topChannels: { name: string; platform: string; views: number; followers: number; count: number }[];
   topStaff: { name: string; team: string | null; views: number; count: number }[];
+  channelDetail: ChannelDetail[];
+  staffDetail: StaffDetail[];
+  topContent: { name: string; count: number; views: number }[];
 };
 const PLATFORM_COLORS: Record<string, string> = {
   FACEBOOK: "#3b82f6", TIKTOK: "#db2777", INSTAGRAM: "#e1306c", YOUTUBE: "#dc2626",
@@ -83,8 +76,10 @@ const fmtCompact = (n: number) => {
 export default function ContentOverviewPage() {
   const chart = useChartColors();
   const [report, setReport] = useState<Report | null>(null);
+  const [list, setList] = useState<ListItem[]>([]);
   useEffect(() => {
     apiGet("/content/report").then(setReport).catch(() => {});
+    apiGet("/content/list").then(setList).catch(() => {});
   }, []);
 
   const k = report?.kpis;
@@ -131,9 +126,52 @@ export default function ContentOverviewPage() {
   const topVideosByView = report?.topVideos ? report.topVideos.map((v, i) => ({ id: i + 1, caption: v.caption || "", link: v.postUrl || "#", views: fmtNum(v.views) })) : [];
   const topChannelsByView = report?.topChannels ? report.topChannels.map((c) => ({ platform: PLATFORM_LABEL[c.platform] || c.platform, name: c.name, views: fmtNum(c.views), follows: fmtNum(c.followers) })) : [];
   const topStaffByView = report?.topStaff ? report.topStaff.map((s, i) => ({ id: i + 1, name: s.name, team: s.team || "-", views: fmtNum(s.views) })) : [];
-  const realTopSkuData = report?.byProduct ? report.byProduct.filter(x => x.name !== 'Khác').map(x => ({ sku: x.name, count: x.count, views: fmtNum(x.views) })).slice(0, 10) : [];
-  const topSkuDataRecord = realTopSkuData.length ? realTopSkuData : mockTopSkuDataRecord;
-  const topSkuCreateRecord = realTopSkuData.length ? realTopSkuData : mockTopSkuCreateRecord;
+  // Top SKU thật (giữ 2 bảng "ghi nhận"/"thời gian tạo" cùng dữ liệu vì DB chỉ có 1 mốc ngày).
+  const realTopSkuData = report?.byProduct
+    ? report.byProduct.filter((x) => x.name !== "Khác").slice(0, 10)
+        .map((x) => ({ sku: x.name, count: x.count, views: fmtNum(x.views) }))
+    : [];
+  const topSkuDataRecord = realTopSkuData;
+  const topSkuCreateRecord = realTopSkuData;
+
+  // Hiệu suất tuyến thật (cũng giữ 2 bảng cùng dữ liệu).
+  const realLinePerf = report?.byLine
+    ? report.byLine.filter((x) => x.name !== "Khác")
+        .map((x) => ({ line: x.name, count: fmtNum(x.count), views: fmtNum(x.views), interactions: fmtNum(x.interactions) }))
+    : [];
+  const linePerformanceDataRecord = realLinePerf;
+  const linePerformanceCreateRecord = realLinePerf;
+
+  // Top nội dung trùng caption nhiều nhất.
+  const topProductionContent = report?.topContent ? report.topContent.map((x) => ({ name: x.name, count: x.count })) : [];
+
+  // Hiệu suất chi tiết theo kênh / nhân sự (bỏ cột không có nguồn: avgWatch, reach, saves).
+  const detailChannelPerformance = report?.channelDetail
+    ? report.channelDetail.map((c) => ({
+        platform: PLATFORM_LABEL[c.platform] || c.platform, channel: c.name,
+        views: fmtNum(c.views), follows: fmtNum(c.followers),
+        likes: fmtNum(c.likes), comments: fmtNum(c.comments), shares: fmtNum(c.shares),
+      }))
+    : [];
+  const detailStaffPerformance = report?.staffDetail
+    ? report.staffDetail.map((s) => ({
+        name: s.name, views: fmtNum(s.views),
+        likes: fmtNum(s.likes), comments: fmtNum(s.comments), shares: fmtNum(s.shares),
+      }))
+    : [];
+
+  // Danh sách nội dung thô theo nền tảng (từ /content/list), giới hạn 50 dòng gần nhất mỗi nền tảng.
+  const metaRawContentList = list.filter((x) => x.platform === "facebook" || x.platform === "instagram").slice(0, 50);
+  const tiktokRawContentList = list.filter((x) => x.platform === "tiktok").slice(0, 50);
+  const youtubeRawContentList = list.filter((x) => x.platform === "youtube").slice(0, 50);
+
+  // Số tổng cho phần giữa các donut (thay số hardcode).
+  const channelsTotal = report?.channelsByPlatform?.reduce((s, x) => s + x.count, 0) ?? 0;
+  const lineTotal = report?.byLine?.reduce((s, x) => s + x.count, 0) ?? 0;
+  const conceptTotal = report?.byConcept?.reduce((s, x) => s + x.count, 0) ?? 0;
+  const winTotal = report?.winRate?.total ?? 0;
+  const winPct = winTotal ? Number(((report!.winRate.win / winTotal) * 100).toFixed(1)) : 0;
+  const notWinPct = winTotal ? Number(((report!.winRate.notWin / winTotal) * 100).toFixed(1)) : 0;
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
@@ -259,20 +297,20 @@ export default function ContentOverviewPage() {
         <div className="bg-card border border-border rounded-xl p-5 flex flex-col justify-between">
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-4">Phân tích Win/Not Win</h3>
-            <div className="grid grid-cols-2 gap-4">
-              
-              {/* Noi dung dang tai */}
+            <div className="flex justify-center">
+
+              {/* Nội dung đăng tải */}
               <div className="flex flex-col items-center">
                 <p className="text-[10px] text-muted-foreground font-semibold mb-2">Nội dung đăng tải</p>
-                <div className="relative w-full h-[100px] flex items-center justify-center">
+                <div className="relative w-full h-[140px] flex items-center justify-center">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={postContentData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={30}
-                        outerRadius={45}
+                        innerRadius={45}
+                        outerRadius={65}
                         paddingAngle={2}
                         dataKey="value"
                       >
@@ -283,45 +321,13 @@ export default function ContentOverviewPage() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute flex flex-col items-center justify-center">
-                    <span className="text-xs font-bold text-foreground">17,213</span>
-                    <span className="text-[8px] text-muted-foreground">Tổng</span>
+                    <span className="text-base font-bold text-foreground">{fmtNum(winTotal)}</span>
+                    <span className="text-[8px] text-muted-foreground">Tổng video</span>
                   </div>
                 </div>
                 <div className="flex justify-center gap-3 mt-2 text-[10px]">
-                  <span className="text-green-500">Win: 8.9%</span>
-                  <span className="text-red-500">Not: 91.1%</span>
-                </div>
-              </div>
-
-              {/* Noi dung san xuat */}
-              <div className="flex flex-col items-center">
-                <p className="text-[10px] text-muted-foreground font-semibold mb-2">Nội dung sản xuất</p>
-                <div className="relative w-full h-[100px] flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={productionContentData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={30}
-                        outerRadius={45}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {productionContentData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute flex flex-col items-center justify-center">
-                    <span className="text-xs font-bold text-foreground">7,161</span>
-                    <span className="text-[8px] text-muted-foreground">Tổng</span>
-                  </div>
-                </div>
-                <div className="flex justify-center gap-3 mt-2 text-[10px]">
-                  <span className="text-green-500">Win: 15%</span>
-                  <span className="text-red-500">Not: 85%</span>
+                  <span className="text-green-500">Win: {winPct}%</span>
+                  <span className="text-red-500">Not: {notWinPct}%</span>
                 </div>
               </div>
 
@@ -392,7 +398,7 @@ export default function ContentOverviewPage() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute flex flex-col items-center justify-center">
-                <span className="text-xl font-bold text-foreground">152</span>
+                <span className="text-xl font-bold text-foreground">{fmtNum(channelsTotal)}</span>
                 <span className="text-[10px] text-muted-foreground">Tổng số kênh</span>
               </div>
             </div>
@@ -469,7 +475,7 @@ export default function ContentOverviewPage() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute flex flex-col items-center justify-center">
-                <span className="text-base font-bold text-foreground">17,224</span>
+                <span className="text-base font-bold text-foreground">{fmtNum(lineTotal)}</span>
                 <span className="text-[9px] text-muted-foreground">Tổng</span>
               </div>
             </div>
@@ -514,7 +520,7 @@ export default function ContentOverviewPage() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute flex flex-col items-center justify-center">
-                <span className="text-base font-bold text-foreground">96,356</span>
+                <span className="text-base font-bold text-foreground">{fmtNum(conceptTotal)}</span>
                 <span className="text-[9px] text-muted-foreground">Tổng</span>
               </div>
             </div>
@@ -668,36 +674,6 @@ export default function ContentOverviewPage() {
           </div>
         </div>
 
-        {/* Hieu suat loai noi dung */}
-        <div className="bg-card border border-border rounded-xl p-4 shadow-md">
-          <h4 className="text-xs font-bold text-foreground mb-3 flex items-center gap-1.5">
-            <FileText size={14} className="text-pink-600" />
-            Hiệu suất theo loại nội dung
-          </h4>
-          <div className="overflow-x-auto text-[10px]">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="pb-2 font-medium">Loại</th>
-                  <th className="pb-2 text-right">Số lượng</th>
-                  <th className="pb-2 text-right">Lượt xem</th>
-                  <th className="pb-2 text-right">Tương tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border text-foreground">
-                {contentStylePerformance.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-muted/20">
-                    <td className="py-2 font-bold text-foreground">{row.type}</td>
-                    <td className="py-2 text-right">{row.count}</td>
-                    <td className="py-2 text-right text-pink-400">{row.views}</td>
-                    <td className="py-2 text-right text-muted-foreground">{row.interactions}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       </div>
 
       {/* Section: Top Performance list grid */}
@@ -754,7 +730,7 @@ export default function ContentOverviewPage() {
               <tbody className="divide-y divide-border text-foreground">
                 {topVideosByView.map((row) => (
                   <tr key={row.id} className="hover:bg-muted/20">
-                    <td className="py-2 text-foreground truncate max-w-[160px]" title={row.caption}>{row.caption}</td>
+                    <td className="py-2 text-foreground truncate max-w-[160px]" title={row.caption ?? undefined}>{row.caption}</td>
                     <td className="py-2 text-right font-semibold text-foreground">{row.views}</td>
                   </tr>
                 ))}
@@ -809,7 +785,6 @@ export default function ContentOverviewPage() {
                   <th className="pb-2 text-right">Likes</th>
                   <th className="pb-2 text-right">Bình luận</th>
                   <th className="pb-2 text-right">Chia sẻ</th>
-                  <th className="pb-2 text-right">Thời gian xem</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-foreground">
@@ -821,7 +796,6 @@ export default function ContentOverviewPage() {
                     <td className="py-2.5 text-right">{row.likes}</td>
                     <td className="py-2.5 text-right">{row.comments}</td>
                     <td className="py-2.5 text-right text-pink-400">{row.shares}</td>
-                    <td className="py-2.5 text-right text-muted-foreground">{row.avgWatch}</td>
                   </tr>
                 ))}
               </tbody>
@@ -838,11 +812,9 @@ export default function ContentOverviewPage() {
                 <tr className="border-b border-border text-muted-foreground">
                   <th className="pb-2 font-medium">Nhân sự</th>
                   <th className="pb-2 text-right">Lượt xem</th>
-                  <th className="pb-2 text-right">Tiếp cận</th>
                   <th className="pb-2 text-right">Likes</th>
                   <th className="pb-2 text-right">Bình luận</th>
                   <th className="pb-2 text-right">Chia sẻ</th>
-                  <th className="pb-2 text-right">Lưu</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-foreground">
@@ -850,11 +822,9 @@ export default function ContentOverviewPage() {
                   <tr key={idx} className="hover:bg-muted/20">
                     <td className="py-2.5 font-semibold text-foreground">{row.name}</td>
                     <td className="py-2.5 text-right text-blue-400">{row.views}</td>
-                    <td className="py-2.5 text-right text-green-500">{row.reach}</td>
                     <td className="py-2.5 text-right">{row.likes}</td>
                     <td className="py-2.5 text-right">{row.comments}</td>
                     <td className="py-2.5 text-right text-pink-400">{row.shares}</td>
-                    <td className="py-2.5 text-right text-muted-foreground">{row.saves}</td>
                   </tr>
                 ))}
               </tbody>
@@ -862,69 +832,6 @@ export default function ContentOverviewPage() {
           </div>
         </div>
 
-      </div>
-
-      {/* Section: Hiệu quả KPI của nhân sự */}
-      <div className="bg-card border border-border rounded-xl p-5 shadow-md">
-        <h3 className="text-sm font-semibold text-foreground mb-4">Hiệu quả KPI của nhân sự</h3>
-        
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          
-          {/* Top nhân sự đạt % KPI cao nhất chart */}
-          <div className="xl:col-span-1 border-r border-border pr-4">
-            <h4 className="text-xs font-semibold text-muted-foreground mb-2">Top nhân sự đạt % KPI cao nhất</h4>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  layout="vertical"
-                  data={staffKpiBarData}
-                  margin={{ top: 10, right: 10, left: 20, bottom: 5 }}
-                >
-                  <XAxis type="number" stroke="#6b7280" fontSize={8} tickFormatter={(val) => `${val}%`} />
-                  <YAxis dataKey="name" type="category" stroke="#6b7280" fontSize={8} width={70} />
-                  <Tooltip formatter={(value) => `${value}%`} />
-                  <Bar dataKey="percentage" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={10} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Tỉ lệ hoàn thành task theo nhân sự table */}
-          <div className="xl:col-span-2">
-            <h4 className="text-xs font-semibold text-muted-foreground mb-2">Tỉ lệ hoàn thành task theo nhân sự</h4>
-            <div className="overflow-x-auto text-[10px]">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-border text-muted-foreground">
-                    <th className="pb-2 font-medium">Nhân sự</th>
-                    <th className="pb-2 text-right">Task tự động</th>
-                    <th className="pb-2 text-right">Task sáng tạo</th>
-                    <th className="pb-2 text-right">Task hoàn thành</th>
-                    <th className="pb-2 text-right">KPI ngày</th>
-                    <th className="pb-2 text-right text-blue-400">% KPI ngày</th>
-                    <th className="pb-2 text-right">KPI tháng</th>
-                    <th className="pb-2 text-right text-amber-500">% KPI tháng</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border text-foreground">
-                  {staffTaskCompletionData.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-muted/20">
-                      <td className="py-2 font-semibold text-foreground">{row.name}</td>
-                      <td className="py-2 text-right">{row.auto}</td>
-                      <td className="py-2 text-right">{row.creative}</td>
-                      <td className="py-2 text-right text-green-500 font-bold">{row.done}</td>
-                      <td className="py-2 text-right">{row.dailyKpi}</td>
-                      <td className="py-2 text-right text-blue-400 font-semibold">{row.dailyPct}</td>
-                      <td className="py-2 text-right">{row.monthlyKpi}</td>
-                      <td className="py-2 text-right text-amber-500 font-semibold">{row.monthlyPct}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-        </div>
       </div>
 
       {/* Section: Raw data lists (Meta Content, Tiktok Content, Youtube Content) */}
@@ -955,12 +862,12 @@ export default function ContentOverviewPage() {
               <tbody className="divide-y divide-border text-foreground">
                 {metaRawContentList.map((row, idx) => (
                   <tr key={idx} className="hover:bg-muted/20 group">
-                    <td className="py-2.5 max-w-[180px] truncate text-foreground group-hover:text-blue-400 transition-colors" title={row.caption}>{row.caption}</td>
-                    <td className="py-2.5 truncate max-w-[140px]" title={row.channel}>{row.channel}</td>
+                    <td className="py-2.5 max-w-[180px] truncate text-foreground group-hover:text-blue-400 transition-colors" title={row.caption ?? undefined}>{row.caption}</td>
+                    <td className="py-2.5 truncate max-w-[140px]" title={row.channel ?? undefined}>{row.channel}</td>
                     <td className="py-2.5 text-muted-foreground">{row.date}</td>
                     <td className="py-2.5 font-bold text-foreground">{row.line}</td>
                     <td className="py-2.5 text-right text-blue-400 font-semibold">{row.views}</td>
-                    <td className="py-2.5 text-right text-green-500">{row.reach}</td>
+                    <td className="py-2.5 text-right text-green-500">{row.reach ?? "—"}</td>
                     <td className="py-2.5 text-right">{row.likes}</td>
                     <td className="py-2.5 text-right">{row.comments}</td>
                   </tr>
@@ -994,8 +901,8 @@ export default function ContentOverviewPage() {
               <tbody className="divide-y divide-border text-foreground">
                 {tiktokRawContentList.map((row, idx) => (
                   <tr key={idx} className="hover:bg-muted/20 group">
-                    <td className="py-2.5 max-w-[180px] truncate text-foreground group-hover:text-pink-400 transition-colors" title={row.caption}>{row.caption}</td>
-                    <td className="py-2.5 truncate max-w-[140px]" title={row.channel}>{row.channel}</td>
+                    <td className="py-2.5 max-w-[180px] truncate text-foreground group-hover:text-pink-400 transition-colors" title={row.caption ?? undefined}>{row.caption}</td>
+                    <td className="py-2.5 truncate max-w-[140px]" title={row.channel ?? undefined}>{row.channel}</td>
                     <td className="py-2.5 text-muted-foreground">{row.date}</td>
                     <td className="py-2.5 font-semibold text-blue-400">{row.concept}</td>
                     <td className="py-2.5 font-bold text-foreground">{row.line}</td>
@@ -1033,8 +940,8 @@ export default function ContentOverviewPage() {
               <tbody className="divide-y divide-border text-foreground">
                 {youtubeRawContentList.map((row, idx) => (
                   <tr key={idx} className="hover:bg-muted/20 group">
-                    <td className="py-2.5 max-w-[180px] truncate text-foreground group-hover:text-red-400 transition-colors" title={row.caption}>{row.caption}</td>
-                    <td className="py-2.5 truncate max-w-[140px]" title={row.channel}>{row.channel}</td>
+                    <td className="py-2.5 max-w-[180px] truncate text-foreground group-hover:text-red-400 transition-colors" title={row.caption ?? undefined}>{row.caption}</td>
+                    <td className="py-2.5 truncate max-w-[140px]" title={row.channel ?? undefined}>{row.channel}</td>
                     <td className="py-2.5 text-muted-foreground">{row.date}</td>
                     <td className="py-2.5 text-muted-foreground">{row.concept}</td>
                     <td className="py-2.5 font-bold text-foreground">{row.line}</td>
@@ -1048,15 +955,6 @@ export default function ContentOverviewPage() {
           </div>
         </div>
 
-      </div>
-
-      {/* Info Card */}
-      <div className="bg-card border border-border rounded-xl p-4 flex items-start gap-3 mt-4 text-xs text-muted-foreground">
-        <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-semibold text-foreground">Giao diện phác thảo (Design Only)</span>.
-          Các tính năng đăng tải tự động, cấu hình phân công lịch đăng và thu thập video từ link mạng xã hội hiện đang hoạt động ở chế độ Demo Giao Diện (Mockup).
-        </div>
       </div>
 
     </div>
