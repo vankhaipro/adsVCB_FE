@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ArrowsClockwise, SpinnerGap, MagnifyingGlass, MetaLogo, TiktokLogo, GoogleLogo, Plus, X, Calendar,
+  ArrowsClockwise, SpinnerGap, MagnifyingGlass, MetaLogo, TiktokLogo, GoogleLogo, Plus, X,
 } from "@phosphor-icons/react";
 import { apiGet, apiPatch, apiPost, fmtVnd } from "@/lib/api";
+import DateRangePicker, { presetToDates } from "@/components/DateRangePicker";
+import MetricFilter, { matchMetric, type MetricCondition } from "@/components/MetricFilter";
 
 type Campaign = {
   id: string;
@@ -108,38 +110,6 @@ function getDaysCount(range: string): number {
   }
 }
 
-function rangeToQuery(range: string): string {
-  const now = new Date();
-  const end = new Date(now);
-  let start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  switch (range) {
-    case "today":
-      break;
-    case "yesterday":
-      start.setDate(start.getDate() - 1);
-      end.setTime(start.getTime());
-      end.setHours(23, 59, 59, 999);
-      break;
-    case "last7days":
-      start.setDate(start.getDate() - 6);
-      break;
-    case "last30days":
-      start.setDate(start.getDate() - 29);
-      break;
-    case "thisMonth":
-      start = new Date(now.getFullYear(), now.getMonth(), 1);
-      break;
-    case "lastMonth": {
-      start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const e = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-      return `from=${start.toISOString()}&to=${e.toISOString()}`;
-    }
-    default:
-      start.setDate(start.getDate() - 29);
-  }
-  return `from=${start.toISOString()}&to=${end.toISOString()}`;
-}
 
 
 export default function CampaignsPage() {
@@ -153,8 +123,12 @@ export default function CampaignsPage() {
   // Tab State
   const [activeTab, setActiveTab] = useState<"campaign" | "adset" | "ad">("campaign");
   
-  // Filter States
+  // Filter States — khoảng thời gian: preset id (để hiện nhãn) + ngày from/to cụ thể
   const [dateRange, setDateRange] = useState("thisMonth");
+  const [customFrom, setCustomFrom] = useState(() => presetToDates("thisMonth").from);
+  const [customTo, setCustomTo] = useState(() => presetToDates("thisMonth").to);
+  // Bộ lọc theo chỉ số (AND nhiều điều kiện)
+  const [metricConds, setMetricConds] = useState<MetricCondition[]>([]);
   const [platform, setPlatform] = useState<string>("ALL");
   const [q, setQ] = useState("");
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>("ALL");
@@ -168,7 +142,9 @@ export default function CampaignsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const params = new URLSearchParams(rangeToQuery(dateRange));
+    const start = new Date(`${customFrom}T00:00:00`);
+    const end = new Date(`${customTo}T23:59:59.999`);
+    const params = new URLSearchParams({ from: start.toISOString(), to: end.toISOString() });
     if (platform !== "ALL") params.set("platform", platform);
     const qStr = params.toString();
     try {
@@ -183,7 +159,7 @@ export default function CampaignsPage() {
     } finally {
       setLoading(false);
     }
-  }, [dateRange, platform]);
+  }, [platform, customFrom, customTo]);
 
   useEffect(() => {
     load();
@@ -589,6 +565,24 @@ export default function CampaignsPage() {
     });
   }, [filteredAds, adSetsWithMetrics, getSku]);
 
+  // Áp bộ lọc theo chỉ số (AND tất cả điều kiện) lên các danh sách đã có metrics.
+  const passMetrics = useCallback(
+    (m: Record<string, number>) => metricConds.every((c) => matchMetric(m?.[c.metric], c)),
+    [metricConds]
+  );
+  const displayCampaigns = useMemo(
+    () => campaignsWithMetrics.filter((c) => passMetrics(c.metrics)),
+    [campaignsWithMetrics, passMetrics]
+  );
+  const displayAdSets = useMemo(
+    () => adSetsWithMetrics.filter((a) => passMetrics(a.metrics)),
+    [adSetsWithMetrics, passMetrics]
+  );
+  const displayAds = useMemo(
+    () => adsWithMetrics.filter((a) => passMetrics(a.metrics)),
+    [adsWithMetrics, passMetrics]
+  );
+
   const selectedAccount = accounts.find((a) => a.id === form.accountId);
 
   // Format Helper for numbers
@@ -601,9 +595,9 @@ export default function CampaignsPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Quản lý Ads</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {activeTab === "campaign" && `${campaignsWithMetrics.length} chiến dịch`}
-            {activeTab === "adset" && `${adSetsWithMetrics.length} nhóm quảng cáo`}
-            {activeTab === "ad" && `${adsWithMetrics.length} quảng cáo`}
+            {activeTab === "campaign" && `${displayCampaigns.length} chiến dịch`}
+            {activeTab === "adset" && `${displayAdSets.length} nhóm quảng cáo`}
+            {activeTab === "ad" && `${displayAds.length} quảng cáo`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -662,23 +656,17 @@ export default function CampaignsPage() {
 
       {/* Filters & Dropdowns */}
       <div className="flex flex-wrap items-center gap-3 bg-card border border-border rounded-xl p-4">
-        {/* Date Selector */}
-        <div className="flex items-center gap-2 bg-background border border-border rounded-md px-3 py-1.5 text-xs">
-          <Calendar size={14} className="text-blue-400" />
-          <span className="text-muted-foreground">Thời gian:</span>
-          <select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="bg-transparent text-foreground outline-none cursor-pointer font-medium"
-          >
-            <option className="bg-background" value="today">Hôm nay</option>
-            <option className="bg-background" value="yesterday">Hôm qua</option>
-            <option className="bg-background" value="last7days">7 ngày qua</option>
-            <option className="bg-background" value="last30days">30 ngày qua</option>
-            <option className="bg-background" value="thisMonth">Tháng này</option>
-            <option className="bg-background" value="lastMonth">Tháng trước</option>
-          </select>
-        </div>
+        {/* Bộ lọc thời gian — preset + lịch chọn khoảng tùy chỉnh */}
+        <DateRangePicker
+          presetId={dateRange}
+          from={customFrom}
+          to={customTo}
+          onApply={({ presetId, from, to }) => {
+            setDateRange(presetId);
+            setCustomFrom(from);
+            setCustomTo(to);
+          }}
+        />
 
         {/* Nút lọc theo nền tảng — "Tất cả" + mỗi nền tảng có trong dữ liệu */}
         <div className="flex flex-wrap items-center gap-1.5">
@@ -746,6 +734,9 @@ export default function CampaignsPage() {
           </select>
         )}
 
+        {/* Bộ lọc theo chỉ số (chi tiêu, hiển thị, CTR...) */}
+        <MetricFilter value={metricConds} onApply={setMetricConds} />
+
         {/* Search Query */}
         <div className="flex items-center gap-2 bg-background border border-border rounded-md px-3 py-1.5 flex-1 min-w-[200px]">
           <MagnifyingGlass size={16} className="text-muted-foreground" />
@@ -798,7 +789,7 @@ export default function CampaignsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {campaignsWithMetrics.slice(0, 150).map((c) => (
+                  {displayCampaigns.slice(0, 150).map((c) => (
                     <tr key={c.id} className="border-b border-border hover:bg-muted/40 transition-colors">
                       <td className="px-3 py-3 text-center">
                         <button
@@ -845,7 +836,7 @@ export default function CampaignsPage() {
                       </td>
                     </tr>
                   ))}
-                  {campaignsWithMetrics.length === 0 && (
+                  {displayCampaigns.length === 0 && (
                     <tr>
                       <td colSpan={15} className="text-center py-10 text-muted-foreground">
                         Không tìm thấy chiến dịch nào.
@@ -879,7 +870,7 @@ export default function CampaignsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {adSetsWithMetrics.slice(0, 150).map((as) => (
+                  {displayAdSets.slice(0, 150).map((as) => (
                     <tr key={as.id} className="border-b border-border hover:bg-muted/40 transition-colors">
                       <td className="px-3 py-3 text-center">
                         <button
@@ -926,7 +917,7 @@ export default function CampaignsPage() {
                       <td className="px-3 py-3 text-right font-mono text-muted-foreground">{fmtNum(as.metrics.cpm)}đ</td>
                     </tr>
                   ))}
-                  {adSetsWithMetrics.length === 0 && (
+                  {displayAdSets.length === 0 && (
                     <tr>
                       <td colSpan={16} className="text-center py-10 text-muted-foreground">
                         Không tìm thấy nhóm quảng cáo nào.
@@ -959,7 +950,7 @@ export default function CampaignsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {adsWithMetrics.slice(0, 150).map((ad) => {
+                  {displayAds.slice(0, 150).map((ad) => {
                     const hash = hashString(ad.id);
                     return (
                       <tr key={ad.id} className="border-b border-border hover:bg-muted/40 transition-colors">
@@ -1010,7 +1001,7 @@ export default function CampaignsPage() {
                       </tr>
                     );
                   })}
-                  {adsWithMetrics.length === 0 && (
+                  {displayAds.length === 0 && (
                     <tr>
                       <td colSpan={15} className="text-center py-10 text-muted-foreground">
                         Không tìm thấy quảng cáo nào.
