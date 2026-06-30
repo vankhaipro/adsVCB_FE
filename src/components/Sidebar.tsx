@@ -132,11 +132,14 @@ function SidebarContent() {
     <div className="w-[210px] h-full flex flex-col bg-card text-foreground border-r border-border flex-shrink-0">
       {/* Logo */}
       <div className="h-[52px] flex items-center px-4 font-bold text-foreground text-base border-b border-border">
-        <img
-          src="/logoN-VienChiBao.png"
-          alt="Viễn Chí Bảo Manager Logo"
-          className="w-6 h-6 object-contain mr-2 rounded-full"
-        />
+        <span className="relative w-6 h-6 mr-2 rounded-full overflow-hidden inline-flex flex-shrink-0">
+          <img
+            src="/logoN-VienChiBao.png"
+            alt="Viễn Chí Bảo Manager Logo"
+            className="absolute max-w-none"
+            style={{ width: "110px", height: "110px", left: "-12px", top: "-44px" }}
+          />
+        </span>
         Viễn Chí Bảo Manager
       </div>
 
