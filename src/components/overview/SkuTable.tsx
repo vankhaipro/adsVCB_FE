@@ -194,7 +194,7 @@ export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
       bodyClassName="px-0 pb-0"
     >
       <div className="px-5 -mt-1 mb-1">
-        <span className="text-[11px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
+        <span className="text-[16px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
           {filteredRows.length} SKU đang chạy thực tế
         </span>
       </div>
@@ -252,7 +252,7 @@ export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
       {/* Phân trang */}
       {filteredRows.length > PER_PAGE && (
         <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-[16px] text-muted-foreground">
             Hiển thị {start + 1}–{Math.min(start + PER_PAGE, filteredRows.length)} trong {filteredRows.length} SKU
           </span>
           <div className="flex items-center gap-1">

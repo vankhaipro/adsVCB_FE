@@ -504,7 +504,7 @@ function OverviewInner() {
                       {!adReal ? (
                         <div className="h-[130px] flex flex-col items-center justify-center text-center gap-1 text-muted-foreground">
                           <Info size={20} />
-                          <span className="text-[11px]">Cần đồng bộ chi phí QC<br />(insight Meta/TikTok)</span>
+                          <span className="text-[16px]">Cần đồng bộ chi phí QC<br />(insight Meta/TikTok)</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-4">
@@ -521,7 +521,7 @@ function OverviewInner() {
                               </PieChart>
                             </ResponsiveContainer>
                           </div>
-                          <div className="flex flex-col gap-2 text-[11px]">
+                          <div className="flex flex-col gap-2 text-[16px]">
                             {platSpend.map((p, i) => (
                               <div key={i} className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.platform === "TIKTOK" ? "#f472b6" : "#3b82f6" }} />
@@ -543,7 +543,7 @@ function OverviewInner() {
                         {!bdReal ? (
                           <div className="h-full flex flex-col items-center justify-center text-center gap-1 text-muted-foreground">
                             <Info size={20} />
-                            <span className="text-[11px]">Cần đồng bộ insight Meta/TikTok</span>
+                            <span className="text-[16px]">Cần đồng bộ insight Meta/TikTok</span>
                           </div>
                         ) : (
                           <ResponsiveContainer width="100%" height="100%">
@@ -569,7 +569,7 @@ function OverviewInner() {
                         {!bdReal ? (
                           <div className="h-full flex flex-col items-center justify-center text-center gap-1 text-muted-foreground">
                             <Info size={20} />
-                            <span className="text-[11px]">Cần đồng bộ insight Meta/TikTok</span>
+                            <span className="text-[16px]">Cần đồng bộ insight Meta/TikTok</span>
                           </div>
                         ) : (
                           <ResponsiveContainer width="100%" height="100%">
@@ -625,7 +625,7 @@ function OverviewInner() {
                           {sapoSkus.length > 0 && (
                             <tfoot className="border-t border-border">
                               <tr>
-                                <td colSpan={4} className="px-4 py-2 text-right text-[11px] text-muted-foreground">Top {sapoSkus.length} SKU theo doanh thu</td>
+                                <td colSpan={4} className="px-4 py-2 text-right text-[16px] text-muted-foreground">Top {sapoSkus.length} SKU theo doanh thu</td>
                               </tr>
                             </tfoot>
                           )}
@@ -640,7 +640,7 @@ function OverviewInner() {
                         {!bdReal ? (
                           <div className="h-full flex flex-col items-center justify-center text-center gap-1 text-muted-foreground">
                             <Info size={20} />
-                            <span className="text-[11px]">Cần đồng bộ chi phí QC theo tuyến nội dung</span>
+                            <span className="text-[16px]">Cần đồng bộ chi phí QC theo tuyến nội dung</span>
                           </div>
                         ) : (
                           <ResponsiveContainer width="100%" height="100%">
@@ -668,7 +668,7 @@ function OverviewInner() {
                       {!bdReal ? (
                         <div className="px-5 py-10 flex flex-col items-center justify-center text-center gap-2 text-muted-foreground">
                           <Info size={22} />
-                          <span className="text-[11px] max-w-[260px]">Chi tiêu/like/tin nhắn theo kênh cần đồng bộ insight Meta/TikTok.</span>
+                          <span className="text-[16px] max-w-[260px]">Chi tiêu/like/tin nhắn theo kênh cần đồng bộ insight Meta/TikTok.</span>
                         </div>
                       ) : (
                         <div className="overflow-x-auto">
@@ -688,7 +688,7 @@ function OverviewInner() {
                                 <tr key={i} className="hover:bg-card/40">
                                   <td className="px-4 py-2.5 text-blue-400 font-medium max-w-[200px] truncate" title={ch.name}>{ch.name}</td>
                                   <td className="px-4 py-2.5 text-center">
-                                    <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${ch.platform === "TIKTOK" ? "bg-pink-500/20 text-pink-400" : "bg-blue-500/20 text-blue-400"}`}>
+                                    <span className={`text-[15px] px-2 py-0.5 rounded font-medium ${ch.platform === "TIKTOK" ? "bg-pink-500/20 text-pink-400" : "bg-blue-500/20 text-blue-400"}`}>
                                       {ch.platform === "TIKTOK" ? "tiktok" : "facebook"}
                                     </span>
                                   </td>
@@ -702,7 +702,7 @@ function OverviewInner() {
                             {channelRows.length > 14 && (
                               <tfoot className="border-t border-border">
                                 <tr>
-                                  <td colSpan={6} className="px-4 py-2 text-right text-[11px] text-muted-foreground">{channelRows.length} kênh</td>
+                                  <td colSpan={6} className="px-4 py-2 text-right text-[16px] text-muted-foreground">{channelRows.length} kênh</td>
                                 </tr>
                               </tfoot>
                             )}
@@ -790,7 +790,7 @@ function OverviewInner() {
                     { label: "Frequency", value: adReal ? freq.toFixed(2) : "—", color: "text-foreground", trend: null },
                   ].map((k, i) => (
                     <div key={i} className="bg-background border border-border rounded-xl p-4 flex flex-col justify-between min-h-[90px]">
-                      <span className="text-[11px] font-medium text-muted-foreground block mb-1">{k.label}</span>
+                      <span className="text-[16px] font-medium text-muted-foreground block mb-1">{k.label}</span>
                       <div className={`text-lg font-bold leading-tight ${k.color}`}>{k.value}</div>
                     </div>
                   ))}
@@ -817,7 +817,7 @@ function OverviewInner() {
                         </ResponsiveContainer>
                       </div>
                       {/* Legend */}
-                      <div className="flex flex-col gap-2 text-[11px] overflow-y-auto max-h-[140px] w-full px-2 custom-scrollbar">
+                      <div className="flex flex-col gap-2 text-[16px] overflow-y-auto max-h-[140px] w-full px-2 custom-scrollbar">
                         {donutData.map((d, i) => (
                           <div key={i} className="flex items-center justify-between gap-2 min-w-0">
                             <div className="flex items-center gap-1.5 min-w-0">
@@ -839,7 +839,7 @@ function OverviewInner() {
                     <div className="flex-1 flex flex-col justify-center gap-3">
                       {objBarData.map((obj, i) => (
                         <div key={i} className="flex flex-col gap-1">
-                          <div className="flex justify-between text-[10px]">
+                          <div className="flex justify-between text-[15px]">
                             <span className="text-muted-foreground font-medium">{obj.name}</span>
                             <span className="text-foreground">{fmtVnd(obj.value)}</span>
                           </div>
@@ -860,7 +860,7 @@ function OverviewInner() {
                   {/* Scatter/Dot: Top 30 channels by objective */}
                   <div className="lg:col-span-4 bg-background border border-border rounded-xl p-5 flex flex-col">
                     <h3 className="text-sm font-semibold text-foreground mb-3">Ngân sách top {Math.min(30, scatterData.length)} kênh</h3>
-                    <div className="text-[10px] flex gap-3 mb-2">
+                    <div className="text-[15px] flex gap-3 mb-2">
                       <span className="flex items-center gap-1"><Circle size={8} weight="fill" className="text-blue-400"/>Tin nhắn</span>
                       <span className="flex items-center gap-1"><Circle size={8} weight="fill" className="text-amber-400"/>Thích trang</span>
                       <span className="flex items-center gap-1"><Circle size={8} weight="fill" className="text-green-400"/>Bình luận</span>
@@ -869,7 +869,7 @@ function OverviewInner() {
                       <div className="flex flex-col gap-2 min-w-0">
                         {scatterData.slice(0, 12).map((d, i) => {
                           return (
-                            <div key={i} className="flex items-center gap-2 text-[10px]">
+                            <div key={i} className="flex items-center gap-2 text-[15px]">
                               <span className="text-muted-foreground w-4 text-right shrink-0">{i + 1}</span>
                               <span className="text-foreground w-28 truncate shrink-0" title={d.name}>{d.name}</span>
                               <div className="flex-1 flex items-center gap-1 min-w-0">
@@ -923,7 +923,7 @@ function OverviewInner() {
                         </tbody>
                         <tfoot className="border-t border-border">
                           <tr>
-                            <td colSpan={4} className="px-4 py-2 text-right text-[10px] text-muted-foreground">
+                            <td colSpan={4} className="px-4 py-2 text-right text-[15px] text-muted-foreground">
                               {likeRanking.filter(r => r.likes > 0).length} kênh
                             </td>
                           </tr>
@@ -966,7 +966,7 @@ function OverviewInner() {
                         </tbody>
                         <tfoot className="border-t border-border">
                           <tr>
-                            <td colSpan={4} className="px-4 py-2 text-right text-[10px] text-muted-foreground">
+                            <td colSpan={4} className="px-4 py-2 text-right text-[15px] text-muted-foreground">
                               {messRanking.filter(r => r.messages > 0).length} kênh
                             </td>
                           </tr>

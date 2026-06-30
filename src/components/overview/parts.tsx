@@ -25,7 +25,7 @@ export function Panel({
         <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-2">
           <div>
             {title && <h3 className="text-sm font-semibold text-foreground leading-tight">{title}</h3>}
-            {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
+            {subtitle && <p className="text-[16px] text-muted-foreground mt-0.5">{subtitle}</p>}
           </div>
           {right && <div className="shrink-0">{right}</div>}
         </div>
@@ -87,7 +87,7 @@ export function ChannelChip({ channel }: { channel: Channel }) {
 export function ChangeChip({ change }: { change: number }) {
   const up = change >= 0;
   return (
-    <span className={`flex items-center gap-0.5 text-[11px] font-semibold shrink-0 ${up ? "text-green-500" : "text-red-500"}`}>
+    <span className={`flex items-center gap-0.5 text-[16px] font-semibold shrink-0 ${up ? "text-green-500" : "text-red-500"}`}>
       {up ? <CaretUp size={10} weight="bold" /> : <CaretDown size={10} weight="bold" />}
       {Math.abs(change).toFixed(1)}%
     </span>

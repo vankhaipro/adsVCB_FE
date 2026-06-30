@@ -112,7 +112,7 @@ function MonthGrid({
   return (
     <div className="w-[260px]">
       <div className="text-center text-sm font-semibold text-foreground mb-2">{monthName}</div>
-      <div className="grid grid-cols-7 gap-y-1 text-center text-[11px] text-muted-foreground mb-1">
+      <div className="grid grid-cols-7 gap-y-1 text-center text-[16px] text-muted-foreground mb-1">
         {WEEKDAYS.map((w) => (
           <div key={w} className="py-1">
             {w}

@@ -69,7 +69,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
         title="Xu hướng chi tiêu & Doanh thu"
         subtitle={hasData ? "Theo ngày (Dữ liệu thực tế)" : "Theo ngày, tháng 6/2024"}
         right={
-          <div className="flex items-center gap-3 text-[11px]">
+          <div className="flex items-center gap-3 text-[16px]">
             <span className="flex items-center gap-1.5 text-muted-foreground"><span className="w-3 h-0.5 rounded bg-blue-500" />Chi phí</span>
             <span className="flex items-center gap-1.5 text-muted-foreground"><span className="w-3 h-0.5 rounded bg-green-500" />Doanh thu</span>
           </div>
@@ -107,7 +107,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
           <div className="flex-1 flex flex-col gap-2.5">
             {channelSplit.map((c: any) => (
               <div key={c.name} className="flex flex-col gap-1">
-                <div className="flex items-center justify-between text-[11px]">
+                <div className="flex items-center justify-between text-[16px]">
                   <span className="flex items-center gap-1.5 text-foreground">
                     <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
                     {c.name}

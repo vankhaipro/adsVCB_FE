@@ -44,7 +44,7 @@ export default function Header() {
           </div>
           <div className="hidden md:flex flex-col">
             <span className="text-sm font-medium text-foreground leading-tight">Nguyễn Văn A</span>
-            <span className="text-[10px] text-muted-foreground">Admin</span>
+            <span className="text-[15px] text-muted-foreground">Admin</span>
           </div>
         </div>
       </div>

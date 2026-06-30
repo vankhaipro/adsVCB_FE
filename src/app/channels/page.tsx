@@ -333,7 +333,7 @@ export default function ChannelsPage() {
             Thêm
           </button>
         </div>
-        <p className="text-[11px] text-muted-foreground mt-2">Nền tảng &amp; ID kênh được tự nhận diện từ URL.</p>
+        <p className="text-[16px] text-muted-foreground mt-2">Nền tảng &amp; ID kênh được tự nhận diện từ URL.</p>
       </div>
 
       {/* Bảng kênh */}
@@ -378,7 +378,7 @@ export default function ChannelsPage() {
                         <td className="px-4 py-2.5">{displayMarket}</td>
                         <td className="px-4 py-2.5 font-medium text-foreground max-w-[200px] truncate" title={c.channelName}>{c.channelName}</td>
                       <td className="px-4 py-2.5">
-                        <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${PLATFORM_COLOR[c.platform] || "bg-muted/20 text-muted-foreground"}`}>
+                        <span className={`text-[15px] px-2 py-0.5 rounded font-medium ${PLATFORM_COLOR[c.platform] || "bg-muted/20 text-muted-foreground"}`}>
                           {PLATFORM_LABEL[c.platform] || c.platform}
                         </span>
                       </td>
@@ -437,7 +437,7 @@ export default function ChannelsPage() {
           {/* Phân trang */}
           {channels.length > PER_PAGE && (
             <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-[16px] text-muted-foreground">
                 Hiển thị {start + 1}–{Math.min(start + PER_PAGE, channels.length)} trong {channels.length} kênh
               </span>
               <div className="flex items-center gap-1">
@@ -453,7 +453,7 @@ export default function ChannelsPage() {
                   <button
                     key={i}
                     onClick={() => setPage(i)}
-                    className={`w-6 h-6 flex items-center justify-center rounded text-[11px] font-medium transition-colors ${
+                    className={`w-6 h-6 flex items-center justify-center rounded text-[16px] font-medium transition-colors ${
                       page === i 
                         ? "bg-blue-600 text-white" 
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"

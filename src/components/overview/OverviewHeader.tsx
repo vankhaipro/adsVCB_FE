@@ -64,7 +64,7 @@ function KpiCard({ label, value, sub, change, icon: Icon, iconColor, iconBg }: K
         </div>
         {hasChange && (
           <span
-            className={`flex items-center gap-0.5 text-[11px] font-semibold shrink-0 ${
+            className={`flex items-center gap-0.5 text-[16px] font-semibold shrink-0 ${
               up ? "text-green-600" : "text-red-500"
             }`}
           >
@@ -75,8 +75,8 @@ function KpiCard({ label, value, sub, change, icon: Icon, iconColor, iconBg }: K
       </div>
       <div className="min-w-0">
         <p className="text-lg font-bold text-foreground leading-tight truncate">{value}</p>
-        {sub && <p className="text-[10px] text-muted-foreground truncate">{sub}</p>}
-        <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{label}</p>
+        {sub && <p className="text-[15px] text-muted-foreground truncate">{sub}</p>}
+        <p className="text-[16px] text-muted-foreground mt-0.5 leading-snug">{label}</p>
       </div>
     </div>
   );

@@ -79,7 +79,7 @@ export default function CreativeTable({ campaigns }: CreativeTableProps) {
       bodyClassName="px-0 pb-0"
     >
       <div className="px-5 -mt-1 mb-1">
-        <span className="text-[11px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
+        <span className="text-[16px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
           {campaigns.length} mẫu quảng cáo thực tế
         </span>
       </div>
@@ -144,7 +144,7 @@ export default function CreativeTable({ campaigns }: CreativeTableProps) {
       {/* Phân trang */}
       {campaigns.length > PER_PAGE && (
         <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-[16px] text-muted-foreground">
             Hiển thị {start + 1}–{Math.min(start + PER_PAGE, campaigns.length)} trong {campaigns.length} mẫu quảng cáo
           </span>
           <div className="flex items-center gap-1">

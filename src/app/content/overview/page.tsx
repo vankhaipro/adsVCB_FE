@@ -328,7 +328,7 @@ export default function ContentOverviewPage() {
               </ResponsiveContainer>
               <div className="absolute flex flex-col items-center justify-center">
                 <span className="text-xl font-bold text-foreground">{totalViewsLabel}</span>
-                <span className="text-[10px] text-muted-foreground">Tổng</span>
+                <span className="text-[15px] text-muted-foreground">Tổng</span>
               </div>
             </div>
           </div>
@@ -350,27 +350,27 @@ export default function ContentOverviewPage() {
             <div className="grid grid-cols-2 gap-4">
               
               <div className="bg-muted/30 border border-border rounded-lg p-3.5 col-span-2">
-                <p className="text-[10px] text-muted-foreground font-medium">Tổng Lượt Xem</p>
+                <p className="text-[15px] text-muted-foreground font-medium">Tổng Lượt Xem</p>
                 <p className="text-2xl font-black text-foreground mt-1">{kpi.views}</p>
               </div>
               
               <div className="bg-muted/30 border border-border rounded-lg p-3">
-                <p className="text-[10px] text-muted-foreground font-medium">Tổng Tương Tác</p>
+                <p className="text-[15px] text-muted-foreground font-medium">Tổng Tương Tác</p>
                 <p className="text-lg font-bold text-foreground mt-1">{kpi.interactions}</p>
               </div>
               
               <div className="bg-muted/30 border border-border rounded-lg p-3">
-                <p className="text-[10px] text-muted-foreground font-medium">Lượt Thích</p>
+                <p className="text-[15px] text-muted-foreground font-medium">Lượt Thích</p>
                 <p className="text-lg font-bold text-foreground mt-1">{kpi.likes}</p>
               </div>
               
               <div className="bg-muted/30 border border-border rounded-lg p-3">
-                <p className="text-[10px] text-muted-foreground font-medium">Bình Luận</p>
+                <p className="text-[15px] text-muted-foreground font-medium">Bình Luận</p>
                 <p className="text-lg font-bold text-foreground mt-1">{kpi.comments}</p>
               </div>
               
               <div className="bg-muted/30 border border-border rounded-lg p-3">
-                <p className="text-[10px] text-muted-foreground font-medium">Tổng Followers</p>
+                <p className="text-[15px] text-muted-foreground font-medium">Tổng Followers</p>
                 <p className="text-lg font-bold text-foreground mt-1">{kpi.followers}</p>
               </div>
 
@@ -386,16 +386,16 @@ export default function ContentOverviewPage() {
 
               {/* Nội dung đăng tải */}
               <div className="flex flex-col items-center">
-                <p className="text-[10px] text-muted-foreground font-semibold mb-2">Nội dung đăng tải</p>
-                <div className="relative w-full h-[140px] flex items-center justify-center">
+                <p className="text-[15px] text-muted-foreground font-semibold mb-2">Nội dung đăng tải</p>
+                <div className="relative w-[180px] h-[160px] flex items-center justify-center">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={postContentData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={45}
-                        outerRadius={65}
+                        innerRadius={50}
+                        outerRadius={72}
                         paddingAngle={2}
                         dataKey="value"
                       >
@@ -407,10 +407,10 @@ export default function ContentOverviewPage() {
                   </ResponsiveContainer>
                   <div className="absolute flex flex-col items-center justify-center">
                     <span className="text-base font-bold text-foreground">{fmtNum(winTotal)}</span>
-                    <span className="text-[8px] text-muted-foreground">Tổng video</span>
+                    <span className="text-[13px] text-muted-foreground">Tổng video</span>
                   </div>
                 </div>
-                <div className="flex justify-center gap-3 mt-2 text-[10px]">
+                <div className="flex justify-center gap-3 mt-2 text-[15px]">
                   <span className="text-green-500">Win: {winPct}%</span>
                   <span className="text-red-500">Not: {notWinPct}%</span>
                 </div>
@@ -484,11 +484,11 @@ export default function ContentOverviewPage() {
               </ResponsiveContainer>
               <div className="absolute flex flex-col items-center justify-center">
                 <span className="text-xl font-bold text-foreground">{fmtNum(channelsTotal)}</span>
-                <span className="text-[10px] text-muted-foreground">Tổng số kênh</span>
+                <span className="text-[15px] text-muted-foreground">Tổng số kênh</span>
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-[10px]">
+          <div className="grid grid-cols-2 gap-2 text-[15px]">
             {channelsDistributionData.map((item, idx) => (
               <div key={idx} className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
@@ -561,11 +561,11 @@ export default function ContentOverviewPage() {
               </ResponsiveContainer>
               <div className="absolute flex flex-col items-center justify-center">
                 <span className="text-base font-bold text-foreground">{fmtNum(lineTotal)}</span>
-                <span className="text-[9px] text-muted-foreground">Tổng</span>
+                <span className="text-[14px] text-muted-foreground">Tổng</span>
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-1.5 text-[9px] mt-2">
+          <div className="grid grid-cols-3 gap-1.5 text-[14px] mt-2">
             {contentLineDistributionData.map((item, idx) => (
               <div key={idx} className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
@@ -606,11 +606,11 @@ export default function ContentOverviewPage() {
               </ResponsiveContainer>
               <div className="absolute flex flex-col items-center justify-center">
                 <span className="text-base font-bold text-foreground">{fmtNum(conceptTotal)}</span>
-                <span className="text-[9px] text-muted-foreground">Tổng</span>
+                <span className="text-[14px] text-muted-foreground">Tổng</span>
               </div>
             </div>
           </div>
-          <div className="flex justify-around gap-1.5 text-[10px] mt-2">
+          <div className="flex justify-around gap-1.5 text-[15px] mt-2">
             {conceptDistributionData.map((item, idx) => (
               <div key={idx} className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
@@ -627,7 +627,7 @@ export default function ContentOverviewPage() {
           <div className="overflow-y-auto max-h-[190px] text-xs">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-border text-muted-foreground text-[10px]">
+                <tr className="border-b border-border text-muted-foreground text-[15px]">
                   <th className="pb-1.5">Nội dung</th>
                   <th className="pb-1.5 text-right">Số video</th>
                 </tr>
@@ -647,7 +647,7 @@ export default function ContentOverviewPage() {
         {/* Top Sku data record */}
         <div className="bg-card border border-border rounded-xl p-5 shadow-md">
           <h3 className="text-xs font-semibold text-foreground mb-3">Top sản phẩm sản xuất video nhiều nhất (ghi nhận)</h3>
-          <div className="overflow-y-auto max-h-[190px] text-[10px]">
+          <div className="overflow-y-auto max-h-[190px] text-[15px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
@@ -672,7 +672,7 @@ export default function ContentOverviewPage() {
         {/* Top Sku create record */}
         <div className="bg-card border border-border rounded-xl p-5 shadow-md">
           <h3 className="text-xs font-semibold text-foreground mb-3">Top sản phẩm sản xuất video nhiều nhất (thời gian tạo)</h3>
-          <div className="overflow-y-auto max-h-[190px] text-[10px]">
+          <div className="overflow-y-auto max-h-[190px] text-[15px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
@@ -705,7 +705,7 @@ export default function ContentOverviewPage() {
             <Tag size={14} className="text-blue-500" />
             Hiệu suất tuyến nội dung (Thời gian ghi dữ liệu)
           </h4>
-          <div className="overflow-x-auto text-[10px]">
+          <div className="overflow-x-auto text-[15px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
@@ -735,7 +735,7 @@ export default function ContentOverviewPage() {
             <Tag size={14} className="text-amber-500" />
             Hiệu suất tuyến nội dung (Thời gian tạo nội dung)
           </h4>
-          <div className="overflow-x-auto text-[10px]">
+          <div className="overflow-x-auto text-[15px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
@@ -770,7 +770,7 @@ export default function ContentOverviewPage() {
             <Star size={14} className="text-blue-500" />
             Top Kênh theo view
           </h3>
-          <div className="overflow-y-auto max-h-[220px] text-[10px]">
+          <div className="overflow-y-auto max-h-[220px] text-[15px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
@@ -783,7 +783,7 @@ export default function ContentOverviewPage() {
                 {topChannelsByView.map((row, idx) => (
                   <tr key={idx} className="hover:bg-muted/20">
                     <td className="py-2">
-                      <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold ${
+                      <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[13px] font-bold ${
                         row.platform === "Facebook" ? "bg-blue-500/10 text-blue-400" : "bg-pink-500/10 text-pink-400"
                       }`}>
                         {row.platform}
@@ -804,7 +804,7 @@ export default function ContentOverviewPage() {
             <Star size={14} className="text-pink-500" />
             Top Video theo view
           </h3>
-          <div className="overflow-y-auto max-h-[220px] text-[10px]">
+          <div className="overflow-y-auto max-h-[220px] text-[15px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
@@ -830,7 +830,7 @@ export default function ContentOverviewPage() {
             <Star size={14} className="text-amber-500" />
             Top Nhân sự theo view
           </h3>
-          <div className="overflow-y-auto max-h-[220px] text-[10px]">
+          <div className="overflow-y-auto max-h-[220px] text-[15px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
@@ -860,7 +860,7 @@ export default function ContentOverviewPage() {
         {/* Hieu suat chi tiet kenh */}
         <div className="bg-card border border-border rounded-xl p-5 shadow-md">
           <h3 className="text-xs font-bold text-foreground mb-4">Hiệu suất chi tiết theo kênh</h3>
-          <div className="overflow-x-auto text-[10px]">
+          <div className="overflow-x-auto text-[15px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
@@ -891,7 +891,7 @@ export default function ContentOverviewPage() {
         {/* Hieu suat chi tiet team */}
         <div className="bg-card border border-border rounded-xl p-5 shadow-md">
           <h3 className="text-xs font-bold text-foreground mb-4">Hiệu suất chi tiết theo nhân sự</h3>
-          <div className="overflow-x-auto text-[10px]">
+          <div className="overflow-x-auto text-[15px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
@@ -930,7 +930,7 @@ export default function ContentOverviewPage() {
               Meta Content
             </h3>
           </div>
-          <div className="overflow-x-auto text-[10px]">
+          <div className="overflow-x-auto text-[15px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
@@ -971,7 +971,7 @@ export default function ContentOverviewPage() {
               TikTok Content
             </h3>
           </div>
-          <div className="overflow-x-auto text-[10px]">
+          <div className="overflow-x-auto text-[15px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
@@ -1010,7 +1010,7 @@ export default function ContentOverviewPage() {
               YouTube Content
             </h3>
           </div>
-          <div className="overflow-x-auto text-[10px]">
+          <div className="overflow-x-auto text-[15px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">

@@ -124,7 +124,7 @@ export default function MetricFilter({ value, onApply }: Props) {
         <Funnel size={14} className={activeCount > 0 ? "text-blue-500" : "text-blue-400"} weight={activeCount > 0 ? "fill" : "regular"} />
         <span className="font-medium">Lọc theo chỉ số</span>
         {activeCount > 0 && (
-          <span className="bg-blue-600 text-white rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none">
+          <span className="bg-blue-600 text-white rounded-full px-1.5 py-0.5 text-[15px] font-semibold leading-none">
             {activeCount}
           </span>
         )}
