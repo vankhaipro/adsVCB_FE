@@ -10,6 +10,7 @@ import {
   YoutubeLogo
 } from "@phosphor-icons/react";
 import { apiGet } from "@/lib/api";
+import ContentFilterDropdowns, { matchContentFilters, EMPTY_DIM_FILTERS } from "@/components/ContentFilterDropdowns";
 
 // Mock data based on YouTube content screenshots
 const initialVideos = [
@@ -319,18 +320,12 @@ export default function YoutubeContentPage() {
       .catch(() => {});
   }, []);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dimFilters, setDimFilters] = useState(EMPTY_DIM_FILTERS);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
-
-  // Active filters list
-  const [activeFilters, setActiveFilters] = useState([
-    { id: "date", label: "date trong khoảng thời gian: 30 ngày qua" },
-    { id: "created_time", label: "created_time trong khoảng thời gian: 30 ngày qua" },
-    { id: "platform_name", label: "platform_name chứa: youtube" }
-  ]);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -346,10 +341,6 @@ export default function YoutubeContentPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Remove individual filter tag
-  function removeFilter(id: string) {
-    setActiveFilters(activeFilters.filter((filter) => filter.id !== id));
-  }
 
   // Handle Sort
   function requestSort(key: string) {
@@ -389,13 +380,13 @@ export default function YoutubeContentPage() {
     }
   }
 
-  // Filter list by search query
+  // Filter list by search query + dropdown chỉ số
   const filteredVideos = videos.filter((vid) => {
-    return (
+    const matchesSearch =
       vid.caption.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vid.channel.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vid.staff.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+      vid.staff.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch && matchContentFilters(vid, dimFilters);
   });
 
   const totals = filteredVideos.reduce((acc, curr) => {
@@ -414,7 +405,7 @@ export default function YoutubeContentPage() {
   // Reset page when search or filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, activeFilters]);
+  }, [searchQuery, dimFilters]);
 
   // Pagination logic
   const totalPages = Math.max(1, Math.ceil(filteredVideos.length / itemsPerPage));
@@ -426,24 +417,8 @@ export default function YoutubeContentPage() {
       {/* Sticky Filters Toolbar Row */}
       <div className="sticky top-0 z-20 bg-background py-2 -mx-4 px-4 sm:-mx-5 sm:px-5 shrink-0">
         <div className="bg-card border border-border rounded-xl p-3 flex flex-wrap items-center justify-between gap-4 shadow-md">
-          {/* Left Side: Filter Tags */}
-          <div className="flex flex-wrap items-center gap-2">
-            {activeFilters.map((filter) => (
-              <div
-                key={filter.id}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border hover:border-border rounded-lg text-xs text-foreground transition-colors"
-              >
-                <span>{filter.label}</span>
-                <button
-                  onClick={() => removeFilter(filter.id)}
-                  className="text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
-                  title="Xóa bộ lọc"
-                >
-                  <X size={12} weight="bold" />
-                </button>
-              </div>
-            ))}
-          </div>
+          {/* Left Side: Bộ lọc theo chiều (concept/tuyến/team/nhân sự/kênh) */}
+          <ContentFilterDropdowns items={videos} value={dimFilters} onChange={setDimFilters} />
 
           {/* Right Side: Input & Action Buttons */}
           <div className="flex items-center gap-3.5">

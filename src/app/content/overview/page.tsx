@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { apiGet } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
 import Pagination from "@/components/Pagination";
+import DateRangePicker, { presetToDates } from "@/components/DateRangePicker";
 import {
   CaretDown,
   FacebookLogo,
@@ -11,7 +12,6 @@ import {
   YoutubeLogo,
   TrendUp,
   Info,
-  Calendar,
   Tag,
   Star,
   Funnel
@@ -73,14 +73,83 @@ const fmtCompact = (n: number) => {
   return fmtNum(n);
 };
 
+function FilterSelect({ label, value, onChange, options }: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-muted border border-border text-foreground rounded-lg pl-3 pr-8 py-1.5 text-xs appearance-none focus:outline-none focus:border-blue-500 cursor-pointer min-w-[120px] max-w-[180px]"
+      >
+        <option value="">{label}: Tất cả</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+      <CaretDown size={10} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+    </div>
+  );
+}
+
 export default function ContentOverviewPage() {
   const chart = useChartColors();
   const [report, setReport] = useState<Report | null>(null);
   const [list, setList] = useState<ListItem[]>([]);
+  const [metaPage, setMetaPage] = useState(1);
+  const [tiktokPage, setTiktokPage] = useState(1);
+  const [youtubePage, setYoutubePage] = useState(1);
+
+  // ===== Bộ lọc =====
+  const [platform, setPlatform] = useState("");
+  const [team, setTeam] = useState("");
+  const [staff, setStaff] = useState("");
+  const [channel, setChannel] = useState("");
+  const [dateRange, setDateRange] = useState("thisMonth");
+  const [customFrom, setCustomFrom] = useState(() => presetToDates("thisMonth").from);
+  const [customTo, setCustomTo] = useState(() => presetToDates("thisMonth").to);
+
+  // Danh sách option cho dropdown — lấy từ toàn bộ dữ liệu (không lọc), nạp 1 lần.
+  const [allList, setAllList] = useState<ListItem[]>([]);
   useEffect(() => {
-    apiGet("/content/report").then(setReport).catch(() => {});
-    apiGet("/content/list").then(setList).catch(() => {});
+    apiGet("/content/list").then(setAllList).catch(() => {});
   }, []);
+
+  // Query string từ bộ lọc hiện tại.
+  const filterQuery = (() => {
+    const p = new URLSearchParams();
+    const s = new Date(`${customFrom}T00:00:00`);
+    const e = new Date(`${customTo}T23:59:59.999`);
+    p.set("from", s.toISOString());
+    p.set("to", e.toISOString());
+    if (platform) p.set("platform", platform);
+    if (team) p.set("team", team);
+    if (staff) p.set("staff", staff);
+    if (channel) p.set("channel", channel);
+    return p.toString();
+  })();
+
+  // Nạp lại dữ liệu hiển thị mỗi khi bộ lọc đổi.
+  useEffect(() => {
+    apiGet(`/content/report?${filterQuery}`).then(setReport).catch(() => {});
+    apiGet(`/content/list?${filterQuery}`).then(setList).catch(() => {});
+    setMetaPage(1);
+    setTiktokPage(1);
+    setYoutubePage(1);
+  }, [filterQuery]);
+
+  // Option cho dropdown (distinct từ toàn bộ dữ liệu).
+  const distinct = (vals: (string | null)[]) =>
+    [...new Set(vals.filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b));
+  const platformOptions = [...new Set(allList.map((x) => x.platform.toUpperCase()))]
+    .map((p) => ({ value: p, label: PLATFORM_LABEL[p] || p }));
+  const teamOptions = distinct(allList.map((x) => x.team));
+  const staffOptions = distinct(allList.map((x) => x.staff));
+  const channelOptions = distinct(allList.map((x) => x.channel));
 
   const k = report?.kpis;
   // KPI thật (định dạng chuỗi như mock cũ); fallback "—" khi chưa tải xong.
@@ -160,10 +229,12 @@ export default function ContentOverviewPage() {
       }))
     : [];
 
-  // Danh sách nội dung thô theo nền tảng (từ /content/list), giới hạn 50 dòng gần nhất mỗi nền tảng.
-  const metaRawContentList = list.filter((x) => x.platform === "facebook" || x.platform === "instagram").slice(0, 50);
-  const tiktokRawContentList = list.filter((x) => x.platform === "tiktok").slice(0, 50);
-  const youtubeRawContentList = list.filter((x) => x.platform === "youtube").slice(0, 50);
+  // Danh sách nội dung thô theo nền tảng (từ /content/list) — phân trang 10 dòng/trang.
+  const metaRawContentList = list.filter((x) => x.platform === "facebook" || x.platform === "instagram");
+  const tiktokRawContentList = list.filter((x) => x.platform === "tiktok");
+  const youtubeRawContentList = list.filter((x) => x.platform === "youtube");
+  const PAGE_SIZE = 10;
+  const paged = (arr: ListItem[], p: number) => arr.slice((p - 1) * PAGE_SIZE, p * PAGE_SIZE);
 
   // Số tổng cho phần giữa các donut (thay số hardcode).
   const channelsTotal = report?.channelsByPlatform?.reduce((s, x) => s + x.count, 0) ?? 0;
@@ -192,27 +263,41 @@ export default function ContentOverviewPage() {
 
       {/* Filter Bar */}
       <div className="bg-card border border-border rounded-xl p-4 flex flex-wrap items-center gap-3">
-        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg text-xs font-semibold cursor-pointer">
-          <Funnel size={14} />
-          Lưu bộ lọc
-        </button>
-        
-        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-muted-foreground">
-          <Calendar size={14} />
-          <span>Thời gian: <strong className="text-foreground">Tháng trước hoặc tháng này</strong></span>
-          <button className="text-muted-foreground hover:text-foreground ml-1">×</button>
-        </div>
+        {/* Thời gian */}
+        <DateRangePicker
+          presetId={dateRange}
+          from={customFrom}
+          to={customTo}
+          onApply={({ presetId, from, to }) => {
+            setDateRange(presetId);
+            setCustomFrom(from);
+            setCustomTo(to);
+          }}
+        />
 
-        {/* Dropdowns */}
-        {["Nền tảng", "Kênh", "Team", "Nhân viên", "Thời gian ghi dữ liệu"].map((filter, i) => (
-          <div key={i} className="relative">
-            <select className="bg-muted border border-border text-foreground hover:border-border rounded-lg px-3 py-1.5 pr-8 text-xs appearance-none focus:outline-none focus:border-blue-500 cursor-pointer min-w-[120px]">
-              <option>{filter}</option>
-              <option>Tất cả {filter}</option>
-            </select>
-            <CaretDown size={10} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          </div>
-        ))}
+        {/* Nền tảng */}
+        <FilterSelect label="Nền tảng" value={platform} onChange={setPlatform}
+          options={platformOptions} />
+        {/* Kênh */}
+        <FilterSelect label="Kênh" value={channel} onChange={setChannel}
+          options={channelOptions.map((c) => ({ value: c, label: c }))} />
+        {/* Team */}
+        <FilterSelect label="Team" value={team} onChange={setTeam}
+          options={teamOptions.map((t) => ({ value: t, label: t }))} />
+        {/* Nhân viên */}
+        <FilterSelect label="Nhân viên" value={staff} onChange={setStaff}
+          options={staffOptions.map((s) => ({ value: s, label: s }))} />
+
+        {/* Reset */}
+        {(platform || channel || team || staff) && (
+          <button
+            type="button"
+            onClick={() => { setPlatform(""); setChannel(""); setTeam(""); setStaff(""); }}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Funnel size={12} /> Xóa lọc
+          </button>
+        )}
       </div>
 
       {/* Top Row: Donut + KPI Card Grid + Production/Post Donuts */}
@@ -860,7 +945,7 @@ export default function ContentOverviewPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-foreground">
-                {metaRawContentList.map((row, idx) => (
+                {paged(metaRawContentList, metaPage).map((row, idx) => (
                   <tr key={idx} className="hover:bg-muted/20 group">
                     <td className="py-2.5 max-w-[180px] truncate text-foreground group-hover:text-blue-400 transition-colors" title={row.caption ?? undefined}>{row.caption}</td>
                     <td className="py-2.5 truncate max-w-[140px]" title={row.channel ?? undefined}>{row.channel}</td>
@@ -875,6 +960,7 @@ export default function ContentOverviewPage() {
               </tbody>
             </table>
           </div>
+          <Pagination page={metaPage} pageSize={PAGE_SIZE} total={metaRawContentList.length} onChange={setMetaPage} />
         </div>
 
         {/* Tiktok Content Table */}
@@ -899,7 +985,7 @@ export default function ContentOverviewPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-foreground">
-                {tiktokRawContentList.map((row, idx) => (
+                {paged(tiktokRawContentList, tiktokPage).map((row, idx) => (
                   <tr key={idx} className="hover:bg-muted/20 group">
                     <td className="py-2.5 max-w-[180px] truncate text-foreground group-hover:text-pink-400 transition-colors" title={row.caption ?? undefined}>{row.caption}</td>
                     <td className="py-2.5 truncate max-w-[140px]" title={row.channel ?? undefined}>{row.channel}</td>
@@ -913,6 +999,7 @@ export default function ContentOverviewPage() {
               </tbody>
             </table>
           </div>
+          <Pagination page={tiktokPage} pageSize={PAGE_SIZE} total={tiktokRawContentList.length} onChange={setTiktokPage} />
         </div>
 
         {/* Youtube Content Table */}
@@ -938,7 +1025,7 @@ export default function ContentOverviewPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-foreground">
-                {youtubeRawContentList.map((row, idx) => (
+                {paged(youtubeRawContentList, youtubePage).map((row, idx) => (
                   <tr key={idx} className="hover:bg-muted/20 group">
                     <td className="py-2.5 max-w-[180px] truncate text-foreground group-hover:text-red-400 transition-colors" title={row.caption ?? undefined}>{row.caption}</td>
                     <td className="py-2.5 truncate max-w-[140px]" title={row.channel ?? undefined}>{row.channel}</td>
@@ -953,6 +1040,7 @@ export default function ContentOverviewPage() {
               </tbody>
             </table>
           </div>
+          <Pagination page={youtubePage} pageSize={PAGE_SIZE} total={youtubeRawContentList.length} onChange={setYoutubePage} />
         </div>
 
       </div>
