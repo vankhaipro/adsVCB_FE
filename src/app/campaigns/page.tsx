@@ -124,9 +124,9 @@ export default function CampaignsPage() {
   const [activeTab, setActiveTab] = useState<"campaign" | "adset" | "ad">("campaign");
   
   // Filter States — khoảng thời gian: preset id (để hiện nhãn) + ngày from/to cụ thể
-  const [dateRange, setDateRange] = useState("thisMonth");
-  const [customFrom, setCustomFrom] = useState(() => presetToDates("thisMonth").from);
-  const [customTo, setCustomTo] = useState(() => presetToDates("thisMonth").to);
+  const [dateRange, setDateRange] = useState("last30days");
+  const [customFrom, setCustomFrom] = useState(() => presetToDates("last30days").from);
+  const [customTo, setCustomTo] = useState(() => presetToDates("last30days").to);
   // Bộ lọc theo chỉ số (AND nhiều điều kiện)
   const [metricConds, setMetricConds] = useState<MetricCondition[]>([]);
   const [platform, setPlatform] = useState<string>("ALL");

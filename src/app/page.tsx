@@ -222,7 +222,7 @@ function OverviewInner() {
   }
 
   // Filters State
-  const [dateRange, setDateRange] = useState("thisMonth");
+  const [dateRange, setDateRange] = useState("last30days");
   const [platform, setPlatform] = useState("ALL");
   const [objective, setObjective] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");

@@ -109,9 +109,9 @@ export default function ContentOverviewPage() {
   const [team, setTeam] = useState("");
   const [staff, setStaff] = useState("");
   const [channel, setChannel] = useState("");
-  const [dateRange, setDateRange] = useState("thisMonth");
-  const [customFrom, setCustomFrom] = useState(() => presetToDates("thisMonth").from);
-  const [customTo, setCustomTo] = useState(() => presetToDates("thisMonth").to);
+  const [dateRange, setDateRange] = useState("last30days");
+  const [customFrom, setCustomFrom] = useState(() => presetToDates("last30days").from);
+  const [customTo, setCustomTo] = useState(() => presetToDates("last30days").to);
 
   // Danh sách option cho dropdown — lấy từ toàn bộ dữ liệu (không lọc), nạp 1 lần.
   const [allList, setAllList] = useState<ListItem[]>([]);
