@@ -31,6 +31,11 @@ export default function SettingsPage() {
   const [empName, setEmpName] = useState("");
   const [empCode, setEmpCode] = useState("");
   const [empTeamId, setEmpTeamId] = useState("");
+  // Sửa nhân viên đang có
+  const [editEmpId, setEditEmpId] = useState<string | null>(null);
+  const [editEmpName, setEditEmpName] = useState("");
+  const [editEmpCode, setEditEmpCode] = useState("");
+  const [editEmpTeamId, setEditEmpTeamId] = useState("");
 
   // --- Ngưỡng Win ---
   const [winViews, setWinViews] = useState("");
@@ -100,8 +105,19 @@ export default function SettingsPage() {
     setEmpName(""); setEmpCode(""); await load();
   }, "Thêm nhân viên lỗi");
 
-  const saveEmpCode = (e: Employee, code: string) =>
-    guard(async () => { await apiPatch(`/employees/${e.id}`, { code }); await load(); }, "Lưu mã lỗi")();
+  const startEditEmp = (e: Employee) => {
+    setEditEmpId(e.id); setEditEmpName(e.name); setEditEmpCode(e.code ?? ""); setEditEmpTeamId(e.team?.id ?? "");
+  };
+  const cancelEditEmp = () => { setEditEmpId(null); setEditEmpName(""); setEditEmpCode(""); setEditEmpTeamId(""); };
+  const saveEditEmp = (e: Employee) => guard(async () => {
+    if (!editEmpName.trim()) { setError("Nhập tên nhân viên"); return; }
+    await apiPatch(`/employees/${e.id}`, {
+      name: editEmpName.trim(),
+      code: editEmpCode.trim() || null,
+      teamId: editEmpTeamId || null,
+    });
+    cancelEditEmp(); await load();
+  }, "Sửa nhân viên lỗi")();
 
   const delTeam = (t: Team) => guard(async () => {
     if (!confirm(`Xóa team "${t.name}"? Nhân viên thuộc team sẽ bị gỡ team.`)) return;
@@ -352,17 +368,33 @@ export default function SettingsPage() {
               {employees.length === 0 ? (
                 <span className="text-xs text-muted-foreground py-4 text-center">Chưa có nhân viên nào.</span>
               ) : employees.map((e) => (
-                <div key={e.id} className="flex items-center justify-between py-2.5 text-sm gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <input
-                      defaultValue={e.code ?? ""} placeholder="mã"
-                      className="bg-card border border-border rounded px-2 py-1 text-xs text-foreground w-20 outline-none focus:border-blue-500"
-                      onBlur={(ev) => { const v = ev.target.value.trim(); if (v !== (e.code ?? "")) saveEmpCode(e, v); }}
-                    />
-                    <span className="text-foreground truncate">{e.name} {e.team && <span className="text-muted-foreground text-xs">· {e.team.name}</span>}</span>
+                editEmpId === e.id ? (
+                  /* ==== Chế độ sửa ==== */
+                  <div key={e.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm">
+                    <select className={`${inputCls} w-40`} value={editEmpTeamId} onChange={(ev) => setEditEmpTeamId(ev.target.value)}>
+                      <option value="" className="bg-background">— Team —</option>
+                      {teams.map((t) => <option key={t.id} value={t.id} className="bg-background">{t.name}</option>)}
+                    </select>
+                    <input className={`${inputCls} w-24`} placeholder="Mã (K403)" value={editEmpCode} onChange={(ev) => setEditEmpCode(ev.target.value)} />
+                    <input className={`${inputCls} flex-1 min-w-[120px]`} placeholder="Tên nhân viên" value={editEmpName} onChange={(ev) => setEditEmpName(ev.target.value)} />
+                    <button onClick={() => saveEditEmp(e)} title="Lưu" className="flex items-center gap-1 px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-foreground text-xs rounded-md">
+                      <Check size={14} /> Lưu
+                    </button>
+                    <button onClick={cancelEditEmp} title="Hủy" className="p-1.5 text-muted-foreground hover:text-foreground"><X size={16} /></button>
                   </div>
-                  <button onClick={() => delEmployee(e)} className="text-muted-foreground hover:text-red-400 shrink-0"><Trash size={16} /></button>
-                </div>
+                ) : (
+                  /* ==== Chế độ xem ==== */
+                  <div key={e.id} className="flex items-center justify-between py-2.5 text-sm gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="bg-card border border-border rounded px-2 py-1 text-xs text-muted-foreground w-24 shrink-0 truncate">{e.code || "—"}</span>
+                      <span className="text-foreground truncate">{e.name} {e.team && <span className="text-muted-foreground text-xs">· {e.team.name}</span>}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => startEditEmp(e)} title="Sửa" className="text-muted-foreground hover:text-blue-400"><PencilSimple size={16} /></button>
+                      <button onClick={() => delEmployee(e)} title="Xóa" className="text-muted-foreground hover:text-red-400"><Trash size={16} /></button>
+                    </div>
+                  </div>
+                )
               ))}
             </div>
           </div>
