@@ -96,10 +96,15 @@ export default function ContentFilterDropdowns({
   const [staffNames, setStaffNames] = useState<string[]>([]);
   useEffect(() => {
     apiGet("/teams")
-      .then((r: { name?: string }[]) => setTeamNames(r.map((t) => t.name ?? "").filter(Boolean)))
+      .then((r: { name?: string }[]) =>
+        setTeamNames([...new Set(r.map((t) => t.name ?? "").filter(Boolean))])
+      )
       .catch(() => {});
     apiGet("/employees")
-      .then((r: { name?: string }[]) => setStaffNames(r.map((e) => e.name ?? "").filter(Boolean)))
+      .then((r: { name?: string }[]) =>
+        // Khử trùng tên: nhiều nhân viên có thể trùng tên (code mới unique).
+        setStaffNames([...new Set(r.map((e) => e.name ?? "").filter(Boolean))])
+      )
       .catch(() => {});
   }, []);
 
