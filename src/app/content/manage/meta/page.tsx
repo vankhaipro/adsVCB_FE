@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import { apiGet } from "@/lib/api";
 import ContentFilterDropdowns, { matchContentFilters, EMPTY_DIM_FILTERS } from "@/components/ContentFilterDropdowns";
+import CopyableText from "@/components/CopyableText";
 
 // Mock data based on user screenshots
 const initialPosts = [
@@ -528,8 +529,8 @@ export default function MetaContentPage() {
                     </td>
 
                     {/* Content cells */}
-                    <td className="py-2.5 px-4 max-w-[200px] truncate border-r border-border font-medium text-foreground" title={post.caption}>
-                      {post.caption}
+                    <td className="py-2.5 px-4 max-w-[200px] truncate border-r border-border font-medium text-foreground">
+                      <CopyableText text={post.caption} />
                     </td>
 
                     <td className="py-2.5 px-4 border-r border-border">

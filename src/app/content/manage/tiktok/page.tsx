@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import { apiGet } from "@/lib/api";
 import ContentFilterDropdowns, { matchContentFilters, EMPTY_DIM_FILTERS } from "@/components/ContentFilterDropdowns";
+import CopyableText from "@/components/CopyableText";
 
 // Mock data based on TikTok content screenshots
 const initialVideos = [
@@ -588,8 +589,8 @@ export default function TiktokContentPage() {
                     </td>
 
                     {/* Content cells */}
-                    <td className="py-2.5 px-4 max-w-[200px] truncate border-r border-border font-medium text-foreground" title={vid.caption}>
-                      {vid.caption}
+                    <td className="py-2.5 px-4 max-w-[200px] truncate border-r border-border font-medium text-foreground">
+                      <CopyableText text={vid.caption} />
                     </td>
 
                     <td className="py-2.5 px-4 border-r border-border">

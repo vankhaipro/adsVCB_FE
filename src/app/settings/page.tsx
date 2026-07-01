@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Plus, Trash, SpinnerGap, UsersThree, User, Trophy, Key, FloppyDisk, Tag, PencilSimple, X, Check } from "@phosphor-icons/react";
-import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api";
+import { apiGet, apiPost, apiPatch, apiDelete, getAuthRole } from "@/lib/api";
 
 type Team = { id: string; name: string; industry: string | null; market: string | null; _count: { employees: number } };
 type Employee = { id: string; name: string; code: string | null; team: { id: string; name: string } | null };
@@ -16,6 +16,10 @@ const inputCls =
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("employees");
   const [error, setError] = useState<string | null>(null);
+  // Chỉ ADMIN được xem/quản lý tab "Tài khoản".
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => { setIsAdmin(getAuthRole() === "ADMIN"); }, []);
+  useEffect(() => { if (!isAdmin && tab === "accounts") setTab("employees"); }, [isAdmin, tab]);
 
   // --- Nhân viên / Team ---
   const [teams, setTeams] = useState<Team[]>([]);
@@ -201,7 +205,8 @@ export default function SettingsPage() {
     { id: "employees", label: "Nhân viên", icon: <User size={16} /> },
     { id: "industry_market", label: "Ngành & Thị trường", icon: <Tag size={16} /> },
     { id: "win", label: "Ngưỡng Win", icon: <Trophy size={16} /> },
-    { id: "accounts", label: "Tài khoản", icon: <Key size={16} /> },
+    // Tab "Tài khoản" chỉ hiện với ADMIN.
+    ...(isAdmin ? [{ id: "accounts" as Tab, label: "Tài khoản", icon: <Key size={16} /> }] : []),
   ];
 
   return (

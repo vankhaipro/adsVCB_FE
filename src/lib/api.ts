@@ -45,3 +45,18 @@ export const apiDelete = (path: string) =>
 // Format tiền VND
 export const fmtVnd = (n: number) =>
   new Intl.NumberFormat("vi-VN").format(Math.round(n || 0)) + "đ";
+
+// Giải mã vai trò (role) từ JWT trong localStorage (client-side).
+export function getAuthRole(): string | null {
+  if (typeof window === "undefined") return null;
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+  try {
+    let b = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    b += "=".repeat((4 - (b.length % 4)) % 4);
+    const payload = JSON.parse(atob(b));
+    return payload.role ?? null;
+  } catch {
+    return null;
+  }
+}

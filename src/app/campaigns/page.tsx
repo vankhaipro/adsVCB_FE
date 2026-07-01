@@ -7,6 +7,7 @@ import {
 import { apiGet, apiPatch, apiPost, fmtVnd } from "@/lib/api";
 import DateRangePicker, { presetToDates } from "@/components/DateRangePicker";
 import MetricFilter, { matchMetric, type MetricCondition } from "@/components/MetricFilter";
+import CopyableText from "@/components/CopyableText";
 
 type Campaign = {
   id: string;
@@ -806,8 +807,8 @@ export default function CampaignsPage() {
                           />
                         </button>
                       </td>
-                      <td className="px-3 py-3 text-foreground font-medium max-w-[240px] truncate" title={c.name}>
-                        {c.name}
+                      <td className="px-3 py-3 text-foreground font-medium max-w-[240px] truncate">
+                        <CopyableText text={c.name} />
                       </td>
                       <td className="px-3 py-3">
                         <PlatformBadge platform={c.platform} />
@@ -886,8 +887,8 @@ export default function CampaignsPage() {
                           />
                         </button>
                       </td>
-                      <td className="px-3 py-3 text-foreground font-medium max-w-[240px] truncate" title={as.name}>
-                        {as.name}
+                      <td className="px-3 py-3 text-foreground font-medium max-w-[240px] truncate">
+                        <CopyableText text={as.name} />
                       </td>
                       <td className="px-3 py-3">
                         <PlatformBadge platform={as.platform} />
@@ -968,8 +969,8 @@ export default function CampaignsPage() {
                             />
                           </button>
                         </td>
-                        <td className="px-3 py-3 text-foreground font-medium max-w-[200px] truncate" title={ad.name}>
-                          {ad.name}
+                        <td className="px-3 py-3 text-foreground font-medium max-w-[200px] truncate">
+                          <CopyableText text={ad.name} />
                         </td>
                         <td className="px-3 py-3 text-center">
                           <div className="w-8 h-8 rounded bg-muted border border-border flex items-center justify-center overflow-hidden mx-auto">
