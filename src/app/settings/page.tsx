@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Trash, SpinnerGap, UsersThree, User, Trophy, Key, FloppyDisk, Tag } from "@phosphor-icons/react";
+import { Plus, Trash, SpinnerGap, UsersThree, User, Trophy, Key, FloppyDisk, Tag, PencilSimple, X, Check } from "@phosphor-icons/react";
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api";
 
 type Team = { id: string; name: string; industry: string | null; market: string | null; _count: { employees: number } };
@@ -39,6 +39,11 @@ export default function SettingsPage() {
   const [accName, setAccName] = useState("");
   const [accPass, setAccPass] = useState("");
   const [accRole, setAccRole] = useState("ADMIN");
+  // Sửa tài khoản đang có
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editEmail, setEditEmail] = useState("");
+  const [editName, setEditName] = useState("");
+  const [editPass, setEditPass] = useState("");
 
   // --- Ngành / Thị trường ---
   const [industries, setIndustries] = useState<string[]>([]);
@@ -110,13 +115,26 @@ export default function SettingsPage() {
   }, "Lưu ngưỡng lỗi");
 
   const addAccount = guard(async () => {
-    if (!accEmail.trim() || !accName.trim() || !accPass) { setError("Nhập đủ email / tên / mật khẩu"); return; }
+    if (!accEmail.trim() || !accName.trim() || !accPass) { setError("Nhập đủ tài khoản / tên / mật khẩu"); return; }
     await apiPost("/users", { email: accEmail.trim(), name: accName.trim(), password: accPass, role: accRole });
     setAccEmail(""); setAccName(""); setAccPass(""); setAccRole("ADMIN"); await load();
   }, "Thêm tài khoản lỗi");
 
   const changeRole = (a: Account, role: string) =>
     guard(async () => { await apiPatch(`/users/${a.id}`, { role }); await load(); }, "Đổi vai trò lỗi")();
+
+  const startEdit = (a: Account) => {
+    setEditId(a.id); setEditEmail(a.email); setEditName(a.name); setEditPass("");
+  };
+  const cancelEdit = () => { setEditId(null); setEditEmail(""); setEditName(""); setEditPass(""); };
+  const saveEdit = (a: Account) => guard(async () => {
+    if (!editEmail.trim() || !editName.trim()) { setError("Nhập đủ tài khoản / tên"); return; }
+    await apiPatch(`/users/${a.id}`, {
+      email: editEmail.trim(), name: editName.trim(),
+      ...(editPass ? { password: editPass } : {}),
+    });
+    cancelEdit(); await load();
+  }, "Sửa tài khoản lỗi")();
 
   const delAccount = (a: Account) => guard(async () => {
     if (!confirm(`Xóa tài khoản "${a.email}"?`)) return;
@@ -450,7 +468,7 @@ export default function SettingsPage() {
             <Key size={18} className="text-blue-400" /> Tài khoản đăng nhập ({accounts.length})
           </h3>
           <div className="flex flex-wrap gap-2 mb-4">
-            <input className={`${inputCls} flex-1 min-w-[160px]`} placeholder="Email" value={accEmail} onChange={(e) => setAccEmail(e.target.value)} />
+            <input className={`${inputCls} flex-1 min-w-[160px]`} placeholder="Tài khoản" value={accEmail} onChange={(e) => setAccEmail(e.target.value)} />
             <input className={`${inputCls} flex-1 min-w-[120px]`} placeholder="Tên" value={accName} onChange={(e) => setAccName(e.target.value)} />
             <input className={`${inputCls} w-36`} type="password" placeholder="Mật khẩu" value={accPass} onChange={(e) => setAccPass(e.target.value)} />
             <select className={inputCls} value={accRole} onChange={(e) => setAccRole(e.target.value)}>
@@ -464,22 +482,40 @@ export default function SettingsPage() {
           <div className="flex flex-col divide-y divide-border">
             {accounts.length === 0 ? (
               <span className="text-xs text-muted-foreground py-4 text-center">Chưa có tài khoản nào.</span>
-            ) : accounts.map((a) => (
-              <div key={a.id} className="flex items-center justify-between py-2.5 text-sm gap-2">
-                <div className="min-w-0">
-                  <span className="text-foreground truncate">{a.name}</span>
-                  <span className="text-muted-foreground text-xs ml-2">{a.email}</span>
+            ) : accounts.map((a) => {
+              const isAdmin = a.role === "ADMIN";
+              return editId === a.id ? (
+                /* ==== Chế độ sửa ==== */
+                <div key={a.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm">
+                  <input className={`${inputCls} flex-1 min-w-[150px]`} placeholder="Tài khoản" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+                  <input className={`${inputCls} flex-1 min-w-[120px]`} placeholder="Tên" value={editName} onChange={(e) => setEditName(e.target.value)} />
+                  <input className={`${inputCls} w-40`} type="password" placeholder="Mật khẩu mới (bỏ trống nếu giữ)" value={editPass} onChange={(e) => setEditPass(e.target.value)} />
+                  <button onClick={() => saveEdit(a)} title="Lưu" className="flex items-center gap-1 px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-foreground text-xs rounded-md">
+                    <Check size={14} /> Lưu
+                  </button>
+                  <button onClick={cancelEdit} title="Hủy" className="p-1.5 text-muted-foreground hover:text-foreground"><X size={16} /></button>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <select value={a.role} onChange={(e) => changeRole(a, e.target.value)}
-                    className="bg-card border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-blue-500">
-                    <option value="ADMIN" className="bg-background">ADMIN</option>
-                    <option value="STAFF" className="bg-background">STAFF</option>
-                  </select>
-                  <button onClick={() => delAccount(a)} className="text-muted-foreground hover:text-red-400"><Trash size={16} /></button>
+              ) : (
+                /* ==== Chế độ xem ==== */
+                <div key={a.id} className="flex items-center justify-between py-2.5 text-sm gap-2">
+                  <div className="min-w-0">
+                    <span className="text-foreground truncate">{a.name}</span>
+                    <span className="text-muted-foreground text-xs ml-2">{a.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <select value={a.role} onChange={(e) => changeRole(a, e.target.value)}
+                      disabled={isAdmin}
+                      title={isAdmin ? "Không thể đổi vai trò tài khoản Admin" : "Đổi vai trò"}
+                      className="bg-card border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed">
+                      <option value="ADMIN" className="bg-background">ADMIN</option>
+                      <option value="STAFF" className="bg-background">STAFF</option>
+                    </select>
+                    <button onClick={() => startEdit(a)} title="Sửa" className="text-muted-foreground hover:text-blue-400"><PencilSimple size={16} /></button>
+                    <button onClick={() => delAccount(a)} title="Xóa" className="text-muted-foreground hover:text-red-400"><Trash size={16} /></button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

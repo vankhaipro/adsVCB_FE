@@ -11,7 +11,7 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Viễn Chí Bảo Manager",
+  title: "VCB Ads Manager",
   description: "Hệ thống tự động quản lý & tối ưu quảng cáo",
 };
 

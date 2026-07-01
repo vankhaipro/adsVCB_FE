@@ -49,11 +49,11 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-card border border-border mb-4 shadow-lg overflow-hidden">
             <img
               src="/logoN-VienChiBao.png"
-              alt="Viễn Chí Bảo Manager Logo"
+              alt="VCB Ads Manager Logo"
               className="w-full h-full object-cover"
             />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Viễn Chí Bảo Manager</h1>
+          <h1 className="text-2xl font-bold text-foreground">VCB Ads Manager</h1>
           <p className="text-sm text-muted-foreground mt-1">Hệ thống quản lý quảng cáo tự động</p>
         </div>
 
@@ -62,17 +62,17 @@ export default function LoginPage() {
           <h2 className="text-lg font-semibold text-foreground mb-6">Đăng nhập</h2>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Email */}
+            {/* Tài khoản */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-muted-foreground font-medium">Email</label>
+              <label className="text-sm text-muted-foreground font-medium">Tài khoản</label>
               <input
-                id="login-email"
-                type="email"
-                autoComplete="email"
+                id="login-account"
+                type="text"
+                autoComplete="username"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@adsvcb.com"
+                placeholder="Nhập tài khoản"
                 className="bg-card border border-border rounded-lg px-4 py-2.5 text-foreground text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               />
             </div>
@@ -126,7 +126,7 @@ export default function LoginPage() {
         </div>
         
         <p className="text-center text-xs text-muted-foreground mt-6">
-          © 2026 Viễn Chí Bảo Manager. All rights reserved.
+          © 2026 VCB Ads Manager. All rights reserved.
         </p>
       </div>
     </div>

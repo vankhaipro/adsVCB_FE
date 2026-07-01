@@ -135,12 +135,12 @@ function SidebarContent() {
         <span className="relative w-6 h-6 mr-2 rounded-full overflow-hidden inline-flex flex-shrink-0">
           <img
             src="/logoN-VienChiBao.png"
-            alt="Viễn Chí Bảo Manager Logo"
+            alt="VCB Ads Manager Logo"
             className="absolute max-w-none"
             style={{ width: "110px", height: "110px", left: "-12px", top: "-44px" }}
           />
         </span>
-        Viễn Chí Bảo Manager
+        VCB Ads Manager
       </div>
 
       <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-6">
