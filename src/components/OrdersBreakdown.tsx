@@ -9,14 +9,16 @@ import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, 
 const CHART_COLORS = ["#3b82f6", "#db2777", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#64748b"];
 
 type Row = { name: string; orders: number; revenue: number };
+type StaffRow = { name: string; team: string; topChannel: string; orders: number; revenue: number };
 type Dash = {
   totalRevenue: number;
   orderCount: number;
   byChannel: Row[];
-  byPage: Row[];
+  byMessagedPage: Row[];
   byStaff: Row[];
   byTeam: Row[];
   byProvince: Row[];
+  staffTable: StaffRow[];
 };
 
 const CHANNEL_LABEL: Record<string, string> = {
@@ -180,10 +182,53 @@ export default function OrdersBreakdown({ query }: { query: string }) {
       {/* Breakdown grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <BreakdownCard title="Theo kênh" icon={<Storefront size={18} className="text-violet-500" />} items={data?.byChannel ?? []} labelMap={CHANNEL_LABEL} />
-        <BreakdownCard title="Theo fanpage (Facebook)" icon={<FacebookLogo size={18} className="text-blue-500" />} items={data?.byPage ?? []} limit={15} />
+        <BreakdownCard title="Theo page khách nhắn" icon={<FacebookLogo size={18} className="text-blue-500" />} items={data?.byMessagedPage ?? []} limit={15} />
         <BreakdownCard title="Theo team kinh doanh" icon={<UsersThree size={18} className="text-blue-500" />} items={data?.byTeam ?? []} />
         <BreakdownCard title="Theo nhân viên" icon={<UserCircle size={18} className="text-amber-500" />} items={data?.byStaff ?? []} limit={15} />
-        <BreakdownCard title="Theo tỉnh/thành" icon={<MapPin size={18} className="text-rose-500" />} items={data?.byProvince ?? []} limit={15} />
+      </div>
+
+      {/* Bảng chi tiết theo nhân viên */}
+      <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+          <UserCircle size={18} className="text-amber-500" /> Chi tiết theo nhân viên
+          <span className="text-xs text-muted-foreground font-normal">({data?.staffTable?.length ?? 0})</span>
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left whitespace-nowrap">
+            <thead className="text-muted-foreground border-b border-border">
+              <tr>
+                <th className="px-3 py-2 font-medium">#</th>
+                <th className="px-3 py-2 font-medium">Nhân viên</th>
+                <th className="px-3 py-2 font-medium">Team</th>
+                <th className="px-3 py-2 font-medium">Kênh chính</th>
+                <th className="px-3 py-2 font-medium text-right">Số đơn</th>
+                <th className="px-3 py-2 font-medium text-right">% đơn</th>
+                <th className="px-3 py-2 font-medium text-right">Doanh thu</th>
+                <th className="px-3 py-2 font-medium text-right">% DT</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border text-foreground">
+              {(data?.staffTable ?? []).length === 0 ? (
+                <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">Không có dữ liệu</td></tr>
+              ) : (data?.staffTable ?? []).map((s, i) => {
+                const pctOrders = data && data.orderCount > 0 ? (s.orders / data.orderCount) * 100 : 0;
+                const pctRev = data && data.totalRevenue > 0 ? (s.revenue / data.totalRevenue) * 100 : 0;
+                return (
+                  <tr key={i} className="hover:bg-muted/30">
+                    <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
+                    <td className="px-3 py-2 font-medium text-foreground">{s.name}</td>
+                    <td className="px-3 py-2"><span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[11px]">{s.team}</span></td>
+                    <td className="px-3 py-2 text-muted-foreground">{CHANNEL_LABEL[s.topChannel] ?? s.topChannel ?? "—"}</td>
+                    <td className="px-3 py-2 text-right">{fmtNum(s.orders)}</td>
+                    <td className="px-3 py-2 text-right text-muted-foreground">{pctOrders.toFixed(1)}%</td>
+                    <td className="px-3 py-2 text-right font-semibold">{fmtVnd(s.revenue)}</td>
+                    <td className="px-3 py-2 text-right text-muted-foreground">{pctRev.toFixed(1)}%</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
