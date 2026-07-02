@@ -29,6 +29,9 @@ export default function SettingsPage() {
   const [teamName, setTeamName] = useState("");
   const [teamIndustry, setTeamIndustry] = useState("");
   const [teamMarket, setTeamMarket] = useState("");
+  // Sửa tên team
+  const [editTeamId, setEditTeamId] = useState<string | null>(null);
+  const [editTeamName, setEditTeamName] = useState("");
   const [empName, setEmpName] = useState("");
   const [empCode, setEmpCode] = useState("");
   const [empTeamId, setEmpTeamId] = useState("");
@@ -132,6 +135,14 @@ export default function SettingsPage() {
     if (!confirm(`Xóa team "${t.name}"? Nhân viên thuộc team sẽ bị gỡ team.`)) return;
     await apiDelete(`/teams/${t.id}`); await load();
   }, "Xóa team lỗi")();
+
+  const startEditTeam = (t: Team) => { setEditTeamId(t.id); setEditTeamName(t.name); };
+  const cancelEditTeam = () => { setEditTeamId(null); setEditTeamName(""); };
+  const saveEditTeam = (t: Team) => guard(async () => {
+    if (!editTeamName.trim()) { setError("Nhập tên team"); return; }
+    await apiPatch(`/teams/${t.id}`, { name: editTeamName.trim() });
+    cancelEditTeam(); await load();
+  }, "Sửa team lỗi")();
 
   const delEmployee = (e: Employee) => guard(async () => {
     if (!confirm(`Xóa nhân viên "${e.name}"?`)) return;
@@ -334,8 +345,18 @@ export default function SettingsPage() {
               ) : teams.slice((teamPage - 1) * TEAM_PER_PAGE, teamPage * TEAM_PER_PAGE).map((t) => (
                 <div key={t.id} className="flex items-center justify-between py-2.5 text-sm gap-2">
                   <div className="flex flex-wrap items-center gap-2 min-w-0">
-                    <span className="text-foreground font-medium shrink-0">{t.name} <span className="text-muted-foreground text-xs">({t._count.employees} nv)</span></span>
-                    
+                    {editTeamId === t.id ? (
+                      <input
+                        value={editTeamName}
+                        onChange={(e) => setEditTeamName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") saveEditTeam(t); if (e.key === "Escape") cancelEditTeam(); }}
+                        autoFocus
+                        className={`${inputCls} w-40 py-1`}
+                      />
+                    ) : (
+                      <span className="text-foreground font-medium shrink-0">{t.name} <span className="text-muted-foreground text-xs">({t._count.employees} nv)</span></span>
+                    )}
+
                     {/* Select Ngành */}
                     <select
                       value={t.industry ?? ""}
@@ -376,7 +397,17 @@ export default function SettingsPage() {
                       ))}
                     </select>
                   </div>
-                  <button onClick={() => delTeam(t)} className="text-muted-foreground hover:text-red-400 shrink-0"><Trash size={16} /></button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {editTeamId === t.id ? (
+                      <>
+                        <button onClick={() => saveEditTeam(t)} title="Lưu" className="flex items-center gap-1 px-2 py-1 bg-green-600 hover:bg-green-700 text-foreground text-xs rounded-md"><Check size={14} /> Lưu</button>
+                        <button onClick={cancelEditTeam} title="Hủy" className="p-1 text-muted-foreground hover:text-foreground"><X size={16} /></button>
+                      </>
+                    ) : (
+                      <button onClick={() => startEditTeam(t)} title="Sửa tên team" className="text-muted-foreground hover:text-blue-400"><PencilSimple size={16} /></button>
+                    )}
+                    <button onClick={() => delTeam(t)} title="Xóa" className="text-muted-foreground hover:text-red-400"><Trash size={16} /></button>
+                  </div>
                 </div>
               ))}
             </div>
