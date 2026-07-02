@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Trash, SpinnerGap, UsersThree, User, Trophy, Key, FloppyDisk, Tag, PencilSimple, X, Check } from "@phosphor-icons/react";
+import { Plus, Trash, SpinnerGap, UsersThree, User, Trophy, Key, FloppyDisk, Tag, PencilSimple, X, Check, MagnifyingGlass } from "@phosphor-icons/react";
 import { apiGet, apiPost, apiPatch, apiDelete, getAuthRole } from "@/lib/api";
+import Pagination from "@/components/Pagination";
 
 type Team = { id: string; name: string; industry: string | null; market: string | null; _count: { employees: number } };
 type Employee = { id: string; name: string; code: string | null; team: { id: string; name: string } | null };
@@ -36,6 +37,14 @@ export default function SettingsPage() {
   const [editEmpName, setEditEmpName] = useState("");
   const [editEmpCode, setEditEmpCode] = useState("");
   const [editEmpTeamId, setEditEmpTeamId] = useState("");
+  // Lọc + gom nhóm nhân viên theo team
+  const [empSearch, setEmpSearch] = useState("");
+  const [empFilterTeam, setEmpFilterTeam] = useState("");
+  const [teamPage, setTeamPage] = useState(1);
+  const [empPage, setEmpPage] = useState(1);
+  const TEAM_PER_PAGE = 8;
+  const EMP_GROUPS_PER_PAGE = 5;
+  useEffect(() => { setEmpPage(1); }, [empSearch, empFilterTeam]);
 
   // --- Ngưỡng Win ---
   const [winViews, setWinViews] = useState("");
@@ -128,6 +137,34 @@ export default function SettingsPage() {
     if (!confirm(`Xóa nhân viên "${e.name}"?`)) return;
     await apiDelete(`/employees/${e.id}`); await load();
   }, "Xóa nhân viên lỗi")();
+
+  // Render 1 dòng nhân viên (chế độ xem / sửa) — dùng trong các khối team.
+  const renderEmpRow = (e: Employee) =>
+    editEmpId === e.id ? (
+      <div key={e.id} className="flex flex-wrap items-center gap-2 py-2 px-2 text-sm">
+        <select className={`${inputCls} w-40`} value={editEmpTeamId} onChange={(ev) => setEditEmpTeamId(ev.target.value)}>
+          <option value="" className="bg-background">— Team —</option>
+          {teams.map((t) => <option key={t.id} value={t.id} className="bg-background">{t.name}</option>)}
+        </select>
+        <input className={`${inputCls} w-24`} placeholder="Mã (K403)" value={editEmpCode} onChange={(ev) => setEditEmpCode(ev.target.value)} />
+        <input className={`${inputCls} flex-1 min-w-[120px]`} placeholder="Tên nhân viên" value={editEmpName} onChange={(ev) => setEditEmpName(ev.target.value)} />
+        <button onClick={() => saveEditEmp(e)} title="Lưu" className="flex items-center gap-1 px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-foreground text-xs rounded-md">
+          <Check size={14} /> Lưu
+        </button>
+        <button onClick={cancelEditEmp} title="Hủy" className="p-1.5 text-muted-foreground hover:text-foreground"><X size={16} /></button>
+      </div>
+    ) : (
+      <div key={e.id} className="flex items-center justify-between py-2 px-2 text-sm gap-2 hover:bg-muted/30 rounded">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="bg-card border border-border rounded px-2 py-1 text-xs text-muted-foreground w-24 shrink-0 truncate">{e.code || "—"}</span>
+          <span className="text-foreground truncate">{e.name}</span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={() => startEditEmp(e)} title="Sửa" className="text-muted-foreground hover:text-blue-400"><PencilSimple size={16} /></button>
+          <button onClick={() => delEmployee(e)} title="Xóa" className="text-muted-foreground hover:text-red-400"><Trash size={16} /></button>
+        </div>
+      </div>
+    );
 
   const saveWin = guard(async () => {
     await apiPatch("/settings", { win_min_views: Number(winViews) || 0, win_min_engagement_rate: Number(winEng) || 0 });
@@ -294,7 +331,7 @@ export default function SettingsPage() {
             <div className="flex flex-col divide-y divide-border">
               {teams.length === 0 ? (
                 <span className="text-xs text-muted-foreground py-4 text-center">Chưa có team nào.</span>
-              ) : teams.map((t) => (
+              ) : teams.slice((teamPage - 1) * TEAM_PER_PAGE, teamPage * TEAM_PER_PAGE).map((t) => (
                 <div key={t.id} className="flex items-center justify-between py-2.5 text-sm gap-2">
                   <div className="flex flex-wrap items-center gap-2 min-w-0">
                     <span className="text-foreground font-medium shrink-0">{t.name} <span className="text-muted-foreground text-xs">({t._count.employees} nv)</span></span>
@@ -343,6 +380,7 @@ export default function SettingsPage() {
                 </div>
               ))}
             </div>
+            <Pagination page={teamPage} pageSize={TEAM_PER_PAGE} total={teams.length} onChange={setTeamPage} />
           </div>
 
           {/* Employees */}
@@ -364,38 +402,62 @@ export default function SettingsPage() {
                 <Plus size={16} /> Thêm
               </button>
             </div>
-            <div className="flex flex-col divide-y divide-border">
-              {employees.length === 0 ? (
-                <span className="text-xs text-muted-foreground py-4 text-center">Chưa có nhân viên nào.</span>
-              ) : employees.map((e) => (
-                editEmpId === e.id ? (
-                  /* ==== Chế độ sửa ==== */
-                  <div key={e.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm">
-                    <select className={`${inputCls} w-40`} value={editEmpTeamId} onChange={(ev) => setEditEmpTeamId(ev.target.value)}>
-                      <option value="" className="bg-background">— Team —</option>
-                      {teams.map((t) => <option key={t.id} value={t.id} className="bg-background">{t.name}</option>)}
-                    </select>
-                    <input className={`${inputCls} w-24`} placeholder="Mã (K403)" value={editEmpCode} onChange={(ev) => setEditEmpCode(ev.target.value)} />
-                    <input className={`${inputCls} flex-1 min-w-[120px]`} placeholder="Tên nhân viên" value={editEmpName} onChange={(ev) => setEditEmpName(ev.target.value)} />
-                    <button onClick={() => saveEditEmp(e)} title="Lưu" className="flex items-center gap-1 px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-foreground text-xs rounded-md">
-                      <Check size={14} /> Lưu
-                    </button>
-                    <button onClick={cancelEditEmp} title="Hủy" className="p-1.5 text-muted-foreground hover:text-foreground"><X size={16} /></button>
-                  </div>
-                ) : (
-                  /* ==== Chế độ xem ==== */
-                  <div key={e.id} className="flex items-center justify-between py-2.5 text-sm gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="bg-card border border-border rounded px-2 py-1 text-xs text-muted-foreground w-24 shrink-0 truncate">{e.code || "—"}</span>
-                      <span className="text-foreground truncate">{e.name} {e.team && <span className="text-muted-foreground text-xs">· {e.team.name}</span>}</span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button onClick={() => startEditEmp(e)} title="Sửa" className="text-muted-foreground hover:text-blue-400"><PencilSimple size={16} /></button>
-                      <button onClick={() => delEmployee(e)} title="Xóa" className="text-muted-foreground hover:text-red-400"><Trash size={16} /></button>
-                    </div>
-                  </div>
-                )
-              ))}
+            {/* Bộ lọc nhân viên */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 bg-background border border-border rounded-md px-2.5 py-1.5 flex-1 min-w-[160px]">
+                <MagnifyingGlass size={14} className="text-muted-foreground shrink-0" />
+                <input
+                  value={empSearch}
+                  onChange={(e) => setEmpSearch(e.target.value)}
+                  placeholder="Tìm tên / mã NV…"
+                  className="bg-transparent text-sm text-foreground outline-none w-full placeholder:text-muted-foreground"
+                />
+              </div>
+              <select className={inputCls} value={empFilterTeam} onChange={(e) => setEmpFilterTeam(e.target.value)}>
+                <option value="" className="bg-background">— Tất cả team —</option>
+                {teams.map((t) => <option key={t.id} value={t.id} className="bg-background">{t.name}</option>)}
+              </select>
+            </div>
+
+            {/* Danh sách gom theo khối team (phân trang theo team) */}
+            <div className="flex flex-col gap-3">
+              {(() => {
+                const q = empSearch.trim().toLowerCase();
+                const visible = employees.filter(
+                  (e) =>
+                    (!q || `${e.name} ${e.code ?? ""}`.toLowerCase().includes(q)) &&
+                    (!empFilterTeam || e.team?.id === empFilterTeam)
+                );
+                const groups: { id: string; name: string; members: Employee[] }[] = [];
+                for (const t of teams) {
+                  const members = visible.filter((e) => e.team?.id === t.id);
+                  if (members.length) groups.push({ id: t.id, name: t.name, members });
+                }
+                const noTeam = visible.filter((e) => !e.team);
+                if (noTeam.length) groups.push({ id: "__none__", name: "(Chưa có team)", members: noTeam });
+
+                if (groups.length === 0)
+                  return <span className="text-xs text-muted-foreground py-4 text-center block">Không có nhân viên khớp.</span>;
+
+                const totalPages = Math.max(1, Math.ceil(groups.length / EMP_GROUPS_PER_PAGE));
+                const cur = Math.min(empPage, totalPages);
+                const pageGroups = groups.slice((cur - 1) * EMP_GROUPS_PER_PAGE, cur * EMP_GROUPS_PER_PAGE);
+
+                return (
+                  <>
+                    {pageGroups.map((g) => (
+                      <div key={g.id} className="border border-border rounded-lg overflow-hidden">
+                        <div className="flex items-center justify-between px-3 py-2 bg-muted/40">
+                          <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 text-xs font-semibold">{g.name}</span>
+                          <span className="text-xs text-muted-foreground">{g.members.length} NV</span>
+                        </div>
+                        <div className="divide-y divide-border p-1">{g.members.map(renderEmpRow)}</div>
+                      </div>
+                    ))}
+                    <Pagination page={cur} pageSize={EMP_GROUPS_PER_PAGE} total={groups.length} onChange={setEmpPage} />
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowsClockwise, SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight
+  ArrowsClockwise, SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight, Funnel, CaretDown, MagnifyingGlass
 } from "@phosphor-icons/react";
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api";
 
@@ -49,6 +49,14 @@ export default function ChannelsPage() {
   // Phân trang
   const [page, setPage] = useState(0);
   const PER_PAGE = 10;
+
+  // Bộ lọc ("" = tất cả)
+  const [fPlatform, setFPlatform] = useState("");
+  const [fTeam, setFTeam] = useState("");
+  const [fStaff, setFStaff] = useState("");
+  const [fIndustry, setFIndustry] = useState("");
+  const [fMarket, setFMarket] = useState("");
+  const [fSearch, setFSearch] = useState("");
 
   // Form thêm kênh
   const [url, setUrl] = useState("");
@@ -102,9 +110,30 @@ export default function ChannelsPage() {
     load();
   }, [load]);
 
-  const pages = Math.max(1, Math.ceil(channels.length / PER_PAGE));
+  // Áp bộ lọc (client-side)
+  const filtered = channels.filter((c) => {
+    if (fPlatform && c.platform !== fPlatform) return false;
+    if (fTeam && (c.team ?? "") !== fTeam) return false;
+    if (fStaff && (c.staff ?? "") !== fStaff) return false;
+    if (fIndustry && (c.industry ?? "") !== fIndustry) return false;
+    if (fMarket && (c.market ?? "") !== fMarket) return false;
+    if (fSearch) {
+      const q = fSearch.toLowerCase();
+      const hay = `${c.channelName ?? ""} ${c.externalId ?? ""} ${c.url ?? ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  // Reset về trang đầu khi bộ lọc đổi
+  useEffect(() => {
+    setPage(0);
+  }, [fPlatform, fTeam, fStaff, fIndustry, fMarket, fSearch]);
+
+  const pages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const start = page * PER_PAGE;
-  const rows = channels.slice(start, start + PER_PAGE);
+  const rows = filtered.slice(start, start + PER_PAGE);
+  const platformsInData = [...new Set(channels.map((c) => c.platform))];
 
   // Compute sliding window of pagination buttons
   const pageRange = [...Array(pages).keys()].filter(i => {
@@ -336,6 +365,52 @@ export default function ChannelsPage() {
         <p className="text-[16px] text-muted-foreground mt-2">Nền tảng &amp; ID kênh được tự nhận diện từ URL.</p>
       </div>
 
+      {/* Thanh bộ lọc */}
+      <div className="bg-card border border-border rounded-xl p-4 flex flex-wrap items-center gap-2">
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground mr-1">
+          <Funnel size={14} className="text-blue-400" /> Lọc:
+        </span>
+        <div className="flex items-center gap-2 bg-background border border-border rounded-md px-2.5 py-1.5 min-w-[200px] flex-1 max-w-[260px]">
+          <MagnifyingGlass size={14} className="text-muted-foreground shrink-0" />
+          <input
+            value={fSearch}
+            onChange={(e) => setFSearch(e.target.value)}
+            placeholder="Tìm tên kênh / ID / URL…"
+            className="bg-transparent text-xs text-foreground outline-none w-full placeholder:text-muted-foreground"
+          />
+        </div>
+        {[
+          { label: "Nền tảng", value: fPlatform, set: setFPlatform, opts: platformsInData.map((p) => ({ value: p, label: PLATFORM_LABEL[p] || p })) },
+          { label: "Team", value: fTeam, set: setFTeam, opts: teamList.map((t) => ({ value: t.name, label: t.name })) },
+          { label: "Nhân viên", value: fStaff, set: setFStaff, opts: empList.map((e) => ({ value: e.name, label: e.name })) },
+          { label: "Ngành", value: fIndustry, set: setFIndustry, opts: industryList.map((x) => ({ value: x, label: x })) },
+          { label: "Thị trường", value: fMarket, set: setFMarket, opts: marketList.map((x) => ({ value: x, label: x })) },
+        ].map((f) => (
+          <div key={f.label} className="relative">
+            <select
+              value={f.value}
+              onChange={(e) => f.set(e.target.value)}
+              className="bg-background border border-border rounded-md pl-2.5 pr-7 py-1.5 text-xs text-foreground appearance-none focus:border-blue-500 focus:outline-none cursor-pointer max-w-[150px]"
+            >
+              <option value="">{f.label}: Tất cả</option>
+              {f.opts.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <CaretDown size={10} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          </div>
+        ))}
+        {(fPlatform || fTeam || fStaff || fIndustry || fMarket || fSearch) && (
+          <button
+            type="button"
+            onClick={() => { setFPlatform(""); setFTeam(""); setFStaff(""); setFIndustry(""); setFMarket(""); setFSearch(""); }}
+            className="px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            Xóa lọc
+          </button>
+        )}
+      </div>
+
       {/* Bảng kênh */}
       {loading ? (
         <div className="flex flex-col items-center justify-center p-20 gap-3">
@@ -363,8 +438,8 @@ export default function ChannelsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-foreground">
-                {channels.length === 0 ? (
-                  <tr><td colSpan={12} className="px-4 py-10 text-center text-muted-foreground">Chưa có kênh nào. Thêm kênh bằng URL ở trên.</td></tr>
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={12} className="px-4 py-10 text-center text-muted-foreground">{channels.length === 0 ? "Chưa có kênh nào. Thêm kênh bằng URL ở trên." : "Không có kênh khớp bộ lọc."}</td></tr>
                 ) : (
                   rows.map((c) => {
                     const channelTeam = teamList.find((t) => t.name === c.team);
@@ -435,10 +510,10 @@ export default function ChannelsPage() {
           </div>
 
           {/* Phân trang */}
-          {channels.length > PER_PAGE && (
+          {filtered.length > PER_PAGE && (
             <div className="flex items-center justify-between px-5 py-3 border-t border-border">
               <span className="text-[16px] text-muted-foreground">
-                Hiển thị {start + 1}–{Math.min(start + PER_PAGE, channels.length)} trong {channels.length} kênh
+                Hiển thị {start + 1}–{Math.min(start + PER_PAGE, filtered.length)} trong {filtered.length} kênh
               </span>
               <div className="flex items-center gap-1">
                 <button

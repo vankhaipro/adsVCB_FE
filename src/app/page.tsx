@@ -10,6 +10,7 @@ import {
 } from "@phosphor-icons/react";
 import { apiGet, apiPost, fmtVnd } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
+import OrdersBreakdown from "@/components/OrdersBreakdown";
 import OverviewHeader, { type KpiItem } from "@/components/overview/OverviewHeader";
 import OverviewBody from "@/components/overview/OverviewBody";
 import { KPIS, type Kpi } from "@/components/overview/dashboardData";
@@ -212,7 +213,7 @@ function OverviewInner() {
   const [trendData, setTrendData] = useState<any[]>([]);
 
   // Tab từ query param ?tab=overview|channel|mode
-  const TAB_VALUES = ["overview", "channel", "mode"] as const;
+  const TAB_VALUES = ["overview", "channel", "mode", "orders"] as const;
   type TabValue = typeof TAB_VALUES[number];
   const rawTab = searchParams.get("tab");
   const selectedTab: TabValue = TAB_VALUES.includes(rawTab as TabValue) ? (rawTab as TabValue) : "overview";
@@ -415,6 +416,7 @@ function OverviewInner() {
           { value: "overview", label: "Tổng quan" },
           { value: "channel", label: "Hiệu quả theo Kênh" },
           { value: "mode",    label: "Hiệu quả theo Mode" },
+          { value: "orders",  label: "Đơn hàng bán" },
         ] as { value: TabValue; label: string }[]).map((t) => (
           <button
             key={t.value}
@@ -1026,6 +1028,11 @@ function OverviewInner() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB 4: ĐƠN HÀNG BÁN (Sapo) */}
+          {selectedTab === "orders" && (
+            <OrdersBreakdown query={rangeToQuery(dateRange)} />
           )}
         </>
       )}
