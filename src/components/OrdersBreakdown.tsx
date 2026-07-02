@@ -144,7 +144,7 @@ export default function OrdersBreakdown({ query }: { query: string }) {
                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={chart.tooltip} formatter={(v: number) => fmtVnd(v)} />
+                <Tooltip contentStyle={chart.tooltip} formatter={(v) => fmtVnd(Number(v))} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -169,7 +169,7 @@ export default function OrdersBreakdown({ query }: { query: string }) {
                 <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                 <XAxis dataKey="name" stroke="#6b7280" fontSize={11} tickLine={false} />
                 <YAxis stroke="#6b7280" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${Math.round(v / 1e6)}M`} />
-                <Tooltip contentStyle={chart.tooltip} formatter={(v: number) => fmtVnd(v)} cursor={{ fill: "rgba(59,130,246,0.08)" }} />
+                <Tooltip contentStyle={chart.tooltip} formatter={(v) => fmtVnd(Number(v))} cursor={{ fill: "rgba(59,130,246,0.08)" }} />
                 <Bar dataKey="revenue" name="Doanh thu" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={34} />
               </BarChart>
             </ResponsiveContainer>
