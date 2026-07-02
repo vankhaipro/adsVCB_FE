@@ -1,10 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Bell, List, CheckCircle, Sun, Moon } from "@phosphor-icons/react";
 import { useTheme } from "./ThemeProvider";
+import { getAuthUser } from "@/lib/api";
+
+const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", STAFF: "Nhân viên" };
 
 export default function Header() {
   const { theme, toggleTheme } = useTheme();
+  const [user, setUser] = useState<{ name?: string; role?: string } | null>(null);
+  useEffect(() => { setUser(getAuthUser()); }, []);
+  const displayName = user?.name || "Người dùng";
+  const roleLabel = user?.role ? (ROLE_LABEL[user.role] ?? user.role) : "";
 
   return (
     <header className="h-[52px] bg-card border-b border-border flex items-center justify-between px-4 sticky top-0 z-10 flex-shrink-0">
@@ -40,11 +48,11 @@ export default function Header() {
         {/* User Profile */}
         <div className="flex items-center gap-2 pl-2 border-l border-border">
           <div className="w-8 h-8 rounded-full bg-muted overflow-hidden">
-            <img src="https://ui-avatars.com/api/?name=Nguyen+Van+A&background=random" alt="User Avatar" />
+            <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`} alt="User Avatar" />
           </div>
           <div className="hidden md:flex flex-col">
-            <span className="text-sm font-medium text-foreground leading-tight">Nguyễn Văn A</span>
-            <span className="text-[15px] text-muted-foreground">Admin</span>
+            <span className="text-sm font-medium text-foreground leading-tight">{displayName}</span>
+            {roleLabel && <span className="text-[15px] text-muted-foreground">{roleLabel}</span>}
           </div>
         </div>
       </div>

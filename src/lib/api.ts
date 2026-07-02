@@ -49,17 +49,24 @@ export const apiDelete = (path: string) =>
 export const fmtVnd = (n: number) =>
   new Intl.NumberFormat("vi-VN").format(Math.round(n || 0)) + "đ";
 
-// Giải mã vai trò (role) từ JWT trong localStorage (client-side).
-export function getAuthRole(): string | null {
+export type AuthUser = { sub?: string; email?: string; name?: string; role?: string };
+
+// Giải mã payload JWT trong localStorage (client-side), UTF-8 đúng cho tên tiếng Việt.
+export function getAuthUser(): AuthUser | null {
   if (typeof window === "undefined") return null;
   const token = localStorage.getItem("token");
   if (!token) return null;
   try {
     let b = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
     b += "=".repeat((4 - (b.length % 4)) % 4);
-    const payload = JSON.parse(atob(b));
-    return payload.role ?? null;
+    const bytes = Uint8Array.from(atob(b), (ch) => ch.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
   } catch {
     return null;
   }
+}
+
+// Vai trò (role) từ JWT.
+export function getAuthRole(): string | null {
+  return getAuthUser()?.role ?? null;
 }
