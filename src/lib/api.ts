@@ -14,7 +14,10 @@ async function handle(res: Response) {
     let msg = `API ${res.status}`;
     try {
       const j = await res.json();
-      msg = j.error || msg;
+      // NestJS trả { statusCode, message, error }. Ưu tiên message (câu mô tả rõ),
+      // message có thể là mảng (lỗi validation) → nối lại.
+      const m = j.message ?? j.error;
+      msg = Array.isArray(m) ? m.join(", ") : (m || msg);
     } catch {
       /* ignore */
     }
