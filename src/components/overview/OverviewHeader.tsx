@@ -139,6 +139,8 @@ type Props = {
   onSync?: () => void;
   onExport?: () => void;
   syncing?: boolean;
+  syncPercent?: number;
+  syncPhase?: string;
   showKpis?: boolean;
 };
 
@@ -163,6 +165,8 @@ export default function OverviewHeader({
   onSync,
   onExport,
   syncing,
+  syncPercent = 0,
+  syncPhase = "",
   showKpis = true,
 }: Props) {
   const filteredAccountPills = accounts
@@ -212,14 +216,21 @@ export default function OverviewHeader({
             type="button"
             onClick={onSync}
             disabled={syncing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60"
+            title={syncing && syncPhase ? syncPhase : undefined}
+            className="relative flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-90 overflow-hidden"
           >
             {syncing ? (
               <SpinnerGap size={16} className="animate-spin" />
             ) : (
               <CloudArrowDown size={16} />
             )}
-            Đồng bộ dữ liệu
+            {syncing ? `Đồng bộ… ${syncPercent}%` : "Đồng bộ dữ liệu"}
+            {syncing && (
+              <span
+                className="absolute bottom-0 left-0 h-[3px] bg-white/80 transition-all duration-500"
+                style={{ width: `${Math.max(2, Math.min(100, syncPercent))}%` }}
+              />
+            )}
           </button>
           <button
             type="button"
