@@ -8,6 +8,7 @@ import { apiGet, apiPatch, apiPost, fmtVnd } from "@/lib/api";
 import DateRangePicker, { presetToDates } from "@/components/DateRangePicker";
 import MetricFilter, { matchMetric, type MetricCondition } from "@/components/MetricFilter";
 import CopyableText from "@/components/CopyableText";
+import Pagination from "@/components/Pagination";
 
 type Campaign = {
   id: string;
@@ -139,6 +140,16 @@ export default function CampaignsPage() {
   const [selectedAdSetId, setSelectedAdSetId] = useState<string>("ALL");
   const [accountFilter, setAccountFilter] = useState<string>("ALL");
   const [staffFilter, setStaffFilter] = useState<string>("ALL");
+
+  const [selectedCampaignIds, setSelectedCampaignIds] = useState<string[]>([]);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, platform, accountFilter, staffFilter, q, selectedCampaignId, selectedCampaignIds, selectedAdSetId, metricConds]);
 
   // create modal
   const [showCreate, setShowCreate] = useState(false);
@@ -464,11 +475,13 @@ export default function CampaignsPage() {
           (platform === "ALL" || as.platform === platform) &&
           (accountFilter === "ALL" || as.adAccountName === accountFilter) &&
           (staffFilter === "ALL" || as.staff === staffFilter) &&
-          (selectedCampaignId === "ALL" || as.campaignId === selectedCampaignId) &&
+          (selectedCampaignIds.length > 0
+            ? selectedCampaignIds.includes(as.campaignId)
+            : (selectedCampaignId === "ALL" || as.campaignId === selectedCampaignId)) &&
           (!q || as.name.toLowerCase().includes(q.toLowerCase()))
       )
       .sort(runningFirst);
-  }, [adSets, platform, accountFilter, staffFilter, selectedCampaignId, q]);
+  }, [adSets, platform, accountFilter, staffFilter, selectedCampaignIds, selectedCampaignId, q]);
 
   const filteredAds = useMemo(() => {
     return ads
@@ -477,12 +490,14 @@ export default function CampaignsPage() {
           (platform === "ALL" || ad.platform === platform) &&
           (accountFilter === "ALL" || ad.adAccountName === accountFilter) &&
           (staffFilter === "ALL" || ad.staff === staffFilter) &&
-          (selectedCampaignId === "ALL" || ad.campaignId === selectedCampaignId) &&
+          (selectedCampaignIds.length > 0
+            ? selectedCampaignIds.includes(ad.campaignId)
+            : (selectedCampaignId === "ALL" || ad.campaignId === selectedCampaignId)) &&
           (selectedAdSetId === "ALL" || ad.adSetId === selectedAdSetId) &&
           (!q || ad.name.toLowerCase().includes(q.toLowerCase()))
       )
       .sort(runningFirst);
-  }, [ads, platform, accountFilter, staffFilter, selectedCampaignId, selectedAdSetId, q]);
+  }, [ads, platform, accountFilter, staffFilter, selectedCampaignIds, selectedCampaignId, selectedAdSetId, q]);
 
   // Compute metrics for the rendered lists
   const campaignsWithMetrics = useMemo(() => {
@@ -608,6 +623,19 @@ export default function CampaignsPage() {
   const displayAds = useMemo(
     () => adsWithMetrics.filter((a) => passMetrics(a.metrics)),
     [adsWithMetrics, passMetrics]
+  );
+
+  const paginatedCampaigns = useMemo(
+    () => displayCampaigns.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [displayCampaigns, currentPage]
+  );
+  const paginatedAdSets = useMemo(
+    () => displayAdSets.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [displayAdSets, currentPage]
+  );
+  const paginatedAds = useMemo(
+    () => displayAds.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [displayAds, currentPage]
   );
 
   const selectedAccount = accounts.find((a) => a.id === form.accountId);
@@ -806,6 +834,24 @@ export default function CampaignsPage() {
         </div>
       </div>
 
+      {/* Selection bar if any campaigns are selected */}
+      {selectedCampaignIds.length > 0 && (
+        <div className="bg-blue-600/10 border border-blue-600/20 text-blue-400 rounded-xl p-4 flex items-center justify-between text-xs sm:text-sm animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">Đang chọn {selectedCampaignIds.length} chiến dịch</span>
+            <span className="text-muted-foreground text-xs">
+              (Nhóm quảng cáo và Quảng cáo sẽ chỉ hiển thị các chiến dịch này)
+            </span>
+          </div>
+          <button
+            onClick={() => setSelectedCampaignIds([])}
+            className="text-xs text-blue-400 hover:text-blue-300 font-bold underline"
+          >
+            Bỏ chọn tất cả
+          </button>
+        </div>
+      )}
+
       {/* Tables View */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         {loading ? (
@@ -817,11 +863,28 @@ export default function CampaignsPage() {
             {error} — kiểm tra backend đã chạy (npm run dev trong adsVCB_BE).
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="p-4 flex flex-col gap-4">
+            <div className="overflow-x-auto">
             {activeTab === "campaign" && (
               <table className="w-full text-[18px] text-foreground border-collapse">
                 <thead>
                   <tr className="text-left text-muted-foreground text-[16px] uppercase border-b border-border bg-background">
+                    <th className="px-3 py-3 font-medium text-center w-12">
+                      <input
+                        type="checkbox"
+                        checked={paginatedCampaigns.length > 0 && paginatedCampaigns.every(c => selectedCampaignIds.includes(c.id))}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            const newIds = [...new Set([...selectedCampaignIds, ...paginatedCampaigns.map(c => c.id)])];
+                            setSelectedCampaignIds(newIds);
+                          } else {
+                            const paginatedIds = paginatedCampaigns.map(c => c.id);
+                            setSelectedCampaignIds(selectedCampaignIds.filter(id => !paginatedIds.includes(id)));
+                          }
+                        }}
+                        className="rounded border-border text-blue-600 focus:ring-blue-500 bg-background cursor-pointer"
+                      />
+                    </th>
                     <th className="px-3 py-3 font-medium text-center">Thao tác</th>
                     <th className="px-3 py-3 font-medium min-w-[220px]">Tên chiến dịch</th>
                     <th className="px-3 py-3 font-medium">Nền tảng</th>
@@ -840,8 +903,22 @@ export default function CampaignsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayCampaigns.slice(0, 150).map((c) => (
+                  {paginatedCampaigns.map((c) => (
                     <tr key={c.id} className="border-b border-border hover:bg-muted/40 transition-colors">
+                      <td className="px-3 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedCampaignIds.includes(c.id)}
+                          onChange={() => {
+                            if (selectedCampaignIds.includes(c.id)) {
+                              setSelectedCampaignIds(selectedCampaignIds.filter(id => id !== c.id));
+                            } else {
+                              setSelectedCampaignIds([...selectedCampaignIds, c.id]);
+                            }
+                          }}
+                          className="rounded border-border text-blue-600 focus:ring-blue-500 bg-background cursor-pointer"
+                        />
+                      </td>
                       <td className="px-3 py-3 text-center">
                         <button
                           onClick={() => toggle(c)}
@@ -921,7 +998,7 @@ export default function CampaignsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayAdSets.slice(0, 150).map((as) => (
+                  {paginatedAdSets.map((as) => (
                     <tr key={as.id} className="border-b border-border hover:bg-muted/40 transition-colors">
                       <td className="px-3 py-3 text-center">
                         <button
@@ -1001,7 +1078,7 @@ export default function CampaignsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayAds.slice(0, 150).map((ad) => {
+                  {paginatedAds.map((ad) => {
                     const hash = hashString(ad.id);
                     return (
                       <tr key={ad.id} className="border-b border-border hover:bg-muted/40 transition-colors">
@@ -1061,6 +1138,32 @@ export default function CampaignsPage() {
                   )}
                 </tbody>
               </table>
+            )}
+            </div>
+
+            {activeTab === "campaign" && (
+              <Pagination
+                page={currentPage}
+                pageSize={PAGE_SIZE}
+                total={displayCampaigns.length}
+                onChange={setCurrentPage}
+              />
+            )}
+            {activeTab === "adset" && (
+              <Pagination
+                page={currentPage}
+                pageSize={PAGE_SIZE}
+                total={displayAdSets.length}
+                onChange={setCurrentPage}
+              />
+            )}
+            {activeTab === "ad" && (
+              <Pagination
+                page={currentPage}
+                pageSize={PAGE_SIZE}
+                total={displayAds.length}
+                onChange={setCurrentPage}
+              />
             )}
           </div>
         )}
