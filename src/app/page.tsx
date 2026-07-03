@@ -84,6 +84,9 @@ type BreakdownData = {
   byChannel: (InsightAgg & { name: string; platform: string })[];
   byContentLine: (InsightAgg & { line: string })[];
   byObjective: (InsightAgg & { objective: string })[];
+  byTeam?: (InsightAgg & { name: string })[];
+  byMarket?: (InsightAgg & { name: string })[];
+  byIndustry?: (InsightAgg & { name: string })[];
   hasData: boolean;
 };
 

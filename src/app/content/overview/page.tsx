@@ -47,6 +47,8 @@ type Report = {
   byConcept: Grp[];
   byLine: GrpRich[];
   byTeam: Grp[];
+  byMarket?: Grp[];
+  byIndustry?: Grp[];
   byProduct: GrpRich[];
   winRate: { win: number; notWin: number; total: number };
   channelsByPlatform: { name: string; count: number }[];
@@ -297,6 +299,67 @@ export default function ContentOverviewPage() {
     : [];
   const viewsByTeamData = report?.byTeam ? report.byTeam.map((x) => ({ name: x.name, views: x.views })) : [];
   const contentByTeamData = report?.byTeam ? [...report.byTeam].sort((a, b) => b.count - a.count).map((x) => ({ name: x.name, count: x.count })) : [];
+
+  const marketDistributionData = useMemo(() => {
+    if (!report?.byMarket?.length) return [];
+    const tot = report.byMarket.reduce((s, m) => s + m.views, 0) || 1;
+    const colors: Record<string, string> = {
+      "Việt Nam": "#10b981", // Green
+      "Global": "#8b5cf6",   // Purple
+      "Khác": "#6b7280"
+    };
+    return report.byMarket.map((m) => ({
+      name: m.name,
+      value: Number(((m.views / tot) * 100).toFixed(2)),
+      color: colors[m.name] || "#6b7280"
+    }));
+  }, [report]);
+
+  const marketBarData = useMemo(() => {
+    if (!report?.byMarket?.length) return [];
+    return report.byMarket.map((m) => ({
+      name: m.name,
+      views: m.views
+    }));
+  }, [report]);
+
+  const industryDistributionData = useMemo(() => {
+    if (!report?.byIndustry?.length) return [];
+    const tot = report.byIndustry.reduce((s: number, ind: Grp) => s + ind.views, 0) || 1;
+    const colors: Record<string, string> = {
+      "Kim hoàn": "#f59e0b", // Gold/Amber
+      "Đồ da": "#3b82f6",    // Blue
+      "Khác": "#6b7280"
+    };
+    return report.byIndustry.map((ind: Grp) => ({
+      name: ind.name,
+      value: Number(((ind.views / tot) * 100).toFixed(2)),
+      color: colors[ind.name] || "#6b7280"
+    }));
+  }, [report]);
+
+  const industryBarData = useMemo(() => {
+    if (!report?.byIndustry?.length) return [];
+    return report.byIndustry.map((ind: Grp) => ({
+      name: ind.name,
+      views: ind.views
+    }));
+  }, [report]);
+
+  const marketIndustryBarData = useMemo(() => {
+    const list: { name: string; views: number; fill: string }[] = [];
+    if (report?.byMarket) {
+      report.byMarket.forEach((m: Grp) => {
+        list.push({ name: m.name, views: m.views, fill: m.name === "Global" ? "#8b5cf6" : "#10b981" });
+      });
+    }
+    if (report?.byIndustry) {
+      report.byIndustry.forEach((ind: Grp) => {
+        list.push({ name: ind.name, views: ind.views, fill: ind.name === "Đồ da" ? "#3b82f6" : "#f59e0b" });
+      });
+    }
+    return list;
+  }, [report]);
   const viewsTrendData = report?.trendByPlatform
     ? report.trendByPlatform.map((d) => ({ name: d.date.slice(5).replace("-", "/"), Facebook: d.FACEBOOK, Instagram: d.INSTAGRAM, TikTok: d.TIKTOK, YouTube: d.YOUTUBE }))
     : [];
@@ -686,6 +749,111 @@ export default function ContentOverviewPage() {
 
       </div>
 
+      {/* Section: Phân tích theo Thị trường & Ngành hàng */}
+      {marketDistributionData.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Phân bổ theo Thị trường */}
+          <div className="bg-card border border-border rounded-xl p-5 shadow-md lg:col-span-3 flex flex-col justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-4">Phân bổ theo Thị trường</h3>
+              <div className="relative w-full h-[150px] flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={marketDistributionData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={65}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {marketDistributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `${value}%`} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute flex flex-col items-center justify-center">
+                  <span className="text-lg font-bold text-foreground">{totalViewsLabel}</span>
+                  <span className="text-[12px] text-muted-foreground">Tổng view</span>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 text-xs mt-3">
+              {marketDistributionData.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                  <span className="text-muted-foreground truncate">{item.name}:</span>
+                  <span className="text-foreground font-bold">{item.value}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Phân bổ theo Ngành hàng */}
+          <div className="bg-card border border-border rounded-xl p-5 shadow-md lg:col-span-3 flex flex-col justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-4">Phân bổ theo Ngành hàng</h3>
+              <div className="relative w-full h-[150px] flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={industryDistributionData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={65}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {industryDistributionData.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `${value}%`} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute flex flex-col items-center justify-center">
+                  <span className="text-lg font-bold text-foreground">{totalViewsLabel}</span>
+                  <span className="text-[12px] text-muted-foreground">Tổng view</span>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 text-xs mt-3">
+              {industryDistributionData.map((item: any, idx: number) => (
+                <div key={idx} className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                  <span className="text-muted-foreground truncate">{item.name}:</span>
+                  <span className="text-foreground font-bold">{item.value}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Chi tiết lượt xem theo Thị trường & Ngành hàng */}
+          <div className="bg-card border border-border rounded-xl p-5 shadow-md lg:col-span-6">
+            <h3 className="text-sm font-semibold text-foreground mb-4">Tổng lượt xem theo Thị trường & Ngành hàng</h3>
+            <div className="h-[220px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={marketIndustryBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+                  <XAxis dataKey="name" stroke="#6b7280" fontSize={10} />
+                  <YAxis stroke="#6b7280" fontSize={10} />
+                  <Tooltip formatter={(val) => fmtNum(Number(val))} />
+                  <Bar dataKey="views" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={35}>
+                    {marketIndustryBarData.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Section: Concept & SKU analysis */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         
@@ -805,7 +973,7 @@ export default function ContentOverviewPage() {
       </div>
 
       {/* Section: Tables grid (detailed line/format performance) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Hieu suat tuyen ghi du lieu */}
         <div className="bg-card border border-border rounded-xl p-4 shadow-md">
