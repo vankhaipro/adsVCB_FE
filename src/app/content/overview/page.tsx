@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { apiGet } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
 import Pagination from "@/components/Pagination";
@@ -79,19 +79,99 @@ function FilterSelect({ label, value, onChange, options }: {
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Reset search when opening/closing
+  useEffect(() => {
+    if (!isOpen) setSearch("");
+  }, [isOpen]);
+
+  const selectedOption = options.find((o) => o.value === value);
+  const displayLabel = selectedOption ? selectedOption.label : "Tất cả";
+
+  const showSearch = options.length > 8;
+  const filteredOptions = options.filter((o) =>
+    o.label.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="bg-muted border border-border text-foreground rounded-lg pl-3 pr-8 py-1.5 text-xs appearance-none focus:outline-none focus:border-blue-500 cursor-pointer min-w-[120px] max-w-[180px]"
+    <div className="relative z-20" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="bg-muted hover:bg-muted/80 border border-border text-foreground rounded-lg pl-3 pr-8 py-1.5 text-xs focus:outline-none focus:border-blue-500 cursor-pointer min-w-[125px] max-w-[200px] flex items-center justify-between gap-1 w-full text-left"
       >
-        <option value="">{label}: Tất cả</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-      <CaretDown size={10} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        <span className="truncate">
+          {label}: {displayLabel}
+        </span>
+        <CaretDown size={10} className="text-muted-foreground shrink-0" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 mt-1 z-30 min-w-[220px] max-w-[300px] bg-card border border-border rounded-lg shadow-xl py-1 flex flex-col max-h-72 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100">
+          {showSearch && (
+            <div className="px-2 py-1.5 border-b border-border">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Tìm kiếm..."
+                className="w-full bg-muted border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-blue-500 placeholder:text-muted-foreground"
+                autoFocus
+              />
+            </div>
+          )}
+          <div className="overflow-y-auto flex-1">
+            <button
+              type="button"
+              onClick={() => {
+                onChange("");
+                setIsOpen(false);
+              }}
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-blue-600 hover:text-white transition-colors ${
+                value === "" ? "bg-blue-600/10 text-blue-500 font-bold" : "text-foreground"
+              }`}
+            >
+              {label}: Tất cả
+            </button>
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(o.value);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-blue-600 hover:text-white transition-colors truncate ${
+                    o.value === value ? "bg-blue-600/10 text-blue-500 font-bold" : "text-foreground"
+                  }`}
+                  title={o.label}
+                >
+                  {o.label}
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-xs text-muted-foreground text-center">
+                Không tìm thấy kết quả
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -142,14 +222,42 @@ export default function ContentOverviewPage() {
     setYoutubePage(1);
   }, [filterQuery]);
 
-  // Option cho dropdown (distinct từ toàn bộ dữ liệu).
   const distinct = (vals: (string | null)[]) =>
     [...new Set(vals.filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b));
-  const platformOptions = [...new Set(allList.map((x) => x.platform.toUpperCase()))]
-    .map((p) => ({ value: p, label: PLATFORM_LABEL[p] || p }));
-  const teamOptions = distinct(allList.map((x) => x.team));
-  const staffOptions = distinct(allList.map((x) => x.staff));
-  const channelOptions = distinct(allList.map((x) => x.channel));
+
+  // Dynamic cascading dropdown options based on other active filters
+  const platformOptions = useMemo(() => {
+    let filtered = allList;
+    if (team) filtered = filtered.filter((x) => x.team === team);
+    if (staff) filtered = filtered.filter((x) => x.staff === staff);
+    if (channel) filtered = filtered.filter((x) => x.channel === channel);
+    return [...new Set(filtered.map((x) => x.platform.toUpperCase()))]
+      .map((p) => ({ value: p, label: PLATFORM_LABEL[p] || p }));
+  }, [allList, team, staff, channel]);
+
+  const channelOptions = useMemo(() => {
+    let filtered = allList;
+    if (platform) filtered = filtered.filter((x) => x.platform.toUpperCase() === platform.toUpperCase());
+    if (team) filtered = filtered.filter((x) => x.team === team);
+    if (staff) filtered = filtered.filter((x) => x.staff === staff);
+    return distinct(filtered.map((x) => x.channel));
+  }, [allList, platform, team, staff]);
+
+  const teamOptions = useMemo(() => {
+    let filtered = allList;
+    if (platform) filtered = filtered.filter((x) => x.platform.toUpperCase() === platform.toUpperCase());
+    if (channel) filtered = filtered.filter((x) => x.channel === channel);
+    if (staff) filtered = filtered.filter((x) => x.staff === staff);
+    return distinct(filtered.map((x) => x.team));
+  }, [allList, platform, channel, staff]);
+
+  const staffOptions = useMemo(() => {
+    let filtered = allList;
+    if (platform) filtered = filtered.filter((x) => x.platform.toUpperCase() === platform.toUpperCase());
+    if (channel) filtered = filtered.filter((x) => x.channel === channel);
+    if (team) filtered = filtered.filter((x) => x.team === team);
+    return distinct(filtered.map((x) => x.staff));
+  }, [allList, platform, channel, team]);
 
   const k = report?.kpis;
   // KPI thật (định dạng chuỗi như mock cũ); fallback "—" khi chưa tải xong.
