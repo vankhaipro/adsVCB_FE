@@ -128,6 +128,7 @@ type Props = {
   staff: string;
   accountId: string;
   accounts?: { id: string; name: string | null; platform: string }[];
+  staffs?: FilterPill[];
   onPlatformChange: (v: string) => void;
   onStatusChange: (v: string) => void;
   onObjectiveChange: (v: string) => void;
@@ -153,6 +154,7 @@ export default function OverviewHeader({
   staff,
   accountId,
   accounts = [],
+  staffs = [],
   onPlatformChange,
   onStatusChange,
   onObjectiveChange,
@@ -191,7 +193,7 @@ export default function OverviewHeader({
         <FilterSelect label="Tài khoản:" items={filteredAccountPills} value={accountId} onChange={onAccountIdChange} />
         <FilterSelect label="Trạng thái:" items={STATUSES} value={status} onChange={onStatusChange} />
         <FilterSelect label="Mục tiêu:" items={OBJECTIVES} value={objective} onChange={onObjectiveChange} />
-        <FilterSelect label="Nhân viên:" items={STAFFS} value={staff} onChange={onStaffChange} />
+        <FilterSelect label="Nhân viên:" items={staffs.length > 0 ? staffs : STAFFS} value={staff} onChange={onStaffChange} />
 
         {/* Bên phải: khoảng thời gian + hành động */}
         <div className="ml-auto flex items-center gap-2">

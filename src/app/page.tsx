@@ -210,8 +210,21 @@ function OverviewInner() {
   const rawTab = searchParams.get("tab");
   const selectedTab: TabValue = TAB_VALUES.includes(rawTab as TabValue) ? (rawTab as TabValue) : "overview";
 
+  const [employeeOptions, setEmployeeOptions] = useState<{ id: string; label: string }[]>([]);
+
+  useEffect(() => {
+    apiGet("/employees")
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setEmployeeOptions(data.map((e: any) => ({ id: e.name, label: e.name })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   function setSelectedTab(tab: TabValue) {
     router.push(`?tab=${tab}`, { scroll: false });
+    setStaff("ALL");
   }
 
   // Filters State
@@ -223,6 +236,19 @@ function OverviewInner() {
   const [accountId, setAccountId] = useState("ALL");
   const [channel, setChannel] = useState("ALL");
   const [staff, setStaff] = useState("ALL");
+
+  const currentStaffs = useMemo(() => {
+    if (selectedTab === "orders") {
+      return employeeOptions;
+    }
+    return [
+      { id: "Việt", label: "Việt" },
+      { id: "Thành", label: "Thành" },
+      { id: "Ngọc", label: "Ngọc" },
+      { id: "Cương", label: "Cương" },
+      { id: "Khác", label: "Khác" },
+    ];
+  }, [selectedTab, employeeOptions]);
 
   // Load Initial Data
   const load = useCallback(async () => {
@@ -356,6 +382,22 @@ function OverviewInner() {
     return fmtNum(n);
   };
 
+  const sapoFilterQuery = useMemo(() => {
+    const p = new URLSearchParams();
+    
+    // Parse dateRange
+    const dateQStr = rangeToQuery(dateRange);
+    const dateParams = new URLSearchParams(dateQStr);
+    for (const [k, v] of dateParams.entries()) {
+      p.set(k, v);
+    }
+    
+    if (platform !== "ALL") p.set("platform", platform);
+    if (staff !== "ALL") p.set("staff", staff);
+    
+    return p.toString();
+  }, [dateRange, platform, staff]);
+
   const overviewKpis = useMemo((): KpiItem[] => {
     const ICONS: Record<string, Icon> = {
       spend: CurrencyDollar,
@@ -434,6 +476,7 @@ function OverviewInner() {
         staff={staff}
         accountId={accountId}
         accounts={accounts}
+        staffs={currentStaffs}
         onPlatformChange={(v) => {
           setPlatform(v);
           setAccountId("ALL");
@@ -1029,7 +1072,7 @@ function OverviewInner() {
 
           {/* TAB 4: ĐƠN HÀNG BÁN (Sapo) */}
           {selectedTab === "orders" && (
-            <OrdersBreakdown query={rangeToQuery(dateRange)} />
+            <OrdersBreakdown query={sapoFilterQuery} />
           )}
         </>
       )}
