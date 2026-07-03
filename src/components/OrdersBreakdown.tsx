@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { apiGet, fmtVnd } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
-import { Storefront, UsersThree, UserCircle, MapPin, CurrencyDollar, ShoppingBag, FacebookLogo, ChartPie } from "@phosphor-icons/react";
+import { Storefront, UsersThree, UserCircle, CurrencyDollar, ShoppingBag, FacebookLogo, ChartPie } from "@phosphor-icons/react";
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 const CHART_COLORS = ["#3b82f6", "#db2777", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#64748b"];
