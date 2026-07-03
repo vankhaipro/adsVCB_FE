@@ -488,10 +488,8 @@ function OverviewInner() {
         onAccountIdChange={setAccountId}
         kpis={overviewKpis}
         showKpis={selectedTab === "overview"}
-        onRefresh={refresh}
         onSync={syncData}
         onExport={() => alert("Bắt đầu xuất dữ liệu báo cáo...")}
-        refreshing={syncing || loading}
         syncing={syncingData}
       />
 

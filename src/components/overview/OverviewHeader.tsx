@@ -136,10 +136,8 @@ type Props = {
   onStaffChange: (v: string) => void;
   onAccountIdChange: (v: string) => void;
   kpis?: KpiItem[];
-  onRefresh?: () => void;
   onSync?: () => void;
   onExport?: () => void;
-  refreshing?: boolean;
   syncing?: boolean;
   showKpis?: boolean;
 };
@@ -162,10 +160,8 @@ export default function OverviewHeader({
   onStaffChange,
   onAccountIdChange,
   kpis = [],
-  onRefresh,
   onSync,
   onExport,
-  refreshing,
   syncing,
   showKpis = true,
 }: Props) {
@@ -232,19 +228,6 @@ export default function OverviewHeader({
           >
             <Download size={16} />
             Xuất Excel
-          </button>
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-background border border-border hover:bg-card text-foreground text-sm font-medium rounded-lg transition-colors disabled:opacity-60"
-          >
-            {refreshing ? (
-              <SpinnerGap size={16} className="animate-spin" />
-            ) : (
-              <ArrowsClockwise size={16} />
-            )}
-            Làm mới
           </button>
         </div>
       </div>
