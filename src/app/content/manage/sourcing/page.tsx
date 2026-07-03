@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import DateRangePicker, { presetToDates } from "@/components/DateRangePicker";
 import {
-  Calendar,
   Gear,
   CaretDown,
   DownloadSimple,
@@ -46,6 +46,20 @@ export default function SourcingContentPage() {
   const [currentPage, setCurrentPage] = useState<1 | 2>(1);
   const [channels, setChannels] = useState([...initialChannelsPage1]);
 
+  // Bộ lọc ngày — dùng chung component DateRangePicker với toàn web.
+  const [analysisDate, setAnalysisDate] = useState(() => ({
+    presetId: "last30days",
+    ...presetToDates("last30days"),
+  }));
+  const [postDate, setPostDate] = useState(() => ({
+    presetId: "last30days",
+    ...presetToDates("last30days"),
+  }));
+  const [channelDate, setChannelDate] = useState(() => ({
+    presetId: "last30days",
+    ...presetToDates("last30days"),
+  }));
+
   function handlePageChange(page: 1 | 2) {
     setCurrentPage(page);
     setChannels(page === 1 ? [...initialChannelsPage1] : [...initialChannelsPage2]);
@@ -80,10 +94,12 @@ export default function SourcingContentPage() {
         {/* Date picker on tab Kênh */}
         {activeSubTab === "channel" && (
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-muted-foreground select-none">
-              <Calendar size={14} />
-              <span>28/05/2026 &nbsp;→&nbsp; 26/06/2026</span>
-            </div>
+            <DateRangePicker
+              presetId={channelDate.presetId}
+              from={channelDate.from}
+              to={channelDate.to}
+              onApply={setChannelDate}
+            />
 
             {/* Create New Button */}
             <button className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary rounded-lg text-xs text-foreground font-bold transition-colors cursor-pointer shadow-md shadow-blue-500/10">
@@ -104,22 +120,22 @@ export default function SourcingContentPage() {
               {/* Row 1 */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-[15px] text-muted-foreground font-semibold uppercase tracking-wider">Thời gian phân tích</span>
-                <div className="relative">
-                  <div className="flex items-center justify-between bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground select-none cursor-pointer">
-                    <span>28/05/2026 &nbsp;→&nbsp; 26/06/2026</span>
-                    <Calendar size={13} className="text-muted-foreground" />
-                  </div>
-                </div>
+                <DateRangePicker
+                  presetId={analysisDate.presetId}
+                  from={analysisDate.from}
+                  to={analysisDate.to}
+                  onApply={setAnalysisDate}
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <span className="text-[15px] text-muted-foreground font-semibold uppercase tracking-wider">Ngày đăng video</span>
-                <div className="relative">
-                  <div className="flex items-center justify-between bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground select-none cursor-pointer">
-                    <span>28/05/2026 &nbsp;→&nbsp; 26/06/2026</span>
-                    <Calendar size={13} className="text-muted-foreground" />
-                  </div>
-                </div>
+                <DateRangePicker
+                  presetId={postDate.presetId}
+                  from={postDate.from}
+                  to={postDate.to}
+                  onApply={setPostDate}
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">

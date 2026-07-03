@@ -12,6 +12,7 @@ import { apiGet, apiPost, fmtVnd } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
 import OrdersBreakdown from "@/components/OrdersBreakdown";
 import OverviewHeader, { type KpiItem } from "@/components/overview/OverviewHeader";
+import { presetToDates } from "@/components/DateRangePicker";
 import OverviewBody from "@/components/overview/OverviewBody";
 import { KPIS, type Kpi } from "@/components/overview/dashboardData";
 
@@ -101,37 +102,10 @@ function hashString(str: string): number {
   return Math.abs(hash);
 }
 
-// Map khoảng thời gian của bộ lọc -> query ?from=&to= cho API Sapo
-function rangeToQuery(range: string): string {
-  const now = new Date();
-  const end = new Date(now);
-  let start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  switch (range) {
-    case "today":
-      break;
-    case "yesterday":
-      start.setDate(start.getDate() - 1);
-      end.setTime(start.getTime());
-      end.setHours(23, 59, 59, 999);
-      break;
-    case "last7days":
-      start.setDate(start.getDate() - 6);
-      break;
-    case "last30days":
-      start.setDate(start.getDate() - 29);
-      break;
-    case "thisMonth":
-      start = new Date(now.getFullYear(), now.getMonth(), 1);
-      break;
-    case "lastMonth": {
-      start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const e = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-      return `from=${start.toISOString()}&to=${e.toISOString()}`;
-    }
-    default:
-      start.setDate(start.getDate() - 29);
-  }
+// Map khoảng thời gian đã chọn (YYYY-MM-DD) -> query ?from=&to= cho API.
+function datesToQuery(from: string, to: string): string {
+  const start = new Date(`${from}T00:00:00`);
+  const end = new Date(`${to}T23:59:59.999`);
   return `from=${start.toISOString()}&to=${end.toISOString()}`;
 }
 
@@ -231,6 +205,8 @@ function OverviewInner() {
 
   // Filters State
   const [dateRange, setDateRange] = useState("last30days");
+  const [customFrom, setCustomFrom] = useState(() => presetToDates("last30days").from);
+  const [customTo, setCustomTo] = useState(() => presetToDates("last30days").to);
   const [platform, setPlatform] = useState("ALL");
   const [objective, setObjective] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -277,7 +253,7 @@ function OverviewInner() {
   // Doanh thu Sapo chỉ map được theo thời gian (utm_id của đơn ở cấp ad,
   // không gắn được vào campaign/nền tảng/tài khoản) → chỉ phụ thuộc dateRange.
   const loadSapo = useCallback(async () => {
-    const q = rangeToQuery(dateRange);
+    const q = datesToQuery(customFrom, customTo);
     try {
       const [rev, skus] = await Promise.all([
         apiGet(`/sapo/revenue?${q}`),
@@ -289,11 +265,11 @@ function OverviewInner() {
       setSapo(null);
       setSapoSkus([]);
     }
-  }, [dateRange]);
+  }, [customFrom, customTo]);
 
   // Chỉ số quảng cáo (Meta/TikTok) tôn trọng toàn bộ bộ lọc của Tổng quan.
   const loadInsights = useCallback(async () => {
-    const params = new URLSearchParams(rangeToQuery(dateRange));
+    const params = new URLSearchParams(datesToQuery(customFrom, customTo));
     if (platform !== "ALL") params.set("platform", platform);
     if (objective !== "ALL") params.set("objective", objective);
     if (accountId !== "ALL") params.set("accountId", accountId);
@@ -317,7 +293,7 @@ function OverviewInner() {
       setTrendData([]);
       setCampaignsInsights([]);
     }
-  }, [dateRange, platform, objective, accountId, channel, staff]);
+  }, [customFrom, customTo, platform, objective, accountId, channel, staff]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -403,18 +379,17 @@ function OverviewInner() {
   const sapoFilterQuery = useMemo(() => {
     const p = new URLSearchParams();
     
-    // Parse dateRange
-    const dateQStr = rangeToQuery(dateRange);
-    const dateParams = new URLSearchParams(dateQStr);
+    // Parse khoảng thời gian đã chọn
+    const dateParams = new URLSearchParams(datesToQuery(customFrom, customTo));
     for (const [k, v] of dateParams.entries()) {
       p.set(k, v);
     }
-    
+
     if (platform !== "ALL") p.set("platform", platform);
     if (staff !== "ALL") p.set("staff", staff);
-    
+
     return p.toString();
-  }, [dateRange, platform, staff]);
+  }, [customFrom, customTo, platform, staff]);
 
   const overviewKpis = useMemo((): KpiItem[] => {
     const ICONS: Record<string, Icon> = {
@@ -491,6 +466,8 @@ function OverviewInner() {
         status={statusFilter}
         objective={objective}
         dateRange={dateRange}
+        dateFrom={customFrom}
+        dateTo={customTo}
         staff={staff}
         accountId={accountId}
         accounts={accounts}
@@ -501,7 +478,11 @@ function OverviewInner() {
         }}
         onStatusChange={setStatusFilter}
         onObjectiveChange={setObjective}
-        onDateRangeChange={setDateRange}
+        onDateApply={({ presetId, from, to }) => {
+          setDateRange(presetId);
+          setCustomFrom(from);
+          setCustomTo(to);
+        }}
         onStaffChange={setStaff}
         onAccountIdChange={setAccountId}
         kpis={overviewKpis}

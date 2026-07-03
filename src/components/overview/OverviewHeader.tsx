@@ -8,9 +8,9 @@ import {
   CaretUp,
   CaretDown,
   SpinnerGap,
-  CalendarBlank,
   type Icon,
 } from "@phosphor-icons/react";
+import DateRangePicker from "@/components/DateRangePicker";
 
 export type FilterPill = { id: string; label: string };
 
@@ -101,15 +101,6 @@ const OBJECTIVES: FilterPill[] = [
   { id: "MESS", label: "Traffic" },
 ];
 
-const DATE_OPTIONS = [
-  { id: "today", label: "Hôm nay" },
-  { id: "yesterday", label: "Hôm qua" },
-  { id: "last7days", label: "7 ngày" },
-  { id: "last30days", label: "30 ngày" },
-  { id: "thisMonth", label: "Tháng này" },
-  { id: "lastMonth", label: "Tháng trước" },
-];
-
 const STAFFS: FilterPill[] = [
   { id: "Việt", label: "Việt" },
   { id: "Thành", label: "Thành" },
@@ -125,6 +116,8 @@ type Props = {
   status: string;
   objective: string;
   dateRange: string;
+  dateFrom: string;
+  dateTo: string;
   staff: string;
   accountId: string;
   accounts?: { id: string; name: string | null; platform: string }[];
@@ -132,7 +125,7 @@ type Props = {
   onPlatformChange: (v: string) => void;
   onStatusChange: (v: string) => void;
   onObjectiveChange: (v: string) => void;
-  onDateRangeChange: (v: string) => void;
+  onDateApply: (v: { presetId: string; from: string; to: string }) => void;
   onStaffChange: (v: string) => void;
   onAccountIdChange: (v: string) => void;
   kpis?: KpiItem[];
@@ -151,6 +144,8 @@ export default function OverviewHeader({
   status,
   objective,
   dateRange,
+  dateFrom,
+  dateTo,
   staff,
   accountId,
   accounts = [],
@@ -158,7 +153,7 @@ export default function OverviewHeader({
   onPlatformChange,
   onStatusChange,
   onObjectiveChange,
-  onDateRangeChange,
+  onDateApply,
   onStaffChange,
   onAccountIdChange,
   kpis = [],
@@ -197,20 +192,12 @@ export default function OverviewHeader({
 
         {/* Bên phải: khoảng thời gian + hành động */}
         <div className="ml-auto flex items-center gap-2">
-          <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2 text-xs">
-            <CalendarBlank size={14} className="text-blue-400 shrink-0" />
-            <select
-              value={dateRange}
-              onChange={(e) => onDateRangeChange(e.target.value)}
-              className="bg-background text-foreground outline-none cursor-pointer font-medium"
-            >
-              {DATE_OPTIONS.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <DateRangePicker
+            presetId={dateRange}
+            from={dateFrom}
+            to={dateTo}
+            onApply={onDateApply}
+          />
 
           <button
             type="button"
