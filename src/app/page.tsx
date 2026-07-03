@@ -237,8 +237,8 @@ function OverviewInner() {
     setLoading(true);
     try {
       const [camps, accs] = await Promise.all([
-        apiGet("/ads/campaigns"),
-        apiGet("/ads/accounts")
+        apiGet("/mkt-api/campaigns"),
+        apiGet("/mkt-api/accounts")
       ]);
       setCampaigns(camps);
       setAccounts(accs);
@@ -282,10 +282,10 @@ function OverviewInner() {
     const q = params.toString();
     try {
       const [ins, brk, trend, camps] = await Promise.all([
-        apiGet(`/ads/insights?${q}`),
-        apiGet(`/ads/insights/breakdown?${q}`),
-        apiGet(`/ads/insights/trend?${q}`),
-        apiGet(`/ads/campaigns/insights?${q}`)
+        apiGet(`/mkt-api/insights?${q}`),
+        apiGet(`/mkt-api/insights/breakdown?${q}`),
+        apiGet(`/mkt-api/insights/trend?${q}`),
+        apiGet(`/mkt-api/campaigns/insights?${q}`)
       ]);
       setInsights(ins);
       setBreakdown(brk);
@@ -340,8 +340,8 @@ function OverviewInner() {
         steps.push({ name, ok: false, detail: e instanceof Error ? e.message : "lỗi" });
       }
     };
-    await run("Chiến dịch & quảng cáo", () => apiGet("/ads/sync"));
-    await run("Chỉ số quảng cáo", () => apiGet("/ads/sync-insights?days=30"));
+    await run("Chiến dịch & quảng cáo", () => apiGet("/mkt-api/sync"));
+    await run("Chỉ số quảng cáo", () => apiGet("/mkt-api/sync-insights?days=30"));
     await run("Đơn hàng Sapo", () => apiPost("/sapo/sync?days=30"));
     try {
       await Promise.all([load(), loadSapo(), loadInsights()]);

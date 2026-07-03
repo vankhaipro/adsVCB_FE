@@ -24,7 +24,7 @@ export default function AdAccountsPage() {
     setLoading(true);
     setError(null);
     try {
-      setAccounts(await apiGet("/ads/accounts"));
+      setAccounts(await apiGet("/mkt-api/accounts"));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
     } finally {
@@ -39,7 +39,7 @@ export default function AdAccountsPage() {
   const sync = async () => {
     setSyncing(true);
     try {
-      await apiGet("/ads/sync");
+      await apiGet("/mkt-api/sync");
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Đồng bộ lỗi");

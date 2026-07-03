@@ -17,6 +17,7 @@ type Campaign = {
   objective: string | null;
   budget: number;
   adAccount: { name: string | null; platform: string } | null;
+  staff?: string | null;
 };
 
 type AdSet = {
@@ -29,6 +30,7 @@ type AdSet = {
   budget: number;
   targeting: string;
   adAccountName: string;
+  staff: string;
 };
 
 type Ad = {
@@ -42,6 +44,7 @@ type Ad = {
   status: string | null;
   type: "Video" | "Hình ảnh" | "Carousel";
   adAccountName: string;
+  staff: string;
 };
 
 type Account = { id: string; platform: string; name: string | null };
@@ -134,6 +137,8 @@ export default function CampaignsPage() {
   const [q, setQ] = useState("");
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>("ALL");
   const [selectedAdSetId, setSelectedAdSetId] = useState<string>("ALL");
+  const [accountFilter, setAccountFilter] = useState<string>("ALL");
+  const [staffFilter, setStaffFilter] = useState<string>("ALL");
 
   // create modal
   const [showCreate, setShowCreate] = useState(false);
@@ -150,8 +155,8 @@ export default function CampaignsPage() {
     const qStr = params.toString();
     try {
       const [c, a] = await Promise.all([
-        apiGet(`/ads/campaigns/insights?${qStr}`),
-        apiGet("/ads/accounts")
+        apiGet(`/mkt-api/campaigns/insights?includeDetails=true&${qStr}`),
+        apiGet("/mkt-api/accounts")
       ]);
       setCampaigns(c);
       setAccounts(a);
@@ -169,7 +174,7 @@ export default function CampaignsPage() {
   const sync = async () => {
     setSyncing(true);
     try {
-      await apiGet("/ads/sync");
+      await apiGet("/mkt-api/sync");
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Đồng bộ lỗi");
@@ -183,7 +188,7 @@ export default function CampaignsPage() {
     if (!confirm(`${turnOn ? "BẬT" : "TẮT"} chiến dịch "${c.name}"?\n(Tác động lên tài khoản quảng cáo thật)`)) return;
     setBusyId(c.id);
     try {
-      const updated = await apiPatch(`/ads/campaigns/${c.id}/status`, { on: turnOn });
+      const updated = await apiPatch(`/mkt-api/campaigns/${c.id}/status`, { on: turnOn });
       setCampaigns((prev) => prev.map((x) => (x.id === c.id ? { ...x, status: updated.status } : x)));
     } catch (e) {
       alert("Lỗi: " + (e instanceof Error ? e.message : "không đổi được trạng thái"));
@@ -196,7 +201,7 @@ export default function CampaignsPage() {
     if (!form.accountId || !form.name) return;
     setCreating(true);
     try {
-      await apiPost("/ads/campaigns", {
+      await apiPost("/mkt-api/campaigns", {
         accountId: form.accountId,
         name: form.name,
         objective: form.objective || undefined,
@@ -299,7 +304,8 @@ export default function CampaignsPage() {
             status: as.status,
             budget: as.budget,
             targeting: as.targeting || '—',
-            adAccountName: c.adAccount?.name ?? "—"
+            adAccountName: c.adAccount?.name ?? "—",
+            staff: c.staff ?? "—"
           });
         });
       } else {
@@ -313,7 +319,8 @@ export default function CampaignsPage() {
           status: c.status,
           budget: c.budget,
           targeting: 'Tuổi: 18-35',
-          adAccountName: c.adAccount?.name ?? "—"
+          adAccountName: c.adAccount?.name ?? "—",
+          staff: c.staff ?? "—"
         });
       }
     });
@@ -340,7 +347,8 @@ export default function CampaignsPage() {
                 name: ad.name,
                 status: ad.status,
                 type: (ad.type as any) || 'Hình ảnh',
-                adAccountName: c.adAccount?.name ?? "—"
+                adAccountName: c.adAccount?.name ?? "—",
+          staff: c.staff ?? "—"
               });
             });
           } else {
@@ -355,7 +363,8 @@ export default function CampaignsPage() {
                 name: `${as.name} - Quảng cáo 1`,
                 status: as.status,
                 type: 'Video',
-                adAccountName: c.adAccount?.name ?? "—"
+                adAccountName: c.adAccount?.name ?? "—",
+          staff: c.staff ?? "—"
              });
           }
         });
@@ -371,7 +380,8 @@ export default function CampaignsPage() {
           name: `${c.name} - Quảng cáo 1`,
           status: c.status,
           type: 'Video',
-          adAccountName: c.adAccount?.name ?? "—"
+          adAccountName: c.adAccount?.name ?? "—",
+          staff: c.staff ?? "—"
         });
       }
     });
@@ -424,39 +434,55 @@ export default function CampaignsPage() {
     return Array.from(counts, ([id, count]) => ({ id, count })).sort((a, b) => b.count - a.count);
   }, [campaigns]);
 
-  // Filter lists based on platform, query q, and hierarchical filters
+  // Danh sách option cho bộ lọc Tài khoản ads / Nhân viên ads (distinct từ campaigns).
+  const accountOptions = useMemo(
+    () => [...new Set(campaigns.map((c) => c.adAccount?.name).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b)),
+    [campaigns]
+  );
+  const staffOptions = useMemo(
+    () => [...new Set(campaigns.map((c) => c.staff).filter((x): x is string => !!x && x !== "—"))].sort((a, b) => a.localeCompare(b)),
+    [campaigns]
+  );
+
+  // Filter lists based on platform, query q, hierarchical, tài khoản ads & nhân viên ads
   const filteredCampaigns = useMemo(() => {
     return campaigns
       .filter(
         (c) =>
           (platform === "ALL" || c.platform === platform) &&
+          (accountFilter === "ALL" || (c.adAccount?.name ?? "") === accountFilter) &&
+          (staffFilter === "ALL" || (c.staff ?? "") === staffFilter) &&
           (!q || c.name.toLowerCase().includes(q.toLowerCase()))
       )
       .sort(runningFirst);
-  }, [campaigns, platform, q]);
+  }, [campaigns, platform, accountFilter, staffFilter, q]);
 
   const filteredAdSets = useMemo(() => {
     return adSets
       .filter(
         (as) =>
           (platform === "ALL" || as.platform === platform) &&
+          (accountFilter === "ALL" || as.adAccountName === accountFilter) &&
+          (staffFilter === "ALL" || as.staff === staffFilter) &&
           (selectedCampaignId === "ALL" || as.campaignId === selectedCampaignId) &&
           (!q || as.name.toLowerCase().includes(q.toLowerCase()))
       )
       .sort(runningFirst);
-  }, [adSets, platform, selectedCampaignId, q]);
+  }, [adSets, platform, accountFilter, staffFilter, selectedCampaignId, q]);
 
   const filteredAds = useMemo(() => {
     return ads
       .filter(
         (ad) =>
           (platform === "ALL" || ad.platform === platform) &&
+          (accountFilter === "ALL" || ad.adAccountName === accountFilter) &&
+          (staffFilter === "ALL" || ad.staff === staffFilter) &&
           (selectedCampaignId === "ALL" || ad.campaignId === selectedCampaignId) &&
           (selectedAdSetId === "ALL" || ad.adSetId === selectedAdSetId) &&
           (!q || ad.name.toLowerCase().includes(q.toLowerCase()))
       )
       .sort(runningFirst);
-  }, [ads, platform, selectedCampaignId, selectedAdSetId, q]);
+  }, [ads, platform, accountFilter, staffFilter, selectedCampaignId, selectedAdSetId, q]);
 
   // Compute metrics for the rendered lists
   const campaignsWithMetrics = useMemo(() => {
@@ -701,6 +727,30 @@ export default function CampaignsPage() {
             );
           })}
         </div>
+
+        {/* Lọc theo Tài khoản ads */}
+        <select
+          value={accountFilter}
+          onChange={(e) => setAccountFilter(e.target.value)}
+          className="bg-background border border-border rounded-md px-3 py-1.5 text-xs text-foreground outline-none max-w-[200px]"
+        >
+          <option value="ALL">Tài khoản ads: Tất cả</option>
+          {accountOptions.map((a) => (
+            <option key={a} value={a}>{a}</option>
+          ))}
+        </select>
+
+        {/* Lọc theo Nhân viên ads */}
+        <select
+          value={staffFilter}
+          onChange={(e) => setStaffFilter(e.target.value)}
+          className="bg-background border border-border rounded-md px-3 py-1.5 text-xs text-foreground outline-none max-w-[180px]"
+        >
+          <option value="ALL">Nhân viên ads: Tất cả</option>
+          {staffOptions.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
 
         {/* Hierarchical Filters */}
         {(activeTab === "adset" || activeTab === "ad") && (

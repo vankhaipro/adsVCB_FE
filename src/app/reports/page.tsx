@@ -19,7 +19,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiGet("/ads/reports").then(setR).catch(() => {}).finally(() => setLoading(false));
+    apiGet("/mkt-api/reports").then(setR).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   return (

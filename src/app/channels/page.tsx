@@ -25,12 +25,16 @@ type Channel = {
 
 const PLATFORM_LABEL: Record<string, string> = {
   TIKTOK: "TikTok", YOUTUBE: "YouTube", FACEBOOK: "Facebook", INSTAGRAM: "Instagram",
+  THREADS: "Threads", ZALO: "Zalo", SHOPEE: "Shopee",
 };
 const PLATFORM_COLOR: Record<string, string> = {
   TIKTOK: "bg-pink-500/20 text-pink-400",
   YOUTUBE: "bg-red-500/20 text-red-400",
   FACEBOOK: "bg-blue-500/20 text-blue-400",
   INSTAGRAM: "bg-purple-500/20 text-purple-400",
+  THREADS: "bg-zinc-500/20 text-zinc-400",
+  ZALO: "bg-teal-500/20 text-teal-400",
+  SHOPEE: "bg-orange-500/20 text-orange-400",
 };
 
 const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n || 0));

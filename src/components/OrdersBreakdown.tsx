@@ -179,14 +179,6 @@ export default function OrdersBreakdown({ query }: { query: string }) {
         </div>
       </div>
 
-      {/* Breakdown grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <BreakdownCard title="Theo kênh" icon={<Storefront size={18} className="text-violet-500" />} items={data?.byChannel ?? []} labelMap={CHANNEL_LABEL} />
-        <BreakdownCard title="Theo page khách nhắn" icon={<FacebookLogo size={18} className="text-blue-500" />} items={data?.byMessagedPage ?? []} limit={15} />
-        <BreakdownCard title="Theo team kinh doanh" icon={<UsersThree size={18} className="text-blue-500" />} items={data?.byTeam ?? []} />
-        <BreakdownCard title="Theo nhân viên" icon={<UserCircle size={18} className="text-amber-500" />} items={data?.byStaff ?? []} limit={15} />
-      </div>
-
       {/* Bảng chi tiết theo nhân viên */}
       <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -229,6 +221,14 @@ export default function OrdersBreakdown({ query }: { query: string }) {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Breakdown grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <BreakdownCard title="Theo kênh" icon={<Storefront size={18} className="text-violet-500" />} items={data?.byChannel ?? []} labelMap={CHANNEL_LABEL} />
+        <BreakdownCard title="Theo page khách nhắn" icon={<FacebookLogo size={18} className="text-blue-500" />} items={data?.byMessagedPage ?? []} limit={15} />
+        <BreakdownCard title="Theo team kinh doanh" icon={<UsersThree size={18} className="text-blue-500" />} items={data?.byTeam ?? []} />
+        <BreakdownCard title="Theo nhân viên" icon={<UserCircle size={18} className="text-amber-500" />} items={data?.byStaff ?? []} limit={15} />
       </div>
     </div>
   );

@@ -24,7 +24,7 @@ export default function BudgetPage() {
     setLoading(true);
     setError(null);
     try {
-      setCampaigns(await apiGet("/ads/campaigns"));
+      setCampaigns(await apiGet("/mkt-api/campaigns"));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
     } finally {
@@ -42,7 +42,7 @@ export default function BudgetPage() {
     if (!confirm(`Đổi ngân sách "${c.name}" thành ${fmtVnd(val)}?\n(Tác động tài khoản thật)`)) return;
     setSavingId(c.id);
     try {
-      await apiPatch(`/ads/campaigns/${c.id}`, { budget: val });
+      await apiPatch(`/mkt-api/campaigns/${c.id}`, { budget: val });
       setCampaigns((prev) => prev.map((x) => (x.id === c.id ? { ...x, budget: val } : x)));
       setEdits((e) => ({ ...e, [c.id]: "" }));
     } catch (e) {
