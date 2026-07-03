@@ -110,6 +110,14 @@ const DATE_OPTIONS = [
   { id: "lastMonth", label: "Tháng trước" },
 ];
 
+const STAFFS: FilterPill[] = [
+  { id: "Việt", label: "Việt" },
+  { id: "Thành", label: "Thành" },
+  { id: "Ngọc", label: "Ngọc" },
+  { id: "Cương", label: "Cương" },
+  { id: "Khác", label: "Khác" },
+];
+
 type Props = {
   search: string;
   onSearchChange: (v: string) => void;
@@ -117,10 +125,15 @@ type Props = {
   status: string;
   objective: string;
   dateRange: string;
+  staff: string;
+  accountId: string;
+  accounts?: { id: string; name: string | null; platform: string }[];
   onPlatformChange: (v: string) => void;
   onStatusChange: (v: string) => void;
   onObjectiveChange: (v: string) => void;
   onDateRangeChange: (v: string) => void;
+  onStaffChange: (v: string) => void;
+  onAccountIdChange: (v: string) => void;
   kpis?: KpiItem[];
   onRefresh?: () => void;
   onSync?: () => void;
@@ -137,10 +150,15 @@ export default function OverviewHeader({
   status,
   objective,
   dateRange,
+  staff,
+  accountId,
+  accounts = [],
   onPlatformChange,
   onStatusChange,
   onObjectiveChange,
   onDateRangeChange,
+  onStaffChange,
+  onAccountIdChange,
   kpis = [],
   onRefresh,
   onSync,
@@ -149,6 +167,10 @@ export default function OverviewHeader({
   syncing,
   showKpis = true,
 }: Props) {
+  const filteredAccountPills = accounts
+    .filter((a) => platform === "ALL" || a.platform === platform)
+    .map((a) => ({ id: a.id, label: a.name || a.id }));
+
   return (
     <div className="flex flex-col gap-4">
       {/* Filter bar — một hàng gọn, nằm trực tiếp trên nền trang */}
@@ -166,8 +188,10 @@ export default function OverviewHeader({
 
         {/* Nhóm bộ lọc dạng Select (Compact) */}
         <FilterSelect label="Kênh:" items={CHANNELS} value={platform} onChange={onPlatformChange} />
+        <FilterSelect label="Tài khoản:" items={filteredAccountPills} value={accountId} onChange={onAccountIdChange} />
         <FilterSelect label="Trạng thái:" items={STATUSES} value={status} onChange={onStatusChange} />
         <FilterSelect label="Mục tiêu:" items={OBJECTIVES} value={objective} onChange={onObjectiveChange} />
+        <FilterSelect label="Nhân viên:" items={STAFFS} value={staff} onChange={onStaffChange} />
 
         {/* Bên phải: khoảng thời gian + hành động */}
         <div className="ml-auto flex items-center gap-2">

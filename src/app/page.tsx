@@ -163,23 +163,12 @@ function parseCampaignName(name: string, id: string) {
   }
 
   // 2. Staff Extraction
-  let staff = "Chưa rõ";
-  const staffList = ["HUYK", "VAN", "HOAN", "KIM HOAN", "NGOC", "TRANG", "DUONG", "VY", "HA", "LAN"];
-  for (const s of staffList) {
-    if (upper.includes(s)) {
-      staff = s === "HUYK" ? "HuyK" : 
-              s === "VAN" ? "Vân" : 
-              s === "KIM HOAN" || s === "HOAN" ? "Kim Hoàn" : 
-              s === "NGOC" ? "Ngọc" : 
-              s === "TRANG" ? "Trang" : 
-              s === "DUONG" ? "Dương" : s;
-      break;
-    }
-  }
-  if (staff === "Chưa rõ") {
-    const defaultStaffs = ["HuyK", "Vân", "Kim Hoàn", "Ngọc", "Trang"];
-    staff = defaultStaffs[hash % defaultStaffs.length];
-  }
+  let staff = "Khác";
+  const cleanName = name.trim();
+  if (/^(Việt|Viet)\b/i.test(cleanName)) staff = "Việt";
+  else if (/^(Thành|Thanh)\b/i.test(cleanName)) staff = "Thành";
+  else if (/^(Ngọc|Ngoc)\b/i.test(cleanName)) staff = "Ngọc";
+  else if (/^(Cương|Cuong)\b/i.test(cleanName)) staff = "Cương";
 
   // 3. Channel Extraction
   let channel = "Facebook Feed";
@@ -439,6 +428,9 @@ function OverviewInner() {
         status={statusFilter}
         objective={objective}
         dateRange={dateRange}
+        staff={staff}
+        accountId={accountId}
+        accounts={accounts}
         onPlatformChange={(v) => {
           setPlatform(v);
           setAccountId("ALL");
@@ -446,6 +438,8 @@ function OverviewInner() {
         onStatusChange={setStatusFilter}
         onObjectiveChange={setObjective}
         onDateRangeChange={setDateRange}
+        onStaffChange={setStaff}
+        onAccountIdChange={setAccountId}
         kpis={overviewKpis}
         showKpis={selectedTab === "overview"}
         onRefresh={refresh}
