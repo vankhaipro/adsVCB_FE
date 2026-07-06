@@ -683,8 +683,8 @@ export default function ContentOverviewPage() {
               <BarChart data={viewsByTeamData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                 <XAxis dataKey="name" stroke="#6b7280" fontSize={9} />
-                <YAxis stroke="#6b7280" fontSize={9} />
-                <Tooltip formatter={(val) => `${val}M`} />
+                <YAxis stroke="#6b7280" fontSize={9} tickFormatter={(v) => fmtCompact(v)} />
+                <Tooltip formatter={(val) => [fmtNum(Number(val)), "Lượt xem"]} />
                 <Bar dataKey="views" fill="#10b981" radius={[4, 4, 0, 0]} barSize={16} />
               </BarChart>
             </ResponsiveContainer>

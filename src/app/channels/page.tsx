@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowsClockwise, SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight, Funnel, CaretDown, MagnifyingGlass
@@ -41,6 +41,106 @@ const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n
 const fmtDate = (s: string | null) =>
   s ? new Date(s).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 
+function FilterDropdown({
+  label,
+  value,
+  onChange,
+  options,
+  searchable = false
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  searchable?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOpt = options.find((o) => o.value === value);
+  const displayLabel = selectedOpt ? selectedOpt.label : `${label}: Tất cả`;
+
+  const filtered = options.filter((o) =>
+    o.label.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setSearch("");
+        }}
+        className="flex items-center justify-between gap-2 bg-background border border-border rounded-md px-2.5 py-1.5 text-xs text-foreground hover:border-border/80 focus:border-blue-500 focus:outline-none cursor-pointer w-[140px] text-left"
+      >
+        <span className="truncate flex-1">{displayLabel}</span>
+        <CaretDown size={10} className="text-muted-foreground shrink-0" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 mt-1 z-50 w-56 bg-card border border-border rounded-lg shadow-xl flex flex-col overflow-hidden">
+          {searchable && (
+            <div className="p-2 border-b border-border bg-background/50">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={`Tìm ${label.toLowerCase()}...`}
+                className="w-full bg-card border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-blue-500"
+              />
+            </div>
+          )}
+          <div className="max-h-48 overflow-y-auto p-1 divide-y divide-border/20 scrollbar-thin">
+            <button
+              type="button"
+              onClick={() => {
+                onChange("");
+                setIsOpen(false);
+              }}
+              className={`w-full text-left px-2.5 py-1.5 text-xs rounded transition-colors ${
+                value === "" ? "bg-blue-600/20 text-blue-400 font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              Tất cả
+            </button>
+            {filtered.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => {
+                  onChange(o.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-2.5 py-1.5 text-xs rounded transition-colors truncate ${
+                  value === o.value ? "bg-blue-600/20 text-blue-400 font-medium" : "text-foreground hover:bg-muted"
+                }`}
+                title={o.label}
+              >
+                {o.label}
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <div className="p-3 text-center text-[11px] text-muted-foreground">Không tìm thấy</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ChannelsPage() {
   const router = useRouter();
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -73,6 +173,8 @@ export default function ChannelsPage() {
   // Form chỉnh sửa kênh
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
   const [editUrl, setEditUrl] = useState("");
+  const [editPlatform, setEditPlatform] = useState("");
+  const [editExternalId, setEditExternalId] = useState("");
   const [editStaff, setEditStaff] = useState("");
   const [editTeam, setEditTeam] = useState("");
   const [editChannelName, setEditChannelName] = useState("");
@@ -137,7 +239,7 @@ export default function ChannelsPage() {
   const pages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const start = page * PER_PAGE;
   const rows = filtered.slice(start, start + PER_PAGE);
-  const platformsInData = [...new Set(channels.map((c) => c.platform))];
+  const platformsInData = [...new Set(channels.map((c) => c.platform))].filter(p => p && p.toUpperCase() !== "UNKNOWN");
 
   // Compute sliding window of pagination buttons
   const pageRange = [...Array(pages).keys()].filter(i => {
@@ -224,6 +326,8 @@ export default function ChannelsPage() {
   const startEdit = (c: Channel) => {
     setEditingChannel(c);
     setEditUrl(c.url ?? "");
+    setEditPlatform(c.platform ?? "");
+    setEditExternalId(c.externalId ?? "");
     setEditStaff(c.staff ?? "");
     setEditTeam(c.team ?? "");
     setEditChannelName(c.channelName ?? "");
@@ -243,6 +347,8 @@ export default function ChannelsPage() {
       const selectedTeam = teamList.find((t) => t.name === editTeam.trim());
       await apiPatch(`/channels/${editingChannel.id}`, {
         url: editUrl.trim(),
+        platform: editPlatform.trim() || null,
+        externalId: editExternalId.trim() || null,
         staff: editStaff.trim() || null,
         team: editTeam.trim() || null,
         channelName: editChannelName.trim() || null,
@@ -281,6 +387,30 @@ export default function ChannelsPage() {
   const inputCls =
     "bg-card border border-border rounded-md px-3 py-2 text-sm text-foreground outline-none focus:border-blue-500 placeholder:text-muted-foreground";
 
+  // Tính toán thống kê theo Nền tảng
+  const statsByPlatform = channels.reduce((acc, c) => {
+    const p = c.platform || "UNKNOWN";
+    if (p.toUpperCase() === "UNKNOWN") return acc;
+    if (!acc[p]) acc[p] = { count: 0, active: 0, followers: 0 };
+    acc[p].count += 1;
+    if (c.isActive) acc[p].active += 1;
+    acc[p].followers += c.followers || 0;
+    return acc;
+  }, {} as Record<string, { count: number; active: number; followers: number }>);
+
+  // Tính toán thống kê theo Team
+  const statsByTeam = channels.reduce((acc, c) => {
+    const t = c.team || "Không có Team";
+    if (!acc[t]) acc[t] = { count: 0, active: 0, followers: 0 };
+    acc[t].count += 1;
+    if (c.isActive) acc[t].active += 1;
+    acc[t].followers += c.followers || 0;
+    return acc;
+  }, {} as Record<string, { count: number; active: number; followers: number }>);
+
+  const totalFollowers = channels.reduce((sum, c) => sum + (c.followers || 0), 0);
+  const activeChannels = channels.filter(c => c.isActive).length;
+
   return (
     <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10">
       {/* Header */}
@@ -308,6 +438,70 @@ export default function ChannelsPage() {
           {error}
         </div>
       )}
+
+      {/* Thống kê nhanh */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Card 1: Tổng quan */}
+        <div className="bg-gradient-to-br from-blue-900/10 to-purple-900/10 border border-blue-500/10 rounded-xl p-4 shadow-sm flex flex-col justify-between min-h-[120px]">
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-400">Tổng quan hệ thống</span>
+            <h3 className="text-xl font-bold text-foreground mt-1">{fmtNum(channels.length)} <span className="text-xs font-normal text-muted-foreground">Kênh</span></h3>
+          </div>
+          <div className="flex justify-between items-center mt-3 border-t border-border/40 pt-2 text-xs">
+            <div>
+              <p className="text-[10px] text-muted-foreground">Đang hoạt động</p>
+              <p className="font-semibold text-green-400">{fmtNum(activeChannels)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] text-muted-foreground">Tổng Followers</p>
+              <p className="font-semibold text-purple-400">{fmtNum(totalFollowers)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Nền tảng */}
+        <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col justify-between min-h-[120px]">
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Theo Nền tảng</span>
+            <div className="mt-2 space-y-1.5 max-h-[90px] overflow-y-auto pr-1 scrollbar-thin">
+              {Object.keys(statsByPlatform).map((p) => {
+                const stat = statsByPlatform[p];
+                return (
+                  <div key={p} className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${p === 'TIKTOK' ? 'bg-pink-500' : p === 'YOUTUBE' ? 'bg-red-500' : p === 'FACEBOOK' ? 'bg-blue-500' : p === 'INSTAGRAM' ? 'bg-purple-500' : 'bg-zinc-400'}`}></span>
+                      <span className="font-medium text-foreground">{PLATFORM_LABEL[p] || p}</span>
+                    </div>
+                    <span className="text-muted-foreground text-[10px]">
+                      <strong className="text-foreground">{stat.count}</strong> kênh ({stat.active} chạy) • <strong className="text-foreground">{fmtNum(stat.followers)}</strong> fl
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Team */}
+        <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col justify-between min-h-[120px]">
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Theo Team</span>
+            <div className="mt-2 space-y-1.5 max-h-[90px] overflow-y-auto pr-1 scrollbar-thin">
+              {Object.keys(statsByTeam).map((t) => {
+                const stat = statsByTeam[t];
+                return (
+                  <div key={t} className="flex items-center justify-between text-[11px]">
+                    <span className="font-medium text-foreground truncate max-w-[100px]" title={t}>{t}</span>
+                    <span className="text-muted-foreground text-[10px]">
+                      <strong className="text-foreground">{stat.count}</strong> kênh ({stat.active} chạy) • <strong className="text-foreground">{fmtNum(stat.followers)}</strong> fl
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Form thêm kênh */}
       <div className="bg-background border border-border rounded-xl p-4">
@@ -384,25 +578,20 @@ export default function ChannelsPage() {
           />
         </div>
         {[
-          { label: "Nền tảng", value: fPlatform, set: setFPlatform, opts: platformsInData.map((p) => ({ value: p, label: PLATFORM_LABEL[p] || p })) },
-          { label: "Team", value: fTeam, set: setFTeam, opts: teamList.map((t) => ({ value: t.name, label: t.name })) },
-          { label: "Nhân viên", value: fStaff, set: setFStaff, opts: empList.map((e) => ({ value: e.name, label: e.name })) },
-          { label: "Ngành", value: fIndustry, set: setFIndustry, opts: industryList.map((x) => ({ value: x, label: x })) },
-          { label: "Thị trường", value: fMarket, set: setFMarket, opts: marketList.map((x) => ({ value: x, label: x })) },
+          { label: "Nền tảng", value: fPlatform, set: setFPlatform, opts: platformsInData.map((p) => ({ value: p, label: PLATFORM_LABEL[p] || p })), searchable: false },
+          { label: "Team", value: fTeam, set: setFTeam, opts: teamList.map((t) => ({ value: t.name, label: t.name })), searchable: true },
+          { label: "Nhân viên", value: fStaff, set: setFStaff, opts: empList.map((e) => ({ value: e.name, label: e.name })), searchable: true },
+          { label: "Ngành", value: fIndustry, set: setFIndustry, opts: industryList.map((x) => ({ value: x, label: x })), searchable: true },
+          { label: "Thị trường", value: fMarket, set: setFMarket, opts: marketList.map((x) => ({ value: x, label: x })), searchable: true },
         ].map((f) => (
-          <div key={f.label} className="relative">
-            <select
-              value={f.value}
-              onChange={(e) => f.set(e.target.value)}
-              className="bg-background border border-border rounded-md pl-2.5 pr-7 py-1.5 text-xs text-foreground appearance-none focus:border-blue-500 focus:outline-none cursor-pointer max-w-[150px]"
-            >
-              <option value="">{f.label}: Tất cả</option>
-              {f.opts.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-            <CaretDown size={10} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          </div>
+          <FilterDropdown
+            key={f.label}
+            label={f.label}
+            value={f.value}
+            onChange={f.set}
+            options={f.opts}
+            searchable={f.searchable}
+          />
         ))}
         {(fPlatform || fTeam || fStaff || fIndustry || fMarket || fSearch) && (
           <button
@@ -590,6 +779,31 @@ export default function ChannelsPage() {
                   value={editUrl}
                   onChange={(e) => setEditUrl(e.target.value)}
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-muted-foreground font-medium">Nền tảng</label>
+                  <select
+                    className={inputCls}
+                    value={editPlatform}
+                    onChange={(e) => setEditPlatform(e.target.value)}
+                  >
+                    {Object.entries(PLATFORM_LABEL).map(([val, label]) => (
+                      <option key={val} value={val} className="bg-background">{label}</option>
+                    ))}
+                    <option value="UNKNOWN" className="bg-background">UNKNOWN</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-muted-foreground font-medium">ID kênh</label>
+                  <input
+                    className={inputCls}
+                    placeholder="ID kênh"
+                    value={editExternalId}
+                    onChange={(e) => setEditExternalId(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

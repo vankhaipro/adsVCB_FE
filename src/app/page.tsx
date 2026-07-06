@@ -214,6 +214,8 @@ function OverviewInner() {
   const [accountId, setAccountId] = useState("ALL");
   const [channel, setChannel] = useState("ALL");
   const [staff, setStaff] = useState("ALL");
+  const [pageName, setPageName] = useState("ALL");
+  const [organicChannels, setOrganicChannels] = useState<{ id: string; label: string }[]>([]);
 
   const currentStaffs = useMemo(() => {
     if (selectedTab === "orders") {
@@ -232,12 +234,15 @@ function OverviewInner() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [camps, accs] = await Promise.all([
+      const [camps, accs, chs] = await Promise.all([
         apiGet("/mkt-api/campaigns"),
-        apiGet("/mkt-api/accounts")
+        apiGet("/mkt-api/accounts"),
+        apiGet("/channels").catch(() => [])
       ]);
       setCampaigns(camps);
       setAccounts(accs);
+      const uniqueNames = Array.from(new Set(chs.map((c: any) => c.channelName))) as string[];
+      setOrganicChannels(uniqueNames.map(name => ({ id: name, label: name })));
     } catch {
       // Ignore errors
     } finally {
@@ -275,6 +280,7 @@ function OverviewInner() {
     if (accountId !== "ALL") params.set("accountId", accountId);
     if (channel !== "ALL") params.set("channel", channel);
     if (staff !== "ALL") params.set("staff", staff);
+    if (pageName !== "ALL") params.set("pageName", pageName);
     const q = params.toString();
     try {
       const [ins, brk, trend, camps] = await Promise.all([
@@ -293,7 +299,7 @@ function OverviewInner() {
       setTrendData([]);
       setCampaignsInsights([]);
     }
-  }, [customFrom, customTo, platform, objective, accountId, channel, staff]);
+  }, [customFrom, customTo, platform, objective, accountId, channel, staff, pageName]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -463,6 +469,7 @@ function OverviewInner() {
         search={search}
         onSearchChange={setSearch}
         platform={platform}
+        pageName={pageName}
         status={statusFilter}
         objective={objective}
         dateRange={dateRange}
@@ -472,10 +479,12 @@ function OverviewInner() {
         accountId={accountId}
         accounts={accounts}
         staffs={currentStaffs}
+        organicChannels={organicChannels}
         onPlatformChange={(v) => {
           setPlatform(v);
           setAccountId("ALL");
         }}
+        onPageNameChange={setPageName}
         onStatusChange={setStatusFilter}
         onObjectiveChange={setObjective}
         onDateApply={({ presetId, from, to }) => {
