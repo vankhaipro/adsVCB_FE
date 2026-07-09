@@ -313,7 +313,10 @@ export default function OverviewHeader({
       </div>
 
       {showKpis && kpis.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
+        <div className={kpis.length === 6 
+          ? "grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3" 
+          : "grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3"
+        }>
           {kpis.map((kpi, i) => (
             <KpiCard key={i} {...kpi} />
           ))}

@@ -421,11 +421,9 @@ function OverviewInner() {
 
     const data = [
       { key: "spend", label: "Chi phí quảng cáo", value: `${fmtNum(spend)}đ`, sub: `Tổng ngân sách chi tiêu`, change: undefined, color: "text-blue-400", bg: "bg-blue-500/10" },
-      { key: "revenue", label: "Doanh thu (Sapo)", value: `${fmtNum(revenue)}đ`, sub: `Từ các đơn hàng thực tế`, change: undefined, color: "text-green-400", bg: "bg-green-500/10" },
       { key: "impressions", label: "Lượt hiển thị", value: fmtNum(impressions), sub: `Tổng số lần quảng cáo hiện`, change: undefined, color: "text-purple-400", bg: "bg-purple-500/10" },
       { key: "reach", label: "Số người tiếp cận", value: fmtNum(reach), sub: `Số người xem quảng cáo`, change: undefined, color: "text-indigo-400", bg: "bg-indigo-500/10" },
       { key: "clicks", label: "Lượt nhấp liên kết", value: fmtNum(clicks), sub: `Tổng click vào QC`, change: undefined, color: "text-orange-400", bg: "bg-orange-500/10" },
-      { key: "orders", label: "Số đơn hàng", value: fmtNum(orders), sub: `Tổng số đơn từ Sapo`, change: undefined, color: "text-emerald-400", bg: "bg-emerald-500/10" },
       { key: "ctr", label: "Tỷ lệ nhấp (CTR)", value: `${ctr.toFixed(2)}%`, sub: `Tỷ lệ CTR trung bình`, change: undefined, color: "text-yellow-400", bg: "bg-yellow-500/10" },
       { key: "roas", label: "Chỉ số ROAS", value: `${roas.toFixed(2)}x`, sub: `Doanh thu / Chi phí`, change: undefined, color: "text-pink-400", bg: "bg-pink-500/10" }
     ];
@@ -923,9 +921,9 @@ function OverviewInner() {
                               <span className="text-muted-foreground w-4 text-right shrink-0">{i + 1}</span>
                               <span className="text-foreground w-28 truncate shrink-0" title={d.name}>{d.name}</span>
                               <div className="flex-1 flex items-center gap-1 min-w-0">
-                                <div className="h-1.5 rounded bg-blue-500 shrink-0" style={{ width: `${Math.max(2, (d.messages / (scatterData[0]?.messages || 1)) * 60)}%` }} />
-                                <div className="h-1.5 rounded bg-amber-400 shrink-0" style={{ width: `${Math.max(2, (d.likes / (scatterData[0]?.likes || 1)) * 40)}%` }} />
-                                <div className="h-1.5 rounded bg-green-400 shrink-0" style={{ width: `${Math.max(2, (d.comments / (scatterData[0]?.comments || 1)) * 30)}%` }} />
+                                <div className="h-1.5 rounded bg-blue-500 shrink-0" style={{ width: `${Math.max(2, (d.messages / (scatterData[0]?.messages || 1)) * 35)}%` }} />
+                                <div className="h-1.5 rounded bg-amber-400 shrink-0" style={{ width: `${Math.max(2, (d.likes / (scatterData[0]?.likes || 1)) * 25)}%` }} />
+                                <div className="h-1.5 rounded bg-green-400 shrink-0" style={{ width: `${Math.max(2, (d.comments / (scatterData[0]?.comments || 1)) * 15)}%` }} />
                               </div>
                               <span className="text-muted-foreground shrink-0">{fmtVnd(d.spend).replace("đ", "")}</span>
                             </div>
