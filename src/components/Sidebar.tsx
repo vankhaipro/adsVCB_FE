@@ -43,7 +43,6 @@ const mainNav: NavItem[] = [
     ],
   },
   { href: "/auto-rules", label: "Quy tắc tự động", icon: GitBranch },
-  { href: "/budget", label: "Ngân sách", icon: CurrencyCircleDollar },
   { href: "/reports", label: "Báo cáo", icon: ChartBar },
   { href: "/alerts", label: "Cảnh báo", icon: Warning },
   { href: "/logs", label: "Nhật ký hệ thống", icon: Scroll },
