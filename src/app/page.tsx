@@ -8,7 +8,7 @@ import {
   CursorClick, ShoppingCart, Lightning, ChartBar,
   type Icon,
 } from "@phosphor-icons/react";
-import { apiGet, apiPost, fmtVnd } from "@/lib/api";
+import { apiGet, fmtVnd } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
 import OrdersBreakdown from "@/components/OrdersBreakdown";
 import OverviewHeader, { type KpiItem } from "@/components/overview/OverviewHeader";
@@ -168,9 +168,6 @@ function OverviewInner() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [syncingData, setSyncingData] = useState(false);
-  const [syncPercent, setSyncPercent] = useState(0);
-  const [syncPhase, setSyncPhase] = useState("");
 
   // Dữ liệu doanh thu thật từ Sapo (theo khoảng thời gian đang chọn)
   const [sapo, setSapo] = useState<SapoData | null>(null);
@@ -321,57 +318,6 @@ function OverviewInner() {
     }
   };
 
-  // "Đồng bộ dữ liệu": kéo dữ liệu mới từ các nguồn (Pipeboard + Sapo).
-  // Chạy tuần tự /ads/sync trước (bước insight/sapo map theo campaign),
-  // mỗi bước chịu lỗi riêng để 1 lỗi không chặn các bước còn lại.
-  // Bấm "Đồng bộ dữ liệu": khởi động job nền ở BE rồi poll tiến độ để vẽ %.
-  // Không còn treo màn hình chờ — dữ liệu cũ vẫn hiển thị trong lúc đồng bộ.
-  const syncData = async () => {
-    if (syncingData) return; // tránh chạy trùng
-    setSyncingData(true);
-    setSyncPercent(0);
-    setSyncPhase("Bắt đầu…");
-
-    type SyncStatus = {
-      running: boolean;
-      percent: number;
-      phase: string;
-      detail: string;
-      steps: { name: string; ok: boolean; detail: string }[];
-    };
-
-    try {
-      // Khởi động job nền (trả về ngay lập tức)
-      await apiPost("/mkt-api/sync/start?days=30");
-
-      // Poll trạng thái mỗi 1.5s cho tới khi xong
-      let status: SyncStatus | null = null;
-      while (true) {
-        await new Promise((r) => setTimeout(r, 1500));
-        status = (await apiGet("/mkt-api/sync/status")) as SyncStatus;
-        setSyncPercent(status.percent || 0);
-        setSyncPhase(status.detail ? `${status.phase} — ${status.detail}` : status.phase);
-        if (!status.running) break;
-      }
-
-      // Xong: nạp lại dữ liệu từ DB rồi báo kết quả
-      await Promise.all([load(), loadSapo(), loadInsights()]);
-      const steps = status?.steps ?? [];
-      if (steps.length) {
-        alert(
-          "Kết quả đồng bộ:\n" +
-            steps.map((s) => `${s.ok ? "✅" : "❌"} ${s.name}: ${s.detail}`).join("\n")
-        );
-      }
-    } catch (e) {
-      alert("Lỗi đồng bộ: " + (e instanceof Error ? e.message : "không rõ"));
-    } finally {
-      setSyncingData(false);
-      setSyncPercent(0);
-      setSyncPhase("");
-    }
-  };
-
   // Format Helper for numbers
   const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n || 0));
   const fmtCompact = (n: number) => {
@@ -494,11 +440,7 @@ function OverviewInner() {
         onAccountIdChange={setAccountId}
         kpis={overviewKpis}
         showKpis={selectedTab === "overview"}
-        onSync={syncData}
         onExport={() => alert("Bắt đầu xuất dữ liệu báo cáo...")}
-        syncing={syncingData}
-        syncPercent={syncPercent}
-        syncPhase={syncPhase}
       />
 
       {loading ? (

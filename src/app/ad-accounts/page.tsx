@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowsClockwise, SpinnerGap, MetaLogo, TiktokLogo } from "@phosphor-icons/react";
+import { SpinnerGap, MetaLogo, TiktokLogo } from "@phosphor-icons/react";
 import { apiGet, fmtVnd } from "@/lib/api";
 
 type AdAccount = {
@@ -18,7 +18,6 @@ export default function AdAccountsPage() {
   const [accounts, setAccounts] = useState<AdAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,18 +35,6 @@ export default function AdAccountsPage() {
     load();
   }, [load]);
 
-  const sync = async () => {
-    setSyncing(true);
-    try {
-      await apiGet("/mkt-api/sync");
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Đồng bộ lỗi");
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   return (
     <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -57,14 +44,6 @@ export default function AdAccountsPage() {
             {accounts.length} tài khoản (Meta + TikTok) qua Pipeboard.
           </p>
         </div>
-        <button
-          onClick={sync}
-          disabled={syncing}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-foreground text-sm font-medium rounded-md transition-colors"
-        >
-          {syncing ? <SpinnerGap size={16} className="animate-spin" /> : <ArrowsClockwise size={16} />}
-          Đồng bộ
-        </button>
       </div>
 
       {loading ? (

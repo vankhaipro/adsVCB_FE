@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowsClockwise, SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight, Funnel, CaretDown, MagnifyingGlass
+  SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight, Funnel, CaretDown, MagnifyingGlass
 } from "@phosphor-icons/react";
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api";
 
@@ -146,8 +146,6 @@ export default function ChannelsPage() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [syncingAll, setSyncingAll] = useState(false);
-  const [syncingId, setSyncingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
   // Phân trang
@@ -287,31 +285,6 @@ export default function ChannelsPage() {
     }
   };
 
-  const syncOne = async (id: string) => {
-    setSyncingId(id);
-    setError(null);
-    try {
-      await apiGet(`/organic/sync/${id}`);
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Đồng bộ kênh lỗi");
-    } finally {
-      setSyncingId(null);
-    }
-  };
-
-  const syncAll = async () => {
-    setSyncingAll(true);
-    setError(null);
-    try {
-      await apiGet("/organic/sync");
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Đồng bộ lỗi");
-    } finally {
-      setSyncingAll(false);
-    }
-  };
 
   const remove = async (c: Channel) => {
     if (!confirm(`Xóa kênh "${c.channelName}"?`)) return;
@@ -423,14 +396,6 @@ export default function ChannelsPage() {
             {channels.length} kênh
           </p>
         </div>
-        <button
-          onClick={syncAll}
-          disabled={syncingAll}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-foreground text-sm font-medium rounded-md transition-colors"
-        >
-          {syncingAll ? <SpinnerGap size={16} className="animate-spin" /> : <ArrowsClockwise size={16} />}
-          Đồng bộ tất cả
-        </button>
       </div>
 
       {error && (
@@ -673,14 +638,6 @@ export default function ChannelsPage() {
                             className="text-muted-foreground hover:text-green-400"
                           >
                             <ListMagnifyingGlass size={16} />
-                          </button>
-                          <button
-                            onClick={() => syncOne(c.id)}
-                            disabled={syncingId === c.id}
-                            title="Đồng bộ kênh này"
-                            className="text-muted-foreground hover:text-blue-400 disabled:opacity-50"
-                          >
-                            {syncingId === c.id ? <SpinnerGap size={16} className="animate-spin" /> : <ArrowsClockwise size={16} />}
                           </button>
                           <button
                             onClick={() => startEdit(c)}

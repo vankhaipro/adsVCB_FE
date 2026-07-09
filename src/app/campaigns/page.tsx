@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ArrowsClockwise, SpinnerGap, MagnifyingGlass, MetaLogo, TiktokLogo, GoogleLogo, Plus, X,
+  SpinnerGap, MagnifyingGlass, MetaLogo, TiktokLogo, GoogleLogo, Plus, X,
 } from "@phosphor-icons/react";
 import { apiGet, apiPatch, apiPost, fmtVnd } from "@/lib/api";
 import DateRangePicker, { presetToDates } from "@/components/DateRangePicker";
@@ -122,7 +122,6 @@ export default function CampaignsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   
   // Tab State
@@ -182,17 +181,6 @@ export default function CampaignsPage() {
     load();
   }, [load]);
 
-  const sync = async () => {
-    setSyncing(true);
-    try {
-      await apiGet("/mkt-api/sync");
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Đồng bộ lỗi");
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   const toggle = async (c: Campaign) => {
     const turnOn = !isRunning(c.status);
@@ -664,14 +652,6 @@ export default function CampaignsPage() {
               <Plus size={16} weight="bold" /> Tạo chiến dịch
             </button>
           )}
-          <button
-            onClick={sync}
-            disabled={syncing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-foreground text-sm font-medium rounded-md"
-          >
-            {syncing ? <SpinnerGap size={16} className="animate-spin" /> : <ArrowsClockwise size={16} />}
-            Đồng bộ
-          </button>
         </div>
       </div>
 

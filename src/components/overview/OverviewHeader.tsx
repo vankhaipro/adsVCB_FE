@@ -3,12 +3,9 @@
 import { useRef, useState, useEffect } from "react";
 import {
   MagnifyingGlass,
-  ArrowsClockwise,
-  CloudArrowDown,
   Download,
   CaretUp,
   CaretDown,
-  SpinnerGap,
   type Icon,
 } from "@phosphor-icons/react";
 import DateRangePicker from "@/components/DateRangePicker";
@@ -206,11 +203,7 @@ type Props = {
   onStaffChange: (v: string) => void;
   onAccountIdChange: (v: string) => void;
   kpis?: KpiItem[];
-  onSync?: () => void;
   onExport?: () => void;
-  syncing?: boolean;
-  syncPercent?: number;
-  syncPhase?: string;
   showKpis?: boolean;
 };
 
@@ -237,11 +230,7 @@ export default function OverviewHeader({
   onStaffChange,
   onAccountIdChange,
   kpis = [],
-  onSync,
   onExport,
-  syncing,
-  syncPercent = 0,
-  syncPhase = "",
   showKpis = true,
 }: Props) {
   const filteredAccountPills = accounts
@@ -281,26 +270,6 @@ export default function OverviewHeader({
 
         {/* Bên phải: hành động */}
         <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onSync}
-            disabled={syncing}
-            title={syncing && syncPhase ? syncPhase : undefined}
-            className="relative flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-90 overflow-hidden"
-          >
-            {syncing ? (
-              <SpinnerGap size={16} className="animate-spin" />
-            ) : (
-              <CloudArrowDown size={16} />
-            )}
-            {syncing ? `Đồng bộ… ${syncPercent}%` : "Đồng bộ dữ liệu"}
-            {syncing && (
-              <span
-                className="absolute bottom-0 left-0 h-[3px] bg-white/80 transition-all duration-500"
-                style={{ width: `${Math.max(2, Math.min(100, syncPercent))}%` }}
-              />
-            )}
-          </button>
           <button
             type="button"
             onClick={onExport}
