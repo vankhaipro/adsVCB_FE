@@ -141,6 +141,7 @@ export default function CampaignsPage() {
   const [staffFilter, setStaffFilter] = useState<string>("ALL");
 
   const [selectedCampaignIds, setSelectedCampaignIds] = useState<string[]>([]);
+  const [selectedAdSetIds, setSelectedAdSetIds] = useState<string[]>([]);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -148,7 +149,7 @@ export default function CampaignsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, platform, accountFilter, staffFilter, q, selectedCampaignId, selectedCampaignIds, selectedAdSetId, metricConds]);
+  }, [activeTab, platform, accountFilter, staffFilter, q, selectedCampaignId, selectedCampaignIds, selectedAdSetId, selectedAdSetIds, metricConds]);
 
   // create modal
   const [showCreate, setShowCreate] = useState(false);
@@ -481,11 +482,13 @@ export default function CampaignsPage() {
           (selectedCampaignIds.length > 0
             ? selectedCampaignIds.includes(ad.campaignId)
             : (selectedCampaignId === "ALL" || ad.campaignId === selectedCampaignId)) &&
-          (selectedAdSetId === "ALL" || ad.adSetId === selectedAdSetId) &&
+          (selectedAdSetIds.length > 0
+            ? selectedAdSetIds.includes(ad.adSetId)
+            : (selectedAdSetId === "ALL" || ad.adSetId === selectedAdSetId)) &&
           (!q || ad.name.toLowerCase().includes(q.toLowerCase()))
       )
       .sort(runningFirst);
-  }, [ads, platform, accountFilter, staffFilter, selectedCampaignIds, selectedCampaignId, selectedAdSetId, q]);
+  }, [ads, platform, accountFilter, staffFilter, selectedCampaignIds, selectedCampaignId, selectedAdSetIds, selectedAdSetId, q]);
 
   // Compute metrics for the rendered lists
   const campaignsWithMetrics = useMemo(() => {
@@ -832,6 +835,24 @@ export default function CampaignsPage() {
         </div>
       )}
 
+      {/* Selection bar if any ad sets are selected */}
+      {selectedAdSetIds.length > 0 && (
+        <div className="bg-blue-600/10 border border-blue-600/20 text-blue-400 rounded-xl p-4 flex items-center justify-between text-xs sm:text-sm animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">Đang chọn {selectedAdSetIds.length} nhóm quảng cáo</span>
+            <span className="text-muted-foreground text-xs">
+              (Tab Quảng cáo sẽ chỉ hiển thị quảng cáo thuộc các nhóm này)
+            </span>
+          </div>
+          <button
+            onClick={() => setSelectedAdSetIds([])}
+            className="text-xs text-blue-400 hover:text-blue-300 font-bold underline"
+          >
+            Bỏ chọn tất cả
+          </button>
+        </div>
+      )}
+
       {/* Tables View */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         {loading ? (
@@ -959,6 +980,22 @@ export default function CampaignsPage() {
               <table className="w-full text-[18px] text-foreground border-collapse">
                 <thead>
                   <tr className="text-left text-muted-foreground text-[16px] uppercase border-b border-border bg-background">
+                    <th className="px-3 py-3 font-medium text-center w-12">
+                      <input
+                        type="checkbox"
+                        checked={paginatedAdSets.length > 0 && paginatedAdSets.every(as => selectedAdSetIds.includes(as.id))}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            const newIds = [...new Set([...selectedAdSetIds, ...paginatedAdSets.map(as => as.id)])];
+                            setSelectedAdSetIds(newIds);
+                          } else {
+                            const paginatedIds = paginatedAdSets.map(as => as.id);
+                            setSelectedAdSetIds(selectedAdSetIds.filter(id => !paginatedIds.includes(id)));
+                          }
+                        }}
+                        className="rounded border-border text-blue-600 focus:ring-blue-500 bg-background cursor-pointer"
+                      />
+                    </th>
                     <th className="px-3 py-3 font-medium text-center">Thao tác</th>
                     <th className="px-3 py-3 font-medium min-w-[220px]">Nhóm quảng cáo</th>
                     <th className="px-3 py-3 font-medium">Nền tảng</th>
@@ -980,6 +1017,20 @@ export default function CampaignsPage() {
                 <tbody>
                   {paginatedAdSets.map((as) => (
                     <tr key={as.id} className="border-b border-border hover:bg-muted/40 transition-colors">
+                      <td className="px-3 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedAdSetIds.includes(as.id)}
+                          onChange={() => {
+                            if (selectedAdSetIds.includes(as.id)) {
+                              setSelectedAdSetIds(selectedAdSetIds.filter(id => id !== as.id));
+                            } else {
+                              setSelectedAdSetIds([...selectedAdSetIds, as.id]);
+                            }
+                          }}
+                          className="rounded border-border text-blue-600 focus:ring-blue-500 bg-background cursor-pointer"
+                        />
+                      </td>
                       <td className="px-3 py-3 text-center">
                         <button
                           disabled
@@ -1027,7 +1078,7 @@ export default function CampaignsPage() {
                   ))}
                   {displayAdSets.length === 0 && (
                     <tr>
-                      <td colSpan={16} className="text-center py-10 text-muted-foreground">
+                      <td colSpan={17} className="text-center py-10 text-muted-foreground">
                         Không tìm thấy nhóm quảng cáo nào.
                       </td>
                     </tr>
