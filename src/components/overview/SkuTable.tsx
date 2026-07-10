@@ -4,20 +4,25 @@ import { useState, useMemo, useEffect } from "react";
 import { MagnifyingGlass, Download, CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { Panel, Th, ChannelChip } from "./parts";
 import { fmtNum, fmtCompact, fmtRoas, fmtVndShort } from "./dashboardData";
-
-interface SkuTableProps {
-  campaigns: any[];
-  sapoSkus: any[];
-}
+import { useTableInsights } from "./useTableInsights";
+import TableFilterBar from "./TableFilterBar";
 
 function roasColor(v: number) {
   return v >= 3 ? "text-green-400" : v < 1 ? "text-red-400" : "text-amber-400";
 }
 
-export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
+export default function SkuTable() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
   const PER_PAGE = 10;
+
+  const {
+    filteredCampaigns: campaigns,
+    sapoSkus,
+    accountOptions,
+    campaignOptions,
+    filterState,
+  } = useTableInsights({ withSapo: true });
 
   // Reset page when search changes
   useEffect(() => {
@@ -193,8 +198,14 @@ export default function SkuTable({ campaigns, sapoSkus }: SkuTableProps) {
       }
       bodyClassName="px-0 pb-0"
     >
-      <div className="px-5 -mt-1 mb-1">
-        <span className="text-[14px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
+      <div className="px-5 -mt-1 mb-3 flex flex-wrap items-center justify-between gap-3">
+        <TableFilterBar
+          {...filterState}
+          accountOptions={accountOptions}
+          campaignOptions={campaignOptions}
+        />
+
+        <span className="text-[14px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded shrink-0">
           {filteredRows.length} SKU đang chạy thực tế
         </span>
       </div>

@@ -8,7 +8,7 @@ import {
   CursorClick, ShoppingCart, Lightning, ChartBar,
   type Icon,
 } from "@phosphor-icons/react";
-import { apiGet, fmtVnd } from "@/lib/api";
+import { apiGet, fmtVnd, datesToQuery } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
 import OrdersBreakdown from "@/components/OrdersBreakdown";
 import OverviewHeader, { type KpiItem } from "@/components/overview/OverviewHeader";
@@ -102,13 +102,6 @@ function hashString(str: string): number {
   return Math.abs(hash);
 }
 
-// Map khoảng thời gian đã chọn (YYYY-MM-DD) -> query ?from=&to= cho API.
-function datesToQuery(from: string, to: string): string {
-  const start = new Date(`${from}T00:00:00`);
-  const end = new Date(`${to}T23:59:59.999`);
-  return `from=${start.toISOString()}&to=${end.toISOString()}`;
-}
-
 // Extracted properties from campaign name
 function parseCampaignName(name: string, id: string) {
   const upper = name.toUpperCase();
@@ -171,10 +164,10 @@ function OverviewInner() {
 
   // Dữ liệu doanh thu thật từ Sapo (theo khoảng thời gian đang chọn)
   const [sapo, setSapo] = useState<SapoData | null>(null);
-  const [sapoSkus, setSapoSkus] = useState<SapoSku[]>([]);
+  // Bảng SKU giờ tự fetch dữ liệu; state này chỉ còn phục vụ khối LEGACY_OVERVIEW (đang tắt).
+  const [sapoSkus] = useState<SapoSku[]>([]);
   const [insights, setInsights] = useState<InsightData | null>(null);
   const [breakdown, setBreakdown] = useState<BreakdownData | null>(null);
-  const [campaignsInsights, setCampaignsInsights] = useState<any[]>([]);
   const [trendData, setTrendData] = useState<any[]>([]);
 
   // Tab từ query param ?tab=overview|channel|mode
@@ -257,15 +250,10 @@ function OverviewInner() {
   const loadSapo = useCallback(async () => {
     const q = datesToQuery(customFrom, customTo);
     try {
-      const [rev, skus] = await Promise.all([
-        apiGet(`/sapo/revenue?${q}`),
-        apiGet(`/sapo/revenue/by-sku?${q}&limit=50`),
-      ]);
+      const rev = await apiGet(`/sapo/revenue?${q}`);
       setSapo(rev);
-      setSapoSkus(skus);
     } catch {
       setSapo(null);
-      setSapoSkus([]);
     }
   }, [customFrom, customTo]);
 
@@ -280,21 +268,18 @@ function OverviewInner() {
     if (pageName !== "ALL") params.set("pageName", pageName);
     const q = params.toString();
     try {
-      const [ins, brk, trend, camps] = await Promise.all([
+      const [ins, brk, trend] = await Promise.all([
         apiGet(`/mkt-api/insights?${q}`),
         apiGet(`/mkt-api/insights/breakdown?${q}`),
         apiGet(`/mkt-api/insights/trend?${q}`),
-        apiGet(`/mkt-api/campaigns/insights?${q}`)
       ]);
       setInsights(ins);
       setBreakdown(brk);
       setTrendData(trend);
-      setCampaignsInsights(camps);
     } catch {
       setInsights(null);
       setBreakdown(null);
       setTrendData([]);
-      setCampaignsInsights([]);
     }
   }, [customFrom, customTo, platform, objective, accountId, channel, staff, pageName]);
 
@@ -385,16 +370,6 @@ function OverviewInner() {
     }));
   }, [insights, sapo]);
 
-  const filteredCampaigns = useMemo(() => {
-    if (!search.trim()) return campaignsInsights;
-    const term = search.toLowerCase();
-    return campaignsInsights.filter((c: any) => 
-      c.name.toLowerCase().includes(term) || 
-      (c.id && c.id.toLowerCase().includes(term)) ||
-      (c.externalId && c.externalId.toLowerCase().includes(term))
-    );
-  }, [campaignsInsights, search]);
-
   return (
     <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10 font-sans -m-4 sm:-m-5 p-4 sm:p-5 bg-background min-h-full">
       {/* Navigation Tabs — URL query param: ?tab=overview|channel|mode */}
@@ -462,9 +437,7 @@ function OverviewInner() {
         <>
           {/* TAB 1: OVERVIEW — dựng lại theo Figma */}
           {selectedTab === "overview" && (
-            <OverviewBody 
-              campaigns={filteredCampaigns}
-              sapoSkus={sapoSkus}
+            <OverviewBody
               trend={trendData}
               breakdown={breakdown}
             />

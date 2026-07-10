@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { CaretLeft, CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
+import { useState, useMemo, useEffect } from "react";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { Panel, Th, StatusPill, ChannelChip } from "./parts";
 import {
   fmtNum, fmtCompact, fmtVndShort, fmtPct, fmtRoas,
 } from "./dashboardData";
+import { useTableInsights } from "./useTableInsights";
+import TableFilterBar from "./TableFilterBar";
 
 const PER_PAGE = 8;
-
-interface CampaignTableProps {
-  campaigns: any[];
-}
 
 function ctrColor(v: number) {
   return v >= 1.5 ? "text-green-400" : v < 1 ? "text-red-400" : "text-foreground";
@@ -20,41 +18,14 @@ function roasColor(v: number) {
   return v >= 2 ? "text-green-400" : "text-amber-400";
 }
 
-export default function CampaignTable({ campaigns }: CampaignTableProps) {
+export default function CampaignTable() {
   const [page, setPage] = useState(0);
-  const [localSearch, setLocalSearch] = useState("");
-  const [localAccount, setLocalAccount] = useState("ALL");
+  const { filteredCampaigns, accountOptions, campaignOptions, filterState } = useTableInsights();
 
-  // Get unique ad accounts from the campaigns list for the dropdown filter
-  const accountOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const c of campaigns) {
-      if (c.adAccount) {
-        const accName = c.adAccount.name || c.adAccount.id || "Không tên";
-        const accId = c.adAccount.id;
-        map.set(accId, accName);
-      }
-    }
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-  }, [campaigns]);
-
-  const filteredCampaigns = useMemo(() => {
-    return campaigns.filter((c) => {
-      // Filter by localSearch (Campaign name or external ID)
-      if (localSearch.trim()) {
-        const term = localSearch.toLowerCase();
-        const matchesName = (c.name || "").toLowerCase().includes(term);
-        const matchesId = (c.id || "").toLowerCase().includes(term);
-        const matchesExtId = (c.externalId || "").toLowerCase().includes(term);
-        if (!matchesName && !matchesId && !matchesExtId) return false;
-      }
-      // Filter by localAccount
-      if (localAccount !== "ALL") {
-        if (!c.adAccount || c.adAccount.id !== localAccount) return false;
-      }
-      return true;
-    });
-  }, [campaigns, localSearch, localAccount]);
+  // Reset về trang đầu khi bộ lọc thay đổi danh sách.
+  useEffect(() => {
+    setPage(0);
+  }, [filteredCampaigns]);
 
   const pages = Math.max(1, Math.ceil(filteredCampaigns.length / PER_PAGE));
   const start = page * PER_PAGE;
@@ -106,50 +77,15 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
       bodyClassName="px-0 pb-0"
     >
       <div className="px-5 -mt-1 mb-3 flex flex-wrap items-center justify-between gap-3">
+        <TableFilterBar
+          {...filterState}
+          accountOptions={accountOptions}
+          campaignOptions={campaignOptions}
+        />
+
         <span className="text-[14px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded shrink-0">
           {filteredCampaigns.length} chiến dịch thực tế
         </span>
-
-        {/* Filter inputs for local table */}
-        <div className="flex items-center gap-2">
-          {/* Lọc theo chiến dịch */}
-          <div className="flex items-center gap-1.5 bg-background border border-border rounded-lg px-2 py-1 min-w-[150px] max-w-[200px] text-xs">
-            <MagnifyingGlass size={12} className="text-muted-foreground shrink-0" />
-            <input
-              type="text"
-              value={localSearch}
-              onChange={(e) => {
-                setLocalSearch(e.target.value);
-                setPage(0);
-              }}
-              placeholder="Tìm chiến dịch..."
-              className="bg-transparent text-xs text-foreground outline-none w-full placeholder:text-muted-foreground"
-            />
-            {localSearch && (
-              <button onClick={() => { setLocalSearch(""); setPage(0); }} className="text-muted-foreground hover:text-foreground text-[9px] shrink-0 font-bold">✕</button>
-            )}
-          </div>
-
-          {/* Lọc theo tài khoản */}
-          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-background border border-border rounded-lg px-2 py-1 min-w-[160px] max-w-[220px]">
-            <span className="font-medium shrink-0">Tài khoản:</span>
-            <select
-              value={localAccount}
-              onChange={(e) => {
-                setLocalAccount(e.target.value);
-                setPage(0);
-              }}
-              className="bg-transparent font-semibold text-foreground outline-none w-full cursor-pointer pr-1"
-            >
-              <option value="ALL" className="bg-background text-foreground">Tất cả</option>
-              {accountOptions.map((opt) => (
-                <option key={opt.id} value={opt.id} className="bg-background text-foreground">
-                  {opt.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
       </div>
 
       <div className="overflow-x-auto">

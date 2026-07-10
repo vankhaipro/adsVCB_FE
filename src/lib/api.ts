@@ -45,6 +45,13 @@ export const apiPatch = (path: string, body?: unknown) =>
 export const apiDelete = (path: string) =>
   fetch(`${API_URL}${path}`, { method: "DELETE" }).then(handle);
 
+// Map khoảng thời gian đã chọn (YYYY-MM-DD) -> query ?from=&to= cho API.
+export function datesToQuery(from: string, to: string): string {
+  const start = new Date(`${from}T00:00:00`);
+  const end = new Date(`${to}T23:59:59.999`);
+  return `from=${start.toISOString()}&to=${end.toISOString()}`;
+}
+
 // Format tiền VND
 export const fmtVnd = (n: number) =>
   new Intl.NumberFormat("vi-VN").format(Math.round(n || 0)) + "đ";

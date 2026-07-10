@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Download, CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { Panel, Th, StatusPill } from "./parts";
 import { fmtNum, fmtVndShort } from "./dashboardData";
-
-interface CreativeTableProps {
-  campaigns: any[];
-}
+import { useTableInsights } from "./useTableInsights";
+import TableFilterBar from "./TableFilterBar";
 
 function hashString(str: string): number {
   let hash = 0;
@@ -44,9 +42,17 @@ function getSku(name: string, id: string) {
   return sku;
 }
 
-export default function CreativeTable({ campaigns }: CreativeTableProps) {
+export default function CreativeTable() {
   const [page, setPage] = useState(0);
   const PER_PAGE = 10;
+  const { filteredCampaigns: campaigns, accountOptions, campaignOptions, filterState } =
+    useTableInsights();
+
+  // Reset về trang đầu khi bộ lọc thay đổi danh sách.
+  useEffect(() => {
+    setPage(0);
+  }, [campaigns]);
+
   const pages = Math.max(1, Math.ceil(campaigns.length / PER_PAGE));
   const start = page * PER_PAGE;
   const rows = campaigns.slice(start, start + PER_PAGE);
@@ -78,8 +84,14 @@ export default function CreativeTable({ campaigns }: CreativeTableProps) {
       }
       bodyClassName="px-0 pb-0"
     >
-      <div className="px-5 -mt-1 mb-1">
-        <span className="text-[14px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
+      <div className="px-5 -mt-1 mb-3 flex flex-wrap items-center justify-between gap-3">
+        <TableFilterBar
+          {...filterState}
+          accountOptions={accountOptions}
+          campaignOptions={campaignOptions}
+        />
+
+        <span className="text-[14px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded shrink-0">
           {campaigns.length} mẫu quảng cáo thực tế
         </span>
       </div>
