@@ -135,7 +135,7 @@ function KpiCard({ label, value, sub, change, icon: Icon, iconColor, iconBg }: K
         </div>
         {hasChange && (
           <span
-            className={`flex items-center gap-0.5 text-[16px] font-semibold shrink-0 ${
+            className={`flex items-center gap-0.5 text-[14px] font-semibold shrink-0 ${
               up ? "text-green-600" : "text-red-500"
             }`}
           >
@@ -146,8 +146,8 @@ function KpiCard({ label, value, sub, change, icon: Icon, iconColor, iconBg }: K
       </div>
       <div className="min-w-0">
         <p className="text-lg font-bold text-foreground leading-tight truncate">{value}</p>
-        {sub && <p className="text-[15px] text-muted-foreground truncate">{sub}</p>}
-        <p className="text-[16px] text-muted-foreground mt-0.5 leading-snug">{label}</p>
+        {sub && <p className="text-[13px] text-muted-foreground truncate">{sub}</p>}
+        <p className="text-[14px] text-muted-foreground mt-0.5 leading-snug">{label}</p>
       </div>
     </div>
   );
@@ -241,16 +241,6 @@ export default function OverviewHeader({
     <div className="flex flex-col gap-4">
       {/* Filter bar — một hàng gọn, nằm trực tiếp trên nền trang */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        {/* Tìm kiếm */}
-        <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2 min-w-[200px] flex-1 max-w-[260px]">
-          <MagnifyingGlass size={16} className="text-muted-foreground shrink-0" />
-          <input
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Tìm chiến dịch, mã..."
-            className="bg-transparent text-sm text-foreground outline-none w-full placeholder:text-muted-foreground"
-          />
-        </div>
 
         {/* Nhóm bộ lọc dạng Select (Compact) */}
         <FilterDropdown label="Nền tảng:" items={CHANNELS} value={platform} onChange={onPlatformChange} searchable={false} />

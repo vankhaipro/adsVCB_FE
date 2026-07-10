@@ -119,7 +119,7 @@ export default function SourcingContentPage() {
 
               {/* Row 1 */}
               <div className="flex flex-col gap-1.5">
-                <span className="text-[15px] text-muted-foreground font-semibold uppercase tracking-wider">Thời gian phân tích</span>
+                <span className="text-[13px] text-muted-foreground font-semibold uppercase tracking-wider">Thời gian phân tích</span>
                 <DateRangePicker
                   presetId={analysisDate.presetId}
                   from={analysisDate.from}
@@ -129,7 +129,7 @@ export default function SourcingContentPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[15px] text-muted-foreground font-semibold uppercase tracking-wider">Ngày đăng video</span>
+                <span className="text-[13px] text-muted-foreground font-semibold uppercase tracking-wider">Ngày đăng video</span>
                 <DateRangePicker
                   presetId={postDate.presetId}
                   from={postDate.from}
@@ -139,7 +139,7 @@ export default function SourcingContentPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[15px] text-muted-foreground font-semibold uppercase tracking-wider">Lượt xem</span>
+                <span className="text-[13px] text-muted-foreground font-semibold uppercase tracking-wider">Lượt xem</span>
                 <div className="relative">
                   <select className="w-full bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
                     <option>Không giới hạn</option>
@@ -149,7 +149,7 @@ export default function SourcingContentPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[15px] text-muted-foreground font-semibold uppercase tracking-wider">Lượt thích</span>
+                <span className="text-[13px] text-muted-foreground font-semibold uppercase tracking-wider">Lượt thích</span>
                 <div className="relative">
                   <select className="w-full bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
                     <option>Không giới hạn</option>
@@ -160,21 +160,21 @@ export default function SourcingContentPage() {
 
               {/* Row 2 */}
               <div className="flex flex-col gap-1.5">
-                <span className="text-[15px] text-muted-foreground font-semibold uppercase tracking-wider">Nền tảng</span>
+                <span className="text-[13px] text-muted-foreground font-semibold uppercase tracking-wider">Nền tảng</span>
                 <div className="relative bg-muted/50 border border-border rounded-lg px-3 py-2 text-xs text-foreground font-medium">
                   Tiktok
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[15px] text-muted-foreground font-semibold uppercase tracking-wider">Kênh</span>
+                <span className="text-[13px] text-muted-foreground font-semibold uppercase tracking-wider">Kênh</span>
                 <div className="relative bg-muted/50 border border-border rounded-lg px-3 py-2 text-xs text-muted-foreground font-medium">
                   Tất cả
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[15px] text-muted-foreground font-semibold uppercase tracking-wider">Lượt bình luận</span>
+                <span className="text-[13px] text-muted-foreground font-semibold uppercase tracking-wider">Lượt bình luận</span>
                 <div className="relative">
                   <select className="w-full bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
                     <option>Không giới hạn</option>
@@ -184,7 +184,7 @@ export default function SourcingContentPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[15px] text-muted-foreground font-semibold uppercase tracking-wider">Lượt chia sẻ</span>
+                <span className="text-[13px] text-muted-foreground font-semibold uppercase tracking-wider">Lượt chia sẻ</span>
                 <div className="relative">
                   <select className="w-full bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
                     <option>Không giới hạn</option>
@@ -196,7 +196,7 @@ export default function SourcingContentPage() {
               {/* Row 3 */}
               <div className="flex flex-col gap-1.5 md:col-span-2">
                 <div className="flex items-center gap-1">
-                  <span className="text-[15px] text-muted-foreground font-semibold uppercase tracking-wider">Lọc theo nhãn</span>
+                  <span className="text-[13px] text-muted-foreground font-semibold uppercase tracking-wider">Lọc theo nhãn</span>
                   <button className="text-muted-foreground hover:text-foreground" title="Cấu hình nhãn">
                     <Gear size={12} />
                   </button>
@@ -210,7 +210,7 @@ export default function SourcingContentPage() {
               </div>
 
               <div className="flex flex-col gap-1.5 md:col-span-2">
-                <span className="text-[15px] text-muted-foreground font-semibold uppercase tracking-wider">Tỉ lệ tương tác</span>
+                <span className="text-[13px] text-muted-foreground font-semibold uppercase tracking-wider">Tỉ lệ tương tác</span>
                 <div className="relative">
                   <select className="w-full bg-muted/50 border border-border hover:border-border rounded-lg px-3 py-2 text-xs text-foreground appearance-none focus:outline-none focus:border-blue-500 cursor-pointer pr-8 font-medium">
                     <option>Không giới hạn</option>
@@ -343,7 +343,7 @@ export default function SourcingContentPage() {
                         <UserCircle size={32} className="text-muted-foreground shrink-0" />
                         <div className="flex flex-col">
                           <span className="text-foreground font-bold leading-tight">{chan.name}</span>
-                          <span className="text-[15px] text-muted-foreground font-medium">ID: {chan.username}</span>
+                          <span className="text-[13px] text-muted-foreground font-medium">ID: {chan.username}</span>
                         </div>
                       </div>
                     </td>

@@ -179,7 +179,7 @@ export default function BudgetPage() {
             {/* Phân trang */}
             {filtered.length > BUDGET_PER_PAGE && (
               <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-card/10">
-                <span className="text-[12px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground">
                   Hiển thị {start + 1}–{Math.min(start + BUDGET_PER_PAGE, filtered.length)} trong {filtered.length} chiến dịch
                 </span>
                 <div className="flex items-center gap-1">
@@ -195,7 +195,7 @@ export default function BudgetPage() {
                     <button
                       key={i}
                       onClick={() => setPage(i)}
-                      className={`w-6 h-6 flex items-center justify-center rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                      className={`w-6 h-6 flex items-center justify-center rounded text-[10px] font-medium transition-colors cursor-pointer ${
                         page === i 
                           ? "bg-blue-600 text-white" 
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"

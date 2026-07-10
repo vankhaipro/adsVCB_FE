@@ -717,7 +717,7 @@ export default function CampaignsPage() {
             }`}
           >
             Tất cả
-            <span className={`text-[15px] ${platform === "ALL" ? "text-blue-100" : "text-muted-foreground"}`}>{campaigns.length}</span>
+            <span className={`text-[13px] ${platform === "ALL" ? "text-blue-100" : "text-muted-foreground"}`}>{campaigns.length}</span>
           </button>
           {platformList.map(({ id, count }) => {
             const active = platform === id;
@@ -733,7 +733,7 @@ export default function CampaignsPage() {
               >
                 <PlatformIcon platform={id} />
                 {platformLabel(id)}
-                <span className={`text-[15px] ${active ? "text-blue-100" : "text-muted-foreground"}`}>{count}</span>
+                <span className={`text-[13px] ${active ? "text-blue-100" : "text-muted-foreground"}`}>{count}</span>
               </button>
             );
           })}
@@ -867,9 +867,9 @@ export default function CampaignsPage() {
           <div className="p-4 flex flex-col gap-4">
             <div className="overflow-x-auto">
             {activeTab === "campaign" && (
-              <table className="w-full text-[18px] text-foreground border-collapse">
+              <table className="w-full text-[16px] text-foreground border-collapse">
                 <thead>
-                  <tr className="text-left text-muted-foreground text-[16px] uppercase border-b border-border bg-background">
+                  <tr className="text-left text-muted-foreground text-[14px] uppercase border-b border-border bg-background">
                     <th className="px-3 py-3 font-medium text-center w-12">
                       <input
                         type="checkbox"
@@ -942,7 +942,7 @@ export default function CampaignsPage() {
                         <PlatformBadge platform={c.platform} />
                       </td>
                       <td className="px-3 py-3">
-                        <span className={`text-[16px] px-2 py-0.5 rounded ${isRunning(c.status) ? "bg-green-950/40 text-green-400" : "bg-card text-muted-foreground"}`}>
+                        <span className={`text-[14px] px-2 py-0.5 rounded ${isRunning(c.status) ? "bg-green-950/40 text-green-400" : "bg-card text-muted-foreground"}`}>
                           {c.status ?? "—"}
                         </span>
                       </td>
@@ -977,9 +977,9 @@ export default function CampaignsPage() {
             )}
 
             {activeTab === "adset" && (
-              <table className="w-full text-[18px] text-foreground border-collapse">
+              <table className="w-full text-[16px] text-foreground border-collapse">
                 <thead>
-                  <tr className="text-left text-muted-foreground text-[16px] uppercase border-b border-border bg-background">
+                  <tr className="text-left text-muted-foreground text-[14px] uppercase border-b border-border bg-background">
                     <th className="px-3 py-3 font-medium text-center w-12">
                       <input
                         type="checkbox"
@@ -1052,7 +1052,7 @@ export default function CampaignsPage() {
                         <PlatformBadge platform={as.platform} />
                       </td>
                       <td className="px-3 py-3">
-                        <span className={`text-[16px] px-2 py-0.5 rounded ${isRunning(as.status) ? "bg-green-950/40 text-green-400" : "bg-card text-muted-foreground"}`}>
+                        <span className={`text-[14px] px-2 py-0.5 rounded ${isRunning(as.status) ? "bg-green-950/40 text-green-400" : "bg-card text-muted-foreground"}`}>
                           {as.status ?? "—"}
                         </span>
                       </td>
@@ -1088,9 +1088,9 @@ export default function CampaignsPage() {
             )}
 
             {activeTab === "ad" && (
-              <table className="w-full text-[18px] text-foreground border-collapse">
+              <table className="w-full text-[16px] text-foreground border-collapse">
                 <thead>
-                  <tr className="text-left text-muted-foreground text-[16px] uppercase border-b border-border bg-background">
+                  <tr className="text-left text-muted-foreground text-[14px] uppercase border-b border-border bg-background">
                     <th className="px-3 py-3 font-medium text-center">Thao tác</th>
                     <th className="px-3 py-3 font-medium min-w-[200px]">Tên quảng cáo</th>
                     <th className="px-3 py-3 font-medium text-center">Ảnh</th>
@@ -1132,14 +1132,14 @@ export default function CampaignsPage() {
                         </td>
                         <td className="px-3 py-3 text-center">
                           <div className="w-8 h-8 rounded bg-muted border border-border flex items-center justify-center overflow-hidden mx-auto">
-                            <span className="text-[14px] uppercase font-bold text-muted-foreground">AD{(hash % 9) + 1}</span>
+                            <span className="text-[12px] uppercase font-bold text-muted-foreground">AD{(hash % 9) + 1}</span>
                           </div>
                         </td>
                         <td className="px-3 py-3">
                           <PlatformBadge platform={ad.platform} />
                         </td>
                         <td className="px-3 py-3">
-                          <span className={`text-[16px] px-2 py-0.5 rounded ${isRunning(ad.status) ? "bg-green-950/40 text-green-400" : "bg-card text-muted-foreground"}`}>
+                          <span className={`text-[14px] px-2 py-0.5 rounded ${isRunning(ad.status) ? "bg-green-950/40 text-green-400" : "bg-card text-muted-foreground"}`}>
                             {ad.status ?? "—"}
                           </span>
                         </td>

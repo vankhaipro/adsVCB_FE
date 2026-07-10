@@ -25,7 +25,7 @@ export function useChartColors() {
       backgroundColor: dark ? "#1e293b" : "#ffffff",
       border: `1px solid ${dark ? "#334155" : "#e2e8f0"}`,
       borderRadius: 8,
-      fontSize: 11,
+      fontSize: 10,
       color: dark ? "#e2e8f0" : "#0f172a",
     } as const,
   };

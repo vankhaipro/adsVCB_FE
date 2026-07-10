@@ -72,7 +72,7 @@ export default function ReportsPage() {
     ]).finally(() => setLoading(false));
   }, [days]);
 
-  const axisTick = { fill: chart.axis, fontSize: 11 };
+  const axisTick = { fill: chart.axis, fontSize: 10 };
 
   return (
     <div className="flex flex-col gap-6 pb-10">
@@ -149,7 +149,7 @@ export default function ReportsPage() {
                             <Cell key={i} fill={SPENDER_COLORS[s.name] || PALETTE[i % PALETTE.length]} />
                           ))}
                         </Pie>
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
                         <Tooltip formatter={(v) => fmtVnd(Number(v))} contentStyle={chart.tooltip} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -319,7 +319,7 @@ export default function ReportsPage() {
                         <Pie data={m.namingQuality} dataKey="count" nameKey="name" innerRadius={50} outerRadius={85} paddingAngle={2}>
                           {m.namingQuality.map((q, i) => <Cell key={i} fill={NAMEQ_COLORS[q.name] || PALETTE[i % PALETTE.length]} />)}
                         </Pie>
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
                         <Tooltip formatter={(v, _n, p) => [`${fmtNum(Number(v))} CK · ${(p?.payload as NameQ).pct.toFixed(1)}%`, "Số CK"]} contentStyle={chart.tooltip} />
                       </PieChart>
                     </ResponsiveContainer>

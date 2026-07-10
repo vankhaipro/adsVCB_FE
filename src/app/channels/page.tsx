@@ -132,7 +132,7 @@ function FilterDropdown({
               </button>
             ))}
             {filtered.length === 0 && (
-              <div className="p-3 text-center text-[11px] text-muted-foreground">Không tìm thấy</div>
+              <div className="p-3 text-center text-[10px] text-muted-foreground">Không tìm thấy</div>
             )}
           </div>
         </div>
@@ -409,7 +409,7 @@ export default function ChannelsPage() {
         {/* Card 1: Tổng quan */}
         <div className="bg-gradient-to-br from-blue-900/10 to-purple-900/10 border border-blue-500/10 rounded-xl p-4 shadow-sm flex flex-col justify-between min-h-[120px]">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-400">Tổng quan hệ thống</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-400">Tổng quan hệ thống</span>
             <h3 className="text-xl font-bold text-foreground mt-1">{fmtNum(channels.length)} <span className="text-xs font-normal text-muted-foreground">Kênh</span></h3>
           </div>
           <div className="flex justify-between items-center mt-3 border-t border-border/40 pt-2 text-xs">
@@ -427,12 +427,12 @@ export default function ChannelsPage() {
         {/* Card 2: Nền tảng */}
         <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col justify-between min-h-[120px]">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Theo Nền tảng</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Theo Nền tảng</span>
             <div className="mt-2 space-y-1.5 max-h-[90px] overflow-y-auto pr-1 scrollbar-thin">
               {Object.keys(statsByPlatform).map((p) => {
                 const stat = statsByPlatform[p];
                 return (
-                  <div key={p} className="flex items-center justify-between text-[11px]">
+                  <div key={p} className="flex items-center justify-between text-[10px]">
                     <div className="flex items-center gap-1.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${p === 'TIKTOK' ? 'bg-pink-500' : p === 'YOUTUBE' ? 'bg-red-500' : p === 'FACEBOOK' ? 'bg-blue-500' : p === 'INSTAGRAM' ? 'bg-purple-500' : 'bg-zinc-400'}`}></span>
                       <span className="font-medium text-foreground">{PLATFORM_LABEL[p] || p}</span>
@@ -450,12 +450,12 @@ export default function ChannelsPage() {
         {/* Card 3: Team */}
         <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col justify-between min-h-[120px]">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Theo Team</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Theo Team</span>
             <div className="mt-2 space-y-1.5 max-h-[90px] overflow-y-auto pr-1 scrollbar-thin">
               {Object.keys(statsByTeam).map((t) => {
                 const stat = statsByTeam[t];
                 return (
-                  <div key={t} className="flex items-center justify-between text-[11px]">
+                  <div key={t} className="flex items-center justify-between text-[10px]">
                     <span className="font-medium text-foreground truncate max-w-[100px]" title={t}>{t}</span>
                     <span className="text-muted-foreground text-[10px]">
                       <strong className="text-foreground">{stat.count}</strong> kênh ({stat.active} chạy) • <strong className="text-foreground">{fmtNum(stat.followers)}</strong> fl
@@ -525,7 +525,7 @@ export default function ChannelsPage() {
             Thêm
           </button>
         </div>
-        <p className="text-[16px] text-muted-foreground mt-2">Nền tảng &amp; ID kênh được tự nhận diện từ URL.</p>
+        <p className="text-[14px] text-muted-foreground mt-2">Nền tảng &amp; ID kênh được tự nhận diện từ URL.</p>
       </div>
 
       {/* Thanh bộ lọc */}
@@ -611,7 +611,7 @@ export default function ChannelsPage() {
                         <td className="px-4 py-2.5">{displayMarket}</td>
                         <td className="px-4 py-2.5 font-medium text-foreground max-w-[200px] truncate" title={c.channelName}>{c.channelName}</td>
                       <td className="px-4 py-2.5">
-                        <span className={`text-[15px] px-2 py-0.5 rounded font-medium ${PLATFORM_COLOR[c.platform] || "bg-muted/20 text-muted-foreground"}`}>
+                        <span className={`text-[13px] px-2 py-0.5 rounded font-medium ${PLATFORM_COLOR[c.platform] || "bg-muted/20 text-muted-foreground"}`}>
                           {PLATFORM_LABEL[c.platform] || c.platform}
                         </span>
                       </td>
@@ -662,7 +662,7 @@ export default function ChannelsPage() {
           {/* Phân trang */}
           {filtered.length > PER_PAGE && (
             <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-              <span className="text-[16px] text-muted-foreground">
+              <span className="text-[14px] text-muted-foreground">
                 Hiển thị {start + 1}–{Math.min(start + PER_PAGE, filtered.length)} trong {filtered.length} kênh
               </span>
               <div className="flex items-center gap-1">
@@ -678,7 +678,7 @@ export default function ChannelsPage() {
                   <button
                     key={i}
                     onClick={() => setPage(i)}
-                    className={`w-6 h-6 flex items-center justify-center rounded text-[16px] font-medium transition-colors ${
+                    className={`w-6 h-6 flex items-center justify-center rounded text-[14px] font-medium transition-colors ${
                       page === i 
                         ? "bg-blue-600 text-white" 
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"

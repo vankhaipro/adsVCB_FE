@@ -369,7 +369,7 @@ export default function SettingsPage() {
                           setError(err instanceof Error ? err.message : "Lỗi đổi ngành");
                         }
                       }}
-                      className="bg-card border border-border rounded px-1.5 py-0.5 text-[16px] text-muted-foreground focus:text-foreground outline-none focus:border-blue-500"
+                      className="bg-card border border-border rounded px-1.5 py-0.5 text-[14px] text-muted-foreground focus:text-foreground outline-none focus:border-blue-500"
                     >
                       <option value="">— Ngành mặc định —</option>
                       {industries.map((ind) => (
@@ -389,7 +389,7 @@ export default function SettingsPage() {
                           setError(err instanceof Error ? err.message : "Lỗi đổi thị trường");
                         }
                       }}
-                      className="bg-card border border-border rounded px-1.5 py-0.5 text-[16px] text-muted-foreground focus:text-foreground outline-none focus:border-blue-500"
+                      className="bg-card border border-border rounded px-1.5 py-0.5 text-[14px] text-muted-foreground focus:text-foreground outline-none focus:border-blue-500"
                     >
                       <option value="">— Thị trường mặc định —</option>
                       {markets.map((m) => (
@@ -419,7 +419,7 @@ export default function SettingsPage() {
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <User size={18} className="text-blue-400" /> Nhân viên ({employees.length})
             </h3>
-            <p className="text-[16px] text-muted-foreground mb-3">Mã NV = mã trong hashtag (vd <code className="text-foreground">K403</code>) để map nội dung về đúng người.</p>
+            <p className="text-[14px] text-muted-foreground mb-3">Mã NV = mã trong hashtag (vd <code className="text-foreground">K403</code>) để map nội dung về đúng người.</p>
             <div className="flex flex-wrap gap-2 mb-4">
               <select className={inputCls} value={empTeamId} onChange={(e) => setEmpTeamId(e.target.value)}>
                 <option value="" className="bg-background">— Team —</option>
@@ -577,7 +577,7 @@ export default function SettingsPage() {
           <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
             <Trophy size={18} className="text-yellow-400" /> Ngưỡng Win / Not-win
           </h3>
-          <p className="text-[16px] text-muted-foreground mb-4">Một video tính là <b className="text-green-400">Win</b> khi views ≥ ngưỡng (và nếu đặt tỉ lệ tương tác &gt; 0 thì phải đạt thêm).</p>
+          <p className="text-[14px] text-muted-foreground mb-4">Một video tính là <b className="text-green-400">Win</b> khi views ≥ ngưỡng (và nếu đặt tỉ lệ tương tác &gt; 0 thì phải đạt thêm).</p>
           <div className="flex flex-col gap-4">
             <label className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">Views tối thiểu để Win</span>

@@ -24,10 +24,10 @@ export default function Pagination({ page, pageSize, total, onChange }: Props) {
   const to = Math.min(cur * pageSize, total);
 
   const btn =
-    "min-w-[24px] h-6 px-1.5 flex items-center justify-center rounded-md border text-[16px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
+    "min-w-[24px] h-6 px-1.5 flex items-center justify-center rounded-md border text-[14px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
 
   return (
-    <div className="flex items-center justify-between mt-3 pt-2 border-t border-border text-[16px] text-muted-foreground">
+    <div className="flex items-center justify-between mt-3 pt-2 border-t border-border text-[14px] text-muted-foreground">
       <span>
         Hiển thị {from}–{to} / {total}
       </span>

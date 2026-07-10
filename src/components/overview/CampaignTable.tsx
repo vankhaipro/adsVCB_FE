@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
 import { Panel, Th, StatusPill, ChannelChip } from "./parts";
 import {
   fmtNum, fmtCompact, fmtVndShort, fmtPct, fmtRoas,
@@ -22,14 +22,48 @@ function roasColor(v: number) {
 
 export default function CampaignTable({ campaigns }: CampaignTableProps) {
   const [page, setPage] = useState(0);
-  const pages = Math.max(1, Math.ceil(campaigns.length / PER_PAGE));
+  const [localSearch, setLocalSearch] = useState("");
+  const [localAccount, setLocalAccount] = useState("ALL");
+
+  // Get unique ad accounts from the campaigns list for the dropdown filter
+  const accountOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of campaigns) {
+      if (c.adAccount) {
+        const accName = c.adAccount.name || c.adAccount.id || "Không tên";
+        const accId = c.adAccount.id;
+        map.set(accId, accName);
+      }
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [campaigns]);
+
+  const filteredCampaigns = useMemo(() => {
+    return campaigns.filter((c) => {
+      // Filter by localSearch (Campaign name or external ID)
+      if (localSearch.trim()) {
+        const term = localSearch.toLowerCase();
+        const matchesName = (c.name || "").toLowerCase().includes(term);
+        const matchesId = (c.id || "").toLowerCase().includes(term);
+        const matchesExtId = (c.externalId || "").toLowerCase().includes(term);
+        if (!matchesName && !matchesId && !matchesExtId) return false;
+      }
+      // Filter by localAccount
+      if (localAccount !== "ALL") {
+        if (!c.adAccount || c.adAccount.id !== localAccount) return false;
+      }
+      return true;
+    });
+  }, [campaigns, localSearch, localAccount]);
+
+  const pages = Math.max(1, Math.ceil(filteredCampaigns.length / PER_PAGE));
   const start = page * PER_PAGE;
-  const rows = campaigns.slice(start, start + PER_PAGE);
+  const rows = filteredCampaigns.slice(start, start + PER_PAGE);
 
   // Compute live footer totals based on current filtered campaigns list
   const totals = useMemo(() => {
     const t = { spend: 0, reach: 0, impressions: 0, clicks: 0, conversions: 0, revenue: 0, engagement: 0 };
-    for (const c of campaigns) {
+    for (const c of filteredCampaigns) {
       t.spend += c.spend;
       t.reach += c.reach;
       t.impressions += c.impressions;
@@ -42,7 +76,7 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
     const cpc = t.clicks > 0 ? t.spend / t.clicks : 0;
     const roas = t.spend > 0 ? t.revenue / t.spend : 0;
     return { ...t, ctr, cpc, roas };
-  }, [campaigns]);
+  }, [filteredCampaigns]);
 
   // Compute sliding window of pagination buttons
   const pageRange = useMemo(() => {
@@ -71,10 +105,51 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
       }
       bodyClassName="px-0 pb-0"
     >
-      <div className="px-5 -mt-1 mb-1">
-        <span className="text-[16px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
-          {campaigns.length} chiến dịch thực tế
+      <div className="px-5 -mt-1 mb-3 flex flex-wrap items-center justify-between gap-3">
+        <span className="text-[14px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded shrink-0">
+          {filteredCampaigns.length} chiến dịch thực tế
         </span>
+
+        {/* Filter inputs for local table */}
+        <div className="flex items-center gap-2">
+          {/* Lọc theo chiến dịch */}
+          <div className="flex items-center gap-1.5 bg-background border border-border rounded-lg px-2 py-1 min-w-[150px] max-w-[200px] text-xs">
+            <MagnifyingGlass size={12} className="text-muted-foreground shrink-0" />
+            <input
+              type="text"
+              value={localSearch}
+              onChange={(e) => {
+                setLocalSearch(e.target.value);
+                setPage(0);
+              }}
+              placeholder="Tìm chiến dịch..."
+              className="bg-transparent text-xs text-foreground outline-none w-full placeholder:text-muted-foreground"
+            />
+            {localSearch && (
+              <button onClick={() => { setLocalSearch(""); setPage(0); }} className="text-muted-foreground hover:text-foreground text-[9px] shrink-0 font-bold">✕</button>
+            )}
+          </div>
+
+          {/* Lọc theo tài khoản */}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-background border border-border rounded-lg px-2 py-1 min-w-[160px] max-w-[220px]">
+            <span className="font-medium shrink-0">Tài khoản:</span>
+            <select
+              value={localAccount}
+              onChange={(e) => {
+                setLocalAccount(e.target.value);
+                setPage(0);
+              }}
+              className="bg-transparent font-semibold text-foreground outline-none w-full cursor-pointer pr-1"
+            >
+              <option value="ALL" className="bg-background text-foreground">Tất cả</option>
+              {accountOptions.map((opt) => (
+                <option key={opt.id} value={opt.id} className="bg-background text-foreground">
+                  {opt.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -131,18 +206,18 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
                 <td className="px-3 py-2.5 text-right text-muted-foreground">{c.frequency.toFixed(2)}</td>
               </tr>
             ))}
-            {campaigns.length === 0 && (
+            {filteredCampaigns.length === 0 && (
               <tr>
                 <td colSpan={16} className="px-4 py-8 text-center text-muted-foreground">
-                  Không tìm thấy chiến dịch nào trong khoảng thời gian này.
+                  Không tìm thấy chiến dịch nào khớp bộ lọc.
                 </td>
               </tr>
             )}
           </tbody>
-          {campaigns.length > 0 && (
+          {filteredCampaigns.length > 0 && (
             <tfoot className="border-t border-border bg-card font-semibold text-foreground">
               <tr>
-                <td className="px-3 py-3" colSpan={5}>TỔNG CỘNG ({campaigns.length})</td>
+                <td className="px-3 py-3" colSpan={5}>TỔNG CỘNG ({filteredCampaigns.length})</td>
                 <td className="px-3 py-3 text-right text-muted-foreground">—</td>
                 <td className="px-3 py-3 text-right text-foreground">{fmtVndShort(totals.spend)}</td>
                 <td className="px-3 py-3 text-right">{fmtCompact(totals.reach)}</td>
@@ -161,10 +236,10 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
       </div>
 
       {/* Phân trang */}
-      {campaigns.length > PER_PAGE && (
+      {filteredCampaigns.length > PER_PAGE && (
         <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-          <span className="text-[16px] text-muted-foreground">
-            Hiển thị {start + 1}–{Math.min(start + PER_PAGE, campaigns.length)} trong {campaigns.length} chiến dịch
+          <span className="text-[14px] text-muted-foreground">
+            Hiển thị {start + 1}–{Math.min(start + PER_PAGE, filteredCampaigns.length)} trong {filteredCampaigns.length} chiến dịch
           </span>
           <div className="flex items-center gap-1">
             <button

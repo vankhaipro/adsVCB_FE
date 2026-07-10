@@ -692,7 +692,7 @@ export default function AutoRulesPage() {
                   <PlusSquare size={18} className="text-amber-500" />
                   <div>
                     <div className="font-semibold">Tạo quảng cáo mới</div>
-                    <div className="text-[11px] text-muted-foreground">Bật quảng cáo theo bài organic</div>
+                    <div className="text-[10px] text-muted-foreground">Bật quảng cáo theo bài organic</div>
                   </div>
                 </button>
                 <button
@@ -715,7 +715,7 @@ export default function AutoRulesPage() {
                   <FolderOpen size={18} className="text-purple-500" />
                   <div>
                     <div className="font-semibold">Quản lý quảng cáo</div>
-                    <div className="text-[11px] text-muted-foreground">Tắt quảng cáo theo chỉ số</div>
+                    <div className="text-[10px] text-muted-foreground">Tắt quảng cáo theo chỉ số</div>
                   </div>
                 </button>
               </div>
@@ -738,7 +738,7 @@ export default function AutoRulesPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-border text-[12px] font-bold text-muted-foreground uppercase bg-muted/20">
+                <tr className="border-b border-border text-[10px] font-bold text-muted-foreground uppercase bg-muted/20">
                   <th className="px-4 py-3 text-center w-14"></th>
                   <th className="px-4 py-3 min-w-[200px]">Tên quy tắc</th>
                   <th className="px-4 py-3 w-40">Nền tảng</th>
@@ -748,7 +748,7 @@ export default function AutoRulesPage() {
                   <th className="px-4 py-3 text-right w-24">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border text-[13px]">
+              <tbody className="divide-y divide-border text-[11px]">
                 {filteredRules.map((r) => {
                   const isOrganic = r.condition?.type === "organic_video";
                   return (
@@ -806,7 +806,7 @@ export default function AutoRulesPage() {
                         <div className="font-semibold text-foreground/90">
                           {isOrganic ? "1 hành động / nhiều điều kiện" : "1 hành động / 1 điều kiện"}
                         </div>
-                        <div className="text-[12px] text-muted-foreground mt-0.5 max-w-lg overflow-hidden text-ellipsis whitespace-nowrap" title={condLabel(r.condition)}>
+                        <div className="text-[10px] text-muted-foreground mt-0.5 max-w-lg overflow-hidden text-ellipsis whitespace-nowrap" title={condLabel(r.condition)}>
                           {condLabel(r.condition)} → <span className="font-medium text-blue-400">{actLabel(r.action)} quảng cáo</span>
                         </div>
                       </td>
@@ -846,14 +846,14 @@ export default function AutoRulesPage() {
                               <button
                                 onClick={() => runNow(r)}
                                 disabled={busy === r.id}
-                                className="w-full text-left px-3.5 py-1.5 hover:bg-muted text-[12px] text-foreground flex items-center gap-1.5"
+                                className="w-full text-left px-3.5 py-1.5 hover:bg-muted text-[10px] text-foreground flex items-center gap-1.5"
                               >
                                 <Play size={12} /> Chạy thử
                               </button>
                               <button
                                 onClick={() => remove(r)}
                                 disabled={busy === r.id}
-                                className="w-full text-left px-3.5 py-1.5 hover:bg-red-500/10 text-[12px] text-red-500 flex items-center gap-1.5 border-t border-border"
+                                className="w-full text-left px-3.5 py-1.5 hover:bg-red-500/10 text-[10px] text-red-500 flex items-center gap-1.5 border-t border-border"
                               >
                                 <Trash size={12} /> Xoá
                               </button>
@@ -886,15 +886,15 @@ export default function AutoRulesPage() {
             {/* Quick overview metric cards */}
             <div className="grid grid-cols-3 gap-3 mb-5">
               <div className="bg-background border border-border rounded-lg p-3 text-center">
-                <div className="text-[11px] font-bold text-muted-foreground uppercase">Giới hạn mỗi giờ</div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase">Giới hạn mỗi giờ</div>
                 <div className="text-lg font-bold text-foreground mt-1">- hành động</div>
               </div>
               <div className="bg-background border border-border rounded-lg p-3 text-center">
-                <div className="text-[11px] font-bold text-muted-foreground uppercase">Giới hạn mỗi ngày</div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase">Giới hạn mỗi ngày</div>
                 <div className="text-lg font-bold text-foreground mt-1">- hành động</div>
               </div>
               <div className="bg-background border border-border rounded-lg p-3 text-center">
-                <div className="text-[11px] font-bold text-muted-foreground uppercase">Thời gian chờ</div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase">Thời gian chờ</div>
                 <div className="text-lg font-bold text-blue-500 mt-1">{settings.waitTime} phút</div>
               </div>
             </div>
@@ -903,7 +903,7 @@ export default function AutoRulesPage() {
             <div className="flex flex-col gap-4 text-sm mb-6">
               <div className="flex flex-col gap-1.5">
                 <label className="text-foreground font-semibold">Tùy chỉnh thời gian chờ</label>
-                <span className="text-[12px] text-muted-foreground">Chọn khoảng thời gian chờ giữa các hành động tương tác với quảng cáo.</span>
+                <span className="text-[10px] text-muted-foreground">Chọn khoảng thời gian chờ giữa các hành động tương tác với quảng cáo.</span>
                 <div className="flex items-center gap-2.5 mt-1">
                   <input
                     type="number"
@@ -951,7 +951,7 @@ export default function AutoRulesPage() {
           <div className="bg-[#f1f2f5] border border-border w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col my-5">
             {/* Header */}
             <div className="flex justify-between items-center px-6 py-4.5 bg-white border-b border-border">
-              <h3 className="text-[#1a202c] font-bold text-[18px]">Tạo quy tắc tự động mới</h3>
+              <h3 className="text-[#1a202c] font-bold text-[16px]">Tạo quy tắc tự động mới</h3>
               <button
                 onClick={() => setShowCreateAdModal(false)}
                 className="text-muted-foreground hover:text-foreground transition-colors p-1"
@@ -964,14 +964,14 @@ export default function AutoRulesPage() {
             <div className="p-6 flex flex-col gap-5 overflow-y-auto max-h-[75vh]">
               {/* Section 1: Thông tin cơ bản */}
               <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm flex flex-col gap-4">
-                <div className="flex items-center gap-2 text-amber-500 font-bold text-[15px]">
+                <div className="flex items-center gap-2 text-amber-500 font-bold text-[13px]">
                   <FileText size={18} weight="fill" className="text-amber-500" />
                   <span>Thông tin cơ bản</span>
                 </div>
 
                 {/* Tên quy tắc */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[13px] text-[#4a5568] font-medium">
+                  <label className="text-[11px] text-[#4a5568] font-medium">
                     <span className="text-red-500">*</span> Tên quy tắc
                   </label>
                   <input
@@ -979,20 +979,20 @@ export default function AutoRulesPage() {
                     value={cAdForm.name}
                     onChange={(e) => setCAdForm({ ...cAdForm, name: e.target.value })}
                     placeholder="Nhập tên quy tắc"
-                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[14px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   {/* Nền tảng áp dụng */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-[13px] text-[#4a5568] font-medium">
+                    <label className="text-[11px] text-[#4a5568] font-medium">
                       <span className="text-red-500">*</span> Nền tảng áp dụng
                     </label>
                     <select
                       value={cAdForm.platform}
                       onChange={(e) => setCAdForm({ ...cAdForm, platform: e.target.value })}
-                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[14px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                     >
                       <option value="META">Facebook</option>
                       <option value="TIKTOK">TikTok</option>
@@ -1003,13 +1003,13 @@ export default function AutoRulesPage() {
 
                   {/* Tài khoản quảng cáo */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-[13px] text-[#4a5568] font-medium">
+                    <label className="text-[11px] text-[#4a5568] font-medium">
                       <span className="text-red-500">*</span> Tài khoản quảng cáo
                     </label>
                     <select
                       value={cAdForm.adAccountId}
                       onChange={(e) => setCAdForm({ ...cAdForm, adAccountId: e.target.value })}
-                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[14px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                     >
                       <option value="">Chọn tài khoản quảng cáo</option>
                       {adAccounts
@@ -1030,23 +1030,23 @@ export default function AutoRulesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   {/* Ngày bắt đầu */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-[13px] text-[#4a5568] font-medium">Ngày bắt đầu</label>
+                    <label className="text-[11px] text-[#4a5568] font-medium">Ngày bắt đầu</label>
                     <input
                       type="date"
                       value={cAdForm.startDate}
                       onChange={(e) => setCAdForm({ ...cAdForm, startDate: e.target.value })}
-                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[14px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                     />
                   </div>
 
                   {/* Ngày kết thúc */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-[13px] text-[#4a5568] font-medium">Ngày kết thúc</label>
+                    <label className="text-[11px] text-[#4a5568] font-medium">Ngày kết thúc</label>
                     <input
                       type="date"
                       value={cAdForm.endDate}
                       onChange={(e) => setCAdForm({ ...cAdForm, endDate: e.target.value })}
-                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[14px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                     />
                   </div>
                 </div>
@@ -1226,7 +1226,7 @@ export default function AutoRulesPage() {
                 {/* + Thêm điều kiện button */}
                 <button
                   onClick={addCondition}
-                  className="border border-dashed border-blue-200 text-blue-500 bg-blue-50/10 hover:bg-blue-50/20 py-2.5 rounded-lg flex items-center justify-center gap-2 cursor-pointer font-medium text-[13px] transition-colors"
+                  className="border border-dashed border-blue-200 text-blue-500 bg-blue-50/10 hover:bg-blue-50/20 py-2.5 rounded-lg flex items-center justify-center gap-2 cursor-pointer font-medium text-[11px] transition-colors"
                 >
                   + Thêm điều kiện
                 </button>
@@ -1234,11 +1234,11 @@ export default function AutoRulesPage() {
 
               {/* Section 2: Cấu hình quảng cáo */}
               <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm flex flex-col gap-4">
-                <div className="flex items-center gap-2 text-green-600 font-bold text-[15px]">
+                <div className="flex items-center gap-2 text-green-600 font-bold text-[13px]">
                   <ShareNetwork size={18} weight="fill" className="text-green-500" />
                   <span>Cấu hình quảng cáo</span>
                 </div>
-                <div className="text-[13px] text-[#4a5568] -mt-1 leading-normal">
+                <div className="text-[11px] text-[#4a5568] -mt-1 leading-normal">
                   Thì thực hiện đồng thời các hành động bên dưới
                 </div>
 
@@ -1246,7 +1246,7 @@ export default function AutoRulesPage() {
                 <div className="flex border border-slate-100 rounded-lg p-1 bg-slate-100/50">
                   <button
                     onClick={() => setAdConfigTab("new_campaign")}
-                    className={`flex-1 py-1.5 text-center text-[13px] cursor-pointer transition-all ${
+                    className={`flex-1 py-1.5 text-center text-[11px] cursor-pointer transition-all ${
                       adConfigTab === "new_campaign"
                         ? "bg-white text-foreground shadow-sm font-semibold rounded-md"
                         : "text-muted-foreground hover:text-foreground"
@@ -1256,7 +1256,7 @@ export default function AutoRulesPage() {
                   </button>
                   <button
                     onClick={() => setAdConfigTab("existing_campaign")}
-                    className={`flex-1 py-1.5 text-center text-[13px] cursor-pointer transition-all ${
+                    className={`flex-1 py-1.5 text-center text-[11px] cursor-pointer transition-all ${
                       adConfigTab === "existing_campaign"
                         ? "bg-white text-foreground shadow-sm font-semibold rounded-md"
                         : "text-muted-foreground hover:text-foreground"
@@ -1268,17 +1268,17 @@ export default function AutoRulesPage() {
 
                 {adConfigTab === "new_campaign" ? (
                   <div className="flex flex-col gap-4">
-                    <div className="text-[13px] font-semibold text-[#2d3748] flex items-center gap-2">
+                    <div className="text-[11px] font-semibold text-[#2d3748] flex items-center gap-2">
                       <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 text-xs font-bold">1</span>
                       Tạo quảng cáo
                     </div>
-                    <span className="text-[12px] text-muted-foreground -mt-3">
+                    <span className="text-[10px] text-muted-foreground -mt-3">
                       Thiết lập mục tiêu và cấu hình cho cấp chiến dịch/nhóm quảng cáo
                     </span>
 
                     {/* Mục tiêu tối ưu hoá */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[13px] text-[#4a5568] font-medium">Mục tiêu tối ưu hoá</label>
+                      <label className="text-[11px] text-[#4a5568] font-medium">Mục tiêu tối ưu hoá</label>
                       <div className="grid grid-cols-12 gap-2">
                         <select
                           value={cAdForm.optimizationGoal}
@@ -1307,20 +1307,20 @@ export default function AutoRulesPage() {
                       </div>
                     </div>
 
-                    <button className="border border-dashed border-slate-200 text-slate-500 hover:bg-slate-50 py-2 rounded-lg flex items-center justify-center gap-2 cursor-pointer font-medium text-[12px] transition-colors -mt-1">
+                    <button className="border border-dashed border-slate-200 text-slate-500 hover:bg-slate-50 py-2 rounded-lg flex items-center justify-center gap-2 cursor-pointer font-medium text-[10px] transition-colors -mt-1">
                       + Thêm mục tiêu tối ưu hoá
                     </button>
 
                     {/* Đối tượng */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[13px] text-[#4a5568] font-medium">Đối tượng</label>
-                      <span className="text-[12px] text-muted-foreground">
+                      <label className="text-[11px] text-[#4a5568] font-medium">Đối tượng</label>
+                      <span className="text-[10px] text-muted-foreground">
                         Chọn tệp đối tượng bao gồm hoặc loại trừ, áp dụng cho toàn bộ mục tiêu tối ưu hoá
                       </span>
                       <select
                         value={cAdForm.savedAudience}
                         onChange={(e) => setCAdForm({ ...cAdForm, savedAudience: e.target.value })}
-                        className="bg-white border border-slate-200 rounded-lg px-3 py-2 mt-1 text-[13px] text-foreground outline-none focus:border-blue-500"
+                        className="bg-white border border-slate-200 rounded-lg px-3 py-2 mt-1 text-[11px] text-foreground outline-none focus:border-blue-500"
                       >
                         <option value="">Chọn từ đối tượng đã lưu</option>
                         <option value="vietnam_18_45">Việt Nam (18 - 45 tuổi)</option>
@@ -1329,15 +1329,15 @@ export default function AutoRulesPage() {
 
                     {/* Mẫu tên quảng cáo */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[13px] text-[#4a5568] font-medium">Mẫu tên quảng cáo</label>
-                      <span className="text-[12px] text-muted-foreground">Thiết lập mẫu cho tên quảng cáo</span>
+                      <label className="text-[11px] text-[#4a5568] font-medium">Mẫu tên quảng cáo</label>
+                      <span className="text-[10px] text-muted-foreground">Thiết lập mẫu cho tên quảng cáo</span>
                       <input
                         ref={templateInputRef}
                         type="text"
                         value={cAdForm.adNameTemplate}
                         onChange={(e) => setCAdForm({ ...cAdForm, adNameTemplate: e.target.value })}
                         placeholder="Nhập mẫu tên quảng cáo"
-                        className="bg-white border border-slate-200 rounded-lg px-3 py-2 mt-1 text-[13px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"
+                        className="bg-white border border-slate-200 rounded-lg px-3 py-2 mt-1 text-[11px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"
                       />
 
                       {/* Clickable tags */}
@@ -1359,7 +1359,7 @@ export default function AutoRulesPage() {
                               type="button"
                               disabled={disabled}
                               onClick={() => appendTemplateTag(tag.val)}
-                              className={`text-[11px] px-2 py-1 rounded-md cursor-pointer font-medium transition-all ${
+                              className={`text-[10px] px-2 py-1 rounded-md cursor-pointer font-medium transition-all ${
                                 disabled 
                                   ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
                                   : "bg-blue-50/50 hover:bg-blue-50 text-blue-500 border border-blue-100"
@@ -1372,7 +1372,7 @@ export default function AutoRulesPage() {
                       </div>
 
                       {/* Preview name */}
-                      <div className="text-[12px] text-muted-foreground mt-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 font-mono leading-relaxed">
+                      <div className="text-[10px] text-muted-foreground mt-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 font-mono leading-relaxed">
                         <span className="font-semibold text-[#4a5568]">Xem trước: </span> 
                         {getPreviewName(cAdForm.adNameTemplate)}
                       </div>
@@ -1380,7 +1380,7 @@ export default function AutoRulesPage() {
 
                     {/* Checkboxes options */}
                     <div className="flex flex-col gap-2 mt-1">
-                      <label className="flex items-center gap-2.5 text-[13px] text-foreground cursor-pointer font-medium">
+                      <label className="flex items-center gap-2.5 text-[11px] text-foreground cursor-pointer font-medium">
                         <input
                           type="checkbox"
                           checked={cAdForm.statusPaused}
@@ -1389,7 +1389,7 @@ export default function AutoRulesPage() {
                         />
                         <span>Tạo quảng cáo mới ở trạng thái "Tạm dừng"</span>
                       </label>
-                      <label className="flex items-center gap-2.5 text-[13px] text-foreground cursor-pointer font-medium">
+                      <label className="flex items-center gap-2.5 text-[11px] text-foreground cursor-pointer font-medium">
                         <input
                           type="checkbox"
                           checked={cAdForm.oncePerContent}
@@ -1402,13 +1402,13 @@ export default function AutoRulesPage() {
 
                     {/* Step 2: Gửi thông báo */}
                     <div className="border-t border-slate-100 pt-4 flex flex-col gap-3">
-                      <div className="text-[13px] font-semibold text-[#2d3748] flex items-center gap-2">
+                      <div className="text-[11px] font-semibold text-[#2d3748] flex items-center gap-2">
                         <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 text-xs font-bold">2</span>
                         Gửi thông báo
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="flex flex-col gap-1">
-                          <span className="text-[12px] text-muted-foreground">Gửi thông báo tới</span>
+                          <span className="text-[10px] text-muted-foreground">Gửi thông báo tới</span>
                           <select
                             value={cAdForm.notifyTo}
                             onChange={(e) => setCAdForm({ ...cAdForm, notifyTo: e.target.value })}
@@ -1421,7 +1421,7 @@ export default function AutoRulesPage() {
                         </div>
                         
                         <div className="flex flex-col gap-1">
-                          <span className="text-[12px] text-muted-foreground">Nhập Webhook URL / Kênh</span>
+                          <span className="text-[10px] text-muted-foreground">Nhập Webhook URL / Kênh</span>
                           <input
                             type="text"
                             value={webhookInputVal}
@@ -1448,17 +1448,17 @@ export default function AutoRulesPage() {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-4 text-sm bg-slate-50/50 border border-slate-200 p-4 rounded-xl">
-                    <div className="text-[13px] font-semibold text-[#2d3748] flex items-center gap-2">
+                    <div className="text-[11px] font-semibold text-[#2d3748] flex items-center gap-2">
                       <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 text-xs font-bold">1</span>
                       Kích hoạt chiến dịch quảng cáo
                     </div>
                     
                     <div className="flex flex-col gap-1">
-                      <label className="text-[13px] text-[#4a5568] font-medium">Chọn chiến dịch quảng cáo cũ</label>
+                      <label className="text-[11px] text-[#4a5568] font-medium">Chọn chiến dịch quảng cáo cũ</label>
                       <select
                         value={cAdForm.targetCampaignId || ""}
                         onChange={(e) => setCAdForm({ ...cAdForm, targetCampaignId: e.target.value })}
-                        className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[14px] text-foreground outline-none focus:border-blue-500 w-full"
+                        className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12px] text-foreground outline-none focus:border-blue-500 w-full"
                       >
                         <option value="">-- Tự động tìm theo mã liên kết (Hashtag/Mã video) --</option>
                         {campaigns
@@ -1469,20 +1469,20 @@ export default function AutoRulesPage() {
                             </option>
                           ))}
                       </select>
-                      <span className="text-[12px] text-muted-foreground mt-1 leading-normal">
+                      <span className="text-[10px] text-muted-foreground mt-1 leading-normal">
                         Nếu chọn một chiến dịch cụ thể, hệ thống sẽ kích hoạt đúng chiến dịch này. Nếu chọn "Tự động tìm...", hệ thống sẽ quét các chiến dịch khớp với mã/hashtag trong video organic để bật lên.
                       </span>
                     </div>
 
                     {/* Step 2: Gửi thông báo */}
                     <div className="border-t border-slate-200 pt-4 flex flex-col gap-3">
-                      <div className="text-[13px] font-semibold text-[#2d3748] flex items-center gap-2">
+                      <div className="text-[11px] font-semibold text-[#2d3748] flex items-center gap-2">
                         <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 text-xs font-bold">2</span>
                         Gửi thông báo
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="flex flex-col gap-1">
-                          <span className="text-[12px] text-muted-foreground">Gửi thông báo tới</span>
+                          <span className="text-[10px] text-muted-foreground">Gửi thông báo tới</span>
                           <select
                             value={cAdForm.notifyTo}
                             onChange={(e) => setCAdForm({ ...cAdForm, notifyTo: e.target.value })}
@@ -1495,7 +1495,7 @@ export default function AutoRulesPage() {
                         </div>
                         
                         <div className="flex flex-col gap-1">
-                          <span className="text-[12px] text-muted-foreground">Nhập Webhook URL / Kênh</span>
+                          <span className="text-[10px] text-muted-foreground">Nhập Webhook URL / Kênh</span>
                           <input
                             type="text"
                             value={webhookInputVal}
@@ -1524,7 +1524,7 @@ export default function AutoRulesPage() {
 
               {/* Section 3: Lịch trình chạy */}
               <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm flex flex-col gap-4">
-                <div className="flex items-center gap-2 text-purple-600 font-bold text-[15px]">
+                <div className="flex items-center gap-2 text-purple-600 font-bold text-[13px]">
                   <Clock size={18} weight="fill" className="text-purple-500" />
                   <span>Lịch trình chạy</span>
                 </div>
@@ -1541,8 +1541,8 @@ export default function AutoRulesPage() {
                       className="mt-1 w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
                     />
                     <div>
-                      <div className="font-semibold text-foreground text-[13px]">Liên tục</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                      <div className="font-semibold text-foreground text-[11px]">Liên tục</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
                         Lịch trình chạy thường xuyên trong mỗi 30 phút/lần
                       </div>
                     </div>
@@ -1559,8 +1559,8 @@ export default function AutoRulesPage() {
                       className="mt-1 w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
                     />
                     <div>
-                      <div className="font-semibold text-foreground text-[13px]">Hàng ngày</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                      <div className="font-semibold text-foreground text-[11px]">Hàng ngày</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
                         Lịch trình chạy hàng ngày vào 00:00 tới 01:00 (chạy mỗi 30 phút/lần)
                       </div>
                     </div>
@@ -1577,8 +1577,8 @@ export default function AutoRulesPage() {
                       className="mt-1 w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
                     />
                     <div>
-                      <div className="font-semibold text-foreground text-[13px]">Tùy chỉnh</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                      <div className="font-semibold text-foreground text-[11px]">Tùy chỉnh</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
                         Tùy chỉnh lịch trình để hàng ngày trong khoảng thời gian cụ thể (chạy mỗi 30 phút/lần)
                       </div>
                     </div>
@@ -1625,7 +1625,7 @@ export default function AutoRulesPage() {
                 value={mAdName}
                 onChange={(e) => setMAdName(e.target.value)}
                 placeholder="Nhập tên quy tắc..."
-                className="text-[#1a202c] font-bold text-[18px] bg-transparent border-none outline-none w-full placeholder:text-[#a0aec0]/60 focus:ring-0"
+                className="text-[#1a202c] font-bold text-[16px] bg-transparent border-none outline-none w-full placeholder:text-[#a0aec0]/60 focus:ring-0"
               />
               <button
                 onClick={() => setShowManageAdModal(false)}
@@ -1639,24 +1639,24 @@ export default function AutoRulesPage() {
             <div className="p-6 flex flex-col gap-5 overflow-y-auto max-h-[75vh]">
               {/* Section 1: Điều kiện kích hoạt */}
               <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm flex flex-col gap-4">
-                <div className="flex items-center gap-2 text-blue-600 font-bold text-[15px]">
+                <div className="flex items-center gap-2 text-blue-600 font-bold text-[13px]">
                   <Database size={18} weight="fill" className="text-blue-600" />
                   <span>Điều kiện kích hoạt</span>
                 </div>
-                <div className="text-[13px] text-[#4a5568] -mt-2">
+                <div className="text-[11px] text-[#4a5568] -mt-2">
                   Khi tất cả điều kiện sau được đáp ứng
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   {/* Nền tảng */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-[13px] text-[#4a5568] font-medium">
+                    <label className="text-[11px] text-[#4a5568] font-medium">
                       <span className="text-red-500">*</span> Nền tảng
                     </label>
                     <select
                       value={mAdPlatform}
                       onChange={(e) => setMAdPlatform(e.target.value)}
-                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[14px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                     >
                       <option value="META">Facebook</option>
                       <option value="TIKTOK">TikTok</option>
@@ -1667,13 +1667,13 @@ export default function AutoRulesPage() {
 
                   {/* Đối tượng áp dụng */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-[13px] text-[#4a5568] font-medium">
+                    <label className="text-[11px] text-[#4a5568] font-medium">
                       <span className="text-red-500">*</span> Đối tượng áp dụng
                     </label>
                     <select
                       value={mAdAppliedTo}
                       onChange={(e) => setMAdAppliedTo(e.target.value)}
-                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[14px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12px] text-foreground outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                     >
                       <option value="Chiến dịch">Chiến dịch</option>
                       <option value="Nhóm quảng cáo">Nhóm quảng cáo</option>
@@ -1684,7 +1684,7 @@ export default function AutoRulesPage() {
 
                 {/* Condition rows */}
                 <div className="flex flex-col gap-3 mt-1">
-                  <div className="text-[13px] font-bold text-[#2d3748]">Cấu hình điều kiện</div>
+                  <div className="text-[11px] font-bold text-[#2d3748]">Cấu hình điều kiện</div>
                   {mAdConditions.map((cond) => (
                     <div key={cond.id} className="flex items-center gap-2">
                       <select
@@ -1731,7 +1731,7 @@ export default function AutoRulesPage() {
                 {/* + Thêm điều kiện button */}
                 <button
                   onClick={addMCondition}
-                  className="border border-dashed border-blue-200 text-blue-500 bg-blue-50/10 hover:bg-blue-50/20 py-2.5 rounded-lg flex items-center justify-center gap-2 cursor-pointer font-medium text-[13px] transition-colors"
+                  className="border border-dashed border-blue-200 text-blue-500 bg-blue-50/10 hover:bg-blue-50/20 py-2.5 rounded-lg flex items-center justify-center gap-2 cursor-pointer font-medium text-[11px] transition-colors"
                 >
                   + Thêm điều kiện
                 </button>
@@ -1739,11 +1739,11 @@ export default function AutoRulesPage() {
 
               {/* Section 2: Hành động */}
               <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm flex flex-col gap-4">
-                <div className="flex items-center gap-2 text-green-600 font-bold text-[15px]">
+                <div className="flex items-center gap-2 text-green-600 font-bold text-[13px]">
                   <ShareNetwork size={18} weight="fill" className="text-green-500" />
                   <span>Hành động</span>
                 </div>
-                <div className="text-[13px] text-[#4a5568] -mt-2">
+                <div className="text-[11px] text-[#4a5568] -mt-2">
                   Thì thực hiện đồng thời các hành động bên dưới
                 </div>
 
@@ -1818,7 +1818,7 @@ export default function AutoRulesPage() {
                 <button
                   onClick={addMAction}
                   disabled={mAdActions.length >= 5}
-                  className={`border border-dashed py-2.5 rounded-lg flex items-center justify-center gap-2 cursor-pointer font-medium text-[13px] transition-colors ${
+                  className={`border border-dashed py-2.5 rounded-lg flex items-center justify-center gap-2 cursor-pointer font-medium text-[11px] transition-colors ${
                     mAdActions.length >= 5 
                       ? "border-slate-100 text-slate-400 bg-slate-50 cursor-not-allowed"
                       : "border-blue-200 text-blue-500 bg-blue-50/10 hover:bg-blue-50/20"
@@ -1830,7 +1830,7 @@ export default function AutoRulesPage() {
 
               {/* Section 3: Lịch trình chạy */}
               <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm flex flex-col gap-4">
-                <div className="flex items-center gap-2 text-purple-600 font-bold text-[15px]">
+                <div className="flex items-center gap-2 text-purple-600 font-bold text-[13px]">
                   <Clock size={18} weight="fill" className="text-purple-500" />
                   <span>Lịch trình chạy</span>
                 </div>
@@ -1847,8 +1847,8 @@ export default function AutoRulesPage() {
                       className="mt-1 w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
                     />
                     <div>
-                      <div className="font-semibold text-foreground text-[13px]">Liên tục</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                      <div className="font-semibold text-foreground text-[11px]">Liên tục</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
                         Lịch trình chạy thường xuyên trong mỗi 30 phút/lần
                       </div>
                     </div>
@@ -1865,8 +1865,8 @@ export default function AutoRulesPage() {
                       className="mt-1 w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
                     />
                     <div>
-                      <div className="font-semibold text-foreground text-[13px]">Hàng ngày</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                      <div className="font-semibold text-foreground text-[11px]">Hàng ngày</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
                         Lịch trình chạy hàng ngày vào 00:00 tới 01:00 (chạy mỗi 30 phút/lần)
                       </div>
                     </div>
@@ -1883,8 +1883,8 @@ export default function AutoRulesPage() {
                       className="mt-1 w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
                     />
                     <div>
-                      <div className="font-semibold text-foreground text-[13px]">Tùy chỉnh</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                      <div className="font-semibold text-foreground text-[11px]">Tùy chỉnh</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
                         Tùy chỉnh lịch trình để hàng ngày trong khoảng thời gian cụ thể (chạy mỗi 30 phút/lần)
                       </div>
                     </div>

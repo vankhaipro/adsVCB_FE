@@ -378,7 +378,7 @@ export default function LogsPage() {
             {/* Phân trang cho Đồng bộ kênh */}
             {filteredSync.length > SYNC_PER_PAGE && (
               <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-card/10">
-                <span className="text-[12px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground">
                   Hiển thị {syncStart + 1}–{Math.min(syncStart + SYNC_PER_PAGE, filteredSync.length)} trong {filteredSync.length} kênh
                 </span>
                 <div className="flex items-center gap-1">
@@ -394,7 +394,7 @@ export default function LogsPage() {
                     <button
                       key={i}
                       onClick={() => setSyncPage(i)}
-                      className={`w-6 h-6 flex items-center justify-center rounded text-[11px] font-medium transition-colors ${
+                      className={`w-6 h-6 flex items-center justify-center rounded text-[10px] font-medium transition-colors ${
                         syncPage === i 
                           ? "bg-blue-600 text-white" 
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -464,7 +464,7 @@ export default function LogsPage() {
           {/* Phân trang cho Raw Logs */}
           {logs.length > RAW_PER_PAGE && (
             <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-card/10">
-              <span className="text-[12px] text-muted-foreground">
+              <span className="text-[10px] text-muted-foreground">
                 Hiển thị {rawStart + 1}–{Math.min(rawStart + RAW_PER_PAGE, logs.length)} trong {logs.length} bản ghi
               </span>
               <div className="flex items-center gap-1">
@@ -480,7 +480,7 @@ export default function LogsPage() {
                   <button
                     key={i}
                     onClick={() => setRawPage(i)}
-                    className={`w-6 h-6 flex items-center justify-center rounded text-[11px] font-medium transition-colors ${
+                    className={`w-6 h-6 flex items-center justify-center rounded text-[10px] font-medium transition-colors ${
                       rawPage === i 
                         ? "bg-blue-600 text-white" 
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"

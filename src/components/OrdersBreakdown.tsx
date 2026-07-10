@@ -150,7 +150,7 @@ export default function OrdersBreakdown({ query }: { query: string }) {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 gap-1.5 mt-2 text-[11px]">
+          <div className="grid grid-cols-2 gap-1.5 mt-2 text-[10px]">
             {channelPie.map((c, i) => (
               <div key={i} className="flex items-center gap-1.5 min-w-0">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
@@ -209,7 +209,7 @@ export default function OrdersBreakdown({ query }: { query: string }) {
                   <tr key={i} className="hover:bg-muted/30">
                     <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
                     <td className="px-3 py-2 font-medium text-foreground">{s.name}</td>
-                    <td className="px-3 py-2"><span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[11px]">{s.team}</span></td>
+                    <td className="px-3 py-2"><span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[10px]">{s.team}</span></td>
                     <td className="px-3 py-2 text-muted-foreground">{CHANNEL_LABEL[s.topChannel] ?? s.topChannel ?? "—"}</td>
                     <td className="px-3 py-2 text-right">{fmtNum(s.orders)}</td>
                     <td className="px-3 py-2 text-right text-muted-foreground">{pctOrders.toFixed(1)}%</td>

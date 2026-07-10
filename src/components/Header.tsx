@@ -52,7 +52,7 @@ export default function Header() {
           </div>
           <div className="hidden md:flex flex-col">
             <span className="text-sm font-medium text-foreground leading-tight">{displayName}</span>
-            {roleLabel && <span className="text-[15px] text-muted-foreground">{roleLabel}</span>}
+            {roleLabel && <span className="text-[13px] text-muted-foreground">{roleLabel}</span>}
           </div>
         </div>
       </div>
