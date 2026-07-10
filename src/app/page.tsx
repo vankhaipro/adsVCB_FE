@@ -385,6 +385,16 @@ function OverviewInner() {
     }));
   }, [insights, sapo]);
 
+  const filteredCampaigns = useMemo(() => {
+    if (!search.trim()) return campaignsInsights;
+    const term = search.toLowerCase();
+    return campaignsInsights.filter((c: any) => 
+      c.name.toLowerCase().includes(term) || 
+      (c.id && c.id.toLowerCase().includes(term)) ||
+      (c.externalId && c.externalId.toLowerCase().includes(term))
+    );
+  }, [campaignsInsights, search]);
+
   return (
     <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10 font-sans -m-4 sm:-m-5 p-4 sm:p-5 bg-background min-h-full">
       {/* Navigation Tabs — URL query param: ?tab=overview|channel|mode */}
@@ -453,7 +463,7 @@ function OverviewInner() {
           {/* TAB 1: OVERVIEW — dựng lại theo Figma */}
           {selectedTab === "overview" && (
             <OverviewBody 
-              campaigns={campaignsInsights}
+              campaigns={filteredCampaigns}
               sapoSkus={sapoSkus}
               trend={trendData}
               breakdown={breakdown}
