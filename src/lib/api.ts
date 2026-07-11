@@ -26,24 +26,75 @@ async function handle(res: Response) {
   return res.json();
 }
 
-export const apiGet = (path: string) => fetch(`${API_URL}${path}`).then(handle);
+// --- Cache GET phía client để giảm gọi lại BE (và egress Supabase) ---
+// Mỗi lần điều hướng/đổi lại trang trong cùng phiên, GET giống nhau trong TTL dùng lại
+// cache thay vì gọi mạng. Dedup thêm các request "đang bay" (StrictMode double-mount,
+// nhiều component gọi trùng). Mọi mutation (POST/PATCH/DELETE) xóa cache để không cũ.
+const GET_TTL = 60_000; // 60s — dữ liệu dashboard chỉ đổi khi sync (mỗi 3h)
+const getCache = new Map<string, { at: number; data: unknown }>();
+const inflight = new Map<string, Promise<unknown>>();
+// Endpoint biến động (poll tiến độ đồng bộ) — luôn lấy mới.
+const NO_CACHE = /\/sync(\/|$)/;
+
+function invalidateGetCache() {
+  getCache.clear();
+  inflight.clear();
+}
+
+export const apiGet = (path: string, opts?: { cache?: boolean }) => {
+  const useCache = opts?.cache !== false && !NO_CACHE.test(path);
+  if (useCache) {
+    const hit = getCache.get(path);
+    if (hit && Date.now() - hit.at < GET_TTL) return Promise.resolve(hit.data);
+    const flying = inflight.get(path);
+    if (flying) return flying;
+  }
+  const p = fetch(`${API_URL}${path}`)
+    .then(handle)
+    .then((data) => {
+      if (useCache) getCache.set(path, { at: Date.now(), data });
+      inflight.delete(path);
+      return data;
+    })
+    .catch((e) => {
+      inflight.delete(path);
+      throw e;
+    });
+  if (useCache) inflight.set(path, p);
+  return p;
+};
 
 export const apiPost = (path: string, body?: unknown) =>
   fetch(`${API_URL}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
-  }).then(handle);
+  })
+    .then(handle)
+    .then((r) => {
+      invalidateGetCache();
+      return r;
+    });
 
 export const apiPatch = (path: string, body?: unknown) =>
   fetch(`${API_URL}${path}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
-  }).then(handle);
+  })
+    .then(handle)
+    .then((r) => {
+      invalidateGetCache();
+      return r;
+    });
 
 export const apiDelete = (path: string) =>
-  fetch(`${API_URL}${path}`, { method: "DELETE" }).then(handle);
+  fetch(`${API_URL}${path}`, { method: "DELETE" })
+    .then(handle)
+    .then((r) => {
+      invalidateGetCache();
+      return r;
+    });
 
 // Map khoảng thời gian đã chọn (YYYY-MM-DD) -> query ?from=&to= cho API.
 export function datesToQuery(from: string, to: string): string {
