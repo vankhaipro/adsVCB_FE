@@ -8,6 +8,7 @@ import {
 import { SpinnerGap, WarningOctagon, WarningCircle, CheckCircle } from "@phosphor-icons/react";
 import { apiGet, fmtVnd } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
+import DateRangePicker, { presetToDates } from "@/components/DateRangePicker";
 
 type Report = {
   byPlatform: { platform: string; spend: number; accounts: number; campaigns: number }[];
@@ -61,37 +62,38 @@ export default function ReportsPage() {
   const chart = useChartColors();
   const [r, setR] = useState<Report | null>(null);
   const [m, setM] = useState<MetaReport | null>(null);
-  const [days, setDays] = useState(30);
+  const [dateRange, setDateRange] = useState("last30days");
+  const [dateFrom, setDateFrom] = useState(() => presetToDates("last30days").from);
+  const [dateTo, setDateTo] = useState(() => presetToDates("last30days").to);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     Promise.all([
       apiGet("/mkt-api/reports").then(setR).catch(() => {}),
-      apiGet(`/mkt-api/reports/meta?days=${days}`).then(setM).catch(() => setM(null)),
+      apiGet(`/mkt-api/reports/meta?from=${dateFrom}&to=${dateTo}`).then(setM).catch(() => setM(null)),
     ]).finally(() => setLoading(false));
-  }, [days]);
+  }, [dateFrom, dateTo]);
 
   const axisTick = { fill: chart.axis, fontSize: 10 };
 
   return (
     <div className="flex flex-col gap-6 pb-10">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex flex-col items-start gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Báo cáo</h1>
           <p className="text-sm text-muted-foreground mt-1">Phân tích chi tiêu &amp; hiệu quả quảng cáo Meta theo người chạy, mục tiêu, team &amp; tuyến nội dung.</p>
         </div>
-        <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
-          {[14, 30, 90].map((d) => (
-            <button
-              key={d}
-              onClick={() => setDays(d)}
-              className={`px-3 py-1.5 text-xs rounded-md transition-colors ${days === d ? "bg-blue-600 text-white" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              {d} ngày
-            </button>
-          ))}
-        </div>
+        <DateRangePicker
+          presetId={dateRange}
+          from={dateFrom}
+          to={dateTo}
+          onApply={({ presetId, from, to }) => {
+            setDateRange(presetId);
+            setDateFrom(from);
+            setDateTo(to);
+          }}
+        />
       </div>
 
       {loading ? (

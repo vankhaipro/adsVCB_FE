@@ -32,7 +32,8 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
   const [campaignId, setCampaignId] = useState("ALL");
 
   const [rawCampaigns, setRawCampaigns] = useState<any[]>([]);
-  const [sapoSkus, setSapoSkus] = useState<any[]>([]);
+  // Danh mục mã gốc SKU -> tên sản phẩm (tĩnh, lấy từ Sapo OrderLineItem).
+  const [skuCatalog, setSkuCatalog] = useState<{ sku: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,18 +41,18 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
     const q = datesToQuery(from, to);
     setLoading(true);
     const jobs: Promise<any>[] = [apiGet(`/mkt-api/campaigns/insights?${q}`)];
-    if (withSapo) jobs.push(apiGet(`/sapo/revenue/by-sku?${q}&limit=50`));
+    if (withSapo) jobs.push(apiGet(`/sapo/sku-catalog`));
 
     Promise.all(jobs)
-      .then(([camps, skus]) => {
+      .then(([camps, catalog]) => {
         if (cancelled) return;
         setRawCampaigns(Array.isArray(camps) ? camps : []);
-        if (withSapo) setSapoSkus(Array.isArray(skus) ? skus : []);
+        if (withSapo) setSkuCatalog(Array.isArray(catalog) ? catalog : []);
       })
       .catch(() => {
         if (cancelled) return;
         setRawCampaigns([]);
-        if (withSapo) setSapoSkus([]);
+        if (withSapo) setSkuCatalog([]);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -113,7 +114,7 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
 
   return {
     filteredCampaigns,
-    sapoSkus,
+    skuCatalog,
     accountOptions,
     campaignOptions,
     loading,

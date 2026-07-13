@@ -97,10 +97,12 @@ export const apiDelete = (path: string) =>
     });
 
 // Map khoảng thời gian đã chọn (YYYY-MM-DD) -> query ?from=&to= cho API.
+// Gửi thẳng ngày dạng YYYY-MM-DD, KHÔNG đổi qua UTC.
+// Trước đây dùng new Date(local).toISOString() → ở VN (UTC+7) ngày bắt đầu bị lùi 1 ngày
+// (vd 13/07 00:00 local = 12/07 17:00Z), khiến BE lọc dư ngày trước. BE (resolveRange của
+// ads dùng 10 ký tự đầu; của sapo dựng mốc giờ VN) đều nhận đúng YMD.
 export function datesToQuery(from: string, to: string): string {
-  const start = new Date(`${from}T00:00:00`);
-  const end = new Date(`${to}T23:59:59.999`);
-  return `from=${start.toISOString()}&to=${end.toISOString()}`;
+  return `from=${from}&to=${to}`;
 }
 
 // Format tiền VND

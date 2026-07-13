@@ -18,7 +18,7 @@ export default function SkuTable() {
 
   const {
     filteredCampaigns: campaigns,
-    sapoSkus,
+    skuCatalog,
     accountOptions,
     campaignOptions,
     filterState,
@@ -29,69 +29,36 @@ export default function SkuTable() {
     setPage(0);
   }, [q]);
 
-  // Simple initials mapping to products or fallback name
-  const getProductName = (sku: string) => {
-    if (sku.startsWith("B")) return "Nhẫn bạc chế tác";
-    if (sku.startsWith("N")) return "Nhẫn Moissanite";
-    if (sku.startsWith("L")) return "Lắc tay bạc";
-    return "Trang sức cao cấp";
-  };
-
   const mergedSkus = useMemo(() => {
-    // Helper to get SKU from campaign name
-    const getSkuFromCampaign = (name: string, id: string) => {
-      const hash = hashString(id);
-      const skuRegex = /\b([A-Z]{1,3}\d{3,7})\b/i;
-      const skuMatch = name.match(skuRegex);
-      let sku = skuMatch ? skuMatch[1].toUpperCase() : "";
-
-      if (!sku) {
-        const kRegex = /\b(K\d+)\b/i;
-        const kMatch = name.match(kRegex);
-        if (kMatch) {
-          const kCode = kMatch[1].toUpperCase();
-          if (kCode === "K2") sku = "B400815";
-          else if (kCode === "K1") sku = "NM101";
-          else if (kCode === "K0") sku = "L000963";
-          else sku = kCode;
-        }
-      }
-
-      const predefinedSkus = ["B400815", "NM101", "L0006", "L000963", "N101220", "N0006", "N001347", "N200099"];
-      if (!sku || sku === "Khác") {
-        sku = predefinedSkus[hash % predefinedSkus.length];
-      }
-      return sku;
+    // Mã gốc SKU nằm ở cuối tên campaign (vd "... - Mess - B0012"). Lấy match CUỐI của mẫu
+    // mã (không có → "(Không SKU)", KHÔNG gán bừa). Trùng key với catalog để tra tên thật.
+    const SKU_RE = /\b[A-Z]{1,3}\d{3,7}\b/g;
+    const getSkuFromCampaign = (name: string) => {
+      const matches = (name || "").toUpperCase().match(SKU_RE);
+      return matches && matches.length > 0 ? matches[matches.length - 1] : "(Không SKU)";
     };
 
-    function hashString(str: string): number {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = (hash << 5) - hash + char;
-        hash |= 0;
-      }
-      return Math.abs(hash);
+    // Tên sản phẩm thật theo mã gốc, từ Sapo OrderLineItem.
+    const nameBySku = new Map<string, string>();
+    for (const s of skuCatalog) {
+      if (s?.sku) nameBySku.set(s.sku.toUpperCase(), s.name);
     }
 
     const adsBySku: Record<string, { spend: number; clicks: number; impressions: number; conversions: number; channel: string; adsCount: number; likes: number; messages: number }> = {};
     for (const c of campaigns) {
-      const sku = getSkuFromCampaign(c.name, c.id);
+      const sku = getSkuFromCampaign(c.name);
       if (!adsBySku[sku]) {
         adsBySku[sku] = { spend: 0, clicks: 0, impressions: 0, conversions: 0, channel: c.pageName || c.channel || "Facebook", adsCount: 0, likes: 0, messages: 0 };
       }
-      
+
+      // Số quảng cáo thật khi có adSets/ads; nếu không, đếm mỗi campaign là 1 (không bịa theo spend).
       let adsCount = 0;
       if (c.adSets && Array.isArray(c.adSets) && c.adSets.length > 0) {
         c.adSets.forEach((as: any) => {
-          if (as.ads && Array.isArray(as.ads) && as.ads.length > 0) {
-            adsCount += as.ads.length;
-          } else {
-            adsCount += 1;
-          }
+          adsCount += (as.ads && Array.isArray(as.ads) && as.ads.length > 0) ? as.ads.length : 1;
         });
       } else {
-        adsCount = Math.max(1, Math.floor(c.spend / 2000000));
+        adsCount = 1;
       }
 
       adsBySku[sku].spend += c.spend || 0;
@@ -103,43 +70,27 @@ export default function SkuTable() {
       adsBySku[sku].adsCount += adsCount;
     }
 
-    // 2. Build map of Sapo SKUs
-    const sapoMap = new Map<string, any>();
-    for (const s of sapoSkus) {
-      sapoMap.set(s.sku.toUpperCase(), s);
-    }
-
-    // Combine both: get all unique SKUs in both Sapo and Ads
-    const allSkus = new Set([...sapoMap.keys(), ...Object.keys(adsBySku)]);
-
-    const result = Array.from(allSkus).map((sku) => {
-      const sapoItem = sapoMap.get(sku) || { revenue: 0, quantity: 0, lines: 0 };
-      const adsItem = adsBySku[sku] || { spend: 0, clicks: 0, impressions: 0, conversions: 0, channel: "Facebook", adsCount: 0, likes: 0, messages: 0 };
-
+    const result = Object.entries(adsBySku).map(([sku, adsItem]) => {
       const spend = adsItem.spend;
-      const adsCount = adsItem.adsCount;
       const likes = adsItem.likes;
       const messages = adsItem.messages;
 
-      const costPerLike = likes > 0 ? spend / likes : 0;
-      const costPerMess = messages > 0 ? spend / messages : 0;
-
       return {
         sku,
-        name: getProductName(sku),
-        adsCount,
+        name: nameBySku.get(sku) ?? sku,
+        adsCount: adsItem.adsCount,
         spend,
         likes,
-        costPerLike,
+        costPerLike: likes > 0 ? spend / likes : 0,
         messages,
-        costPerMess
+        costPerMess: messages > 0 ? spend / messages : 0,
       };
     });
 
     // Sort by spend descending
     result.sort((a, b) => b.spend - a.spend);
     return result;
-  }, [campaigns, sapoSkus]);
+  }, [campaigns, skuCatalog]);
 
   const filteredRows = mergedSkus.filter(
     (s) => !q || s.sku.toLowerCase().includes(q.toLowerCase()) || s.name.toLowerCase().includes(q.toLowerCase())
