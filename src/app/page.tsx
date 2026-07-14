@@ -249,6 +249,9 @@ function OverviewInner() {
   // không gắn được vào campaign/nền tảng/tài khoản) → chỉ phụ thuộc dateRange.
   const loadSapo = useCallback(async () => {
     const q = datesToQuery(customFrom, customTo);
+    // Xóa số cũ trước khi tải khoảng ngày mới để thẻ không "đọng" giá trị của
+    // range trước trong lúc fetch (tránh hiểu nhầm kiểu ngày chưa tới vẫn có data).
+    setSapo(null);
     try {
       const rev = await apiGet(`/sapo/revenue?${q}`);
       setSapo(rev);
@@ -267,6 +270,11 @@ function OverviewInner() {
     if (staff !== "ALL") params.set("staff", staff);
     if (pageName !== "ALL") params.set("pageName", pageName);
     const q = params.toString();
+    // Xóa số cũ trước khi tải để thẻ hiện "—" trong lúc fetch thay vì giữ lại
+    // chỉ số của khoảng ngày trước (nguyên nhân trước đây "ngày 15 vẫn có data").
+    setInsights(null);
+    setBreakdown(null);
+    setTrendData([]);
     try {
       const [ins, brk, trend] = await Promise.all([
         apiGet(`/mkt-api/insights?${q}`),
