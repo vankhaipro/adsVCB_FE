@@ -123,6 +123,7 @@ const actLabel = (a: any) => {
   if (!a) return "Chỉ cảnh báo";
   if (a.type === "pause") return "Tắt";
   if (a.type === "enable") return "Bật";
+  if (a.type === "create") return "Tạo";
   return "Chỉ cảnh báo";
 };
 
@@ -436,7 +437,8 @@ export default function AutoRulesPage() {
             }))
           },
           action: {
-            type: "enable",
+            type: adConfigTab === "new_campaign" ? "create" : "enable",
+            mode: adConfigTab, // "new_campaign" (tạo mới) | "existing_campaign" (bật có sẵn)
             execute: true,
             optimizationGoal: cAdForm.optimizationGoal,
             budgetType: cAdForm.budgetType,
