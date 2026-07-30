@@ -40,19 +40,14 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
     let cancelled = false;
     const q = datesToQuery(from, to);
     setLoading(true);
-    const jobs: Promise<any>[] = [apiGet(`/mkt-api/campaigns/insights?${q}`)];
-    if (withSapo) jobs.push(apiGet(`/sapo/sku-catalog`));
+    const fetchCamps = apiGet(`/mkt-api/campaigns/insights?${q}`).catch(() => []);
+    const fetchCatalog = withSapo ? apiGet(`/sapo/sku-catalog`).catch(() => []) : Promise.resolve([]);
 
-    Promise.all(jobs)
+    Promise.all([fetchCamps, fetchCatalog])
       .then(([camps, catalog]) => {
         if (cancelled) return;
         setRawCampaigns(Array.isArray(camps) ? camps : []);
-        if (withSapo) setSkuCatalog(Array.isArray(catalog) ? catalog : []);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setRawCampaigns([]);
-        if (withSapo) setSkuCatalog([]);
+        setSkuCatalog(Array.isArray(catalog) ? catalog : []);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

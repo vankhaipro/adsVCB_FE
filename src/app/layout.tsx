@@ -29,7 +29,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeNoFlashScript }} />
       </head>
-      <body className="h-full bg-background text-foreground font-sans">
+      <body className="h-full bg-background text-foreground font-sans" suppressHydrationWarning>
         <ThemeProvider>
           <MainLayout>{children}</MainLayout>
         </ThemeProvider>
