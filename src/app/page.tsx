@@ -345,7 +345,7 @@ function OverviewInner() {
       clicks: CursorClick,
       orders: ShoppingCart,
       ctr: Lightning,
-      roas: ChartBar,
+      cpm: ChartBar,
     };
 
     const hasData = !!insights?.hasData;
@@ -356,7 +356,7 @@ function OverviewInner() {
     const clicks = insights?.clicks ?? 0;
     const orders = sapo?.orderCount ?? 0;
     const ctr = insights?.ctr ?? 0;
-    const roas = spend > 0 ? revenue / spend : 0;
+    const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0;
 
     const data = [
       { key: "spend", label: "Chi phí quảng cáo", value: `${fmtNum(spend)}đ`, sub: `Tổng ngân sách chi tiêu`, change: undefined, color: "text-blue-400", bg: "bg-blue-500/10" },
@@ -364,7 +364,7 @@ function OverviewInner() {
       { key: "reach", label: "Số người tiếp cận", value: fmtNum(reach), sub: `Số người xem quảng cáo`, change: undefined, color: "text-indigo-400", bg: "bg-indigo-500/10" },
       { key: "clicks", label: "Lượt nhấp liên kết", value: fmtNum(clicks), sub: `Tổng click vào QC`, change: undefined, color: "text-orange-400", bg: "bg-orange-500/10" },
       { key: "ctr", label: "Tỷ lệ nhấp (CTR)", value: `${ctr.toFixed(2)}%`, sub: `Tỷ lệ CTR trung bình`, change: undefined, color: "text-yellow-400", bg: "bg-yellow-500/10" },
-      { key: "roas", label: "Chỉ số ROAS", value: `${roas.toFixed(2)}x`, sub: `Doanh thu / Chi phí`, change: undefined, color: "text-pink-400", bg: "bg-pink-500/10" }
+      { key: "cpm", label: "Chi phí / 1000 lần hiển thị (CPM)", value: `${fmtNum(Math.round(cpm))}đ`, sub: `Chi phí trên 1000 lượt hiển thị`, change: undefined, color: "text-pink-400", bg: "bg-pink-500/10" }
     ];
 
     return data.map((k) => ({

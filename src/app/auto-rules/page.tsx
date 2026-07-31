@@ -123,7 +123,17 @@ const actLabel = (a: any) => {
   if (!a) return "Chỉ cảnh báo";
   if (a.type === "pause") return "Tắt";
   if (a.type === "enable") return "Bật";
+  if (a.type === "create") return "Tạo";
   return "Chỉ cảnh báo";
+};
+
+const checkIsOrganic = (r: Rule) => {
+  if (!r) return false;
+  if (r.condition?.type === "organic_video") return true;
+  if (r.action?.type === "create" || r.action?.type === "enable") return true;
+  if ((r.action as any)?.mode === "new_campaign" || (r.action as any)?.mode === "existing_campaign") return true;
+  if (Array.isArray(r.condition?.conditionsList) && r.condition.conditionsList.some((c: any) => ["views", "likes", "page_name", "tags", "team", "days_since_created", "impressions", "engagement"].includes(c?.type))) return true;
+  return false;
 };
 
 export default function AutoRulesPage() {
@@ -147,6 +157,7 @@ export default function AutoRulesPage() {
   const [showCreateAdModal, setShowCreateAdModal] = useState(false); // Tạo quảng cáo mới
   const [showManageAdModal, setShowManageAdModal] = useState(false); // Quản lý quảng cáo
   const [showSettingsModal, setShowSettingsModal] = useState(false); // Cài đặt
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null); // Id quy tắc đang chỉnh sửa
 
   // Settings values
   const [settings, setSettings] = useState({
@@ -231,7 +242,7 @@ export default function AutoRulesPage() {
         setAdAccounts(data);
         if (data.length > 0) {
           const matching = data.find((acc: any) => acc.platform === cAdForm.platform);
-          setCAdForm((prev) => ({ ...prev, adAccountId: matching ? matching.id : data[0].id }));
+          setCAdForm((prev) => ({ ...prev, adAccountId: prev.adAccountId || (matching ? matching.id : data[0].id) }));
         }
       })
       .catch(() => {});
@@ -368,7 +379,107 @@ export default function AutoRulesPage() {
     setWebhookList(webhookList.filter(url => url !== urlToRemove));
   };
 
-  // Create rule handler
+  // Edit rule handler - Pre-fill form from existing rule
+  const handleEditRule = (r: Rule) => {
+    setEditingRuleId(r.id);
+    setActiveRowMenu(null);
+
+    const isOrganic = checkIsOrganic(r);
+    if (isOrganic) {
+      const mode = (r.action as any)?.mode || ((r.action as any)?.targetCampaignId ? "existing_campaign" : "new_campaign");
+      setAdConfigTab(mode as any);
+
+      setCAdForm({
+        name: r.name || "",
+        platform: r.platform || "META",
+        adAccountId: r.condition?.adAccountId || "",
+        startDate: r.condition?.startDate || "",
+        endDate: r.condition?.endDate || "",
+        optimizationGoal: (r.action as any)?.optimizationGoal || "Tối đa hoá Lượt thích trang",
+        budgetType: (r.action as any)?.budgetType || "daily",
+        budgetValue: (r.action as any)?.budgetValue ? String((r.action as any).budgetValue) : "",
+        savedAudience: (r.action as any)?.savedAudience || "",
+        adNameTemplate: (r.action as any)?.adNameTemplate || "SB - {{createdAt}} - {{team}} - {{page}} - {{hashtag}} - Follow - {{caption}}",
+        statusPaused: (r.action as any)?.statusPaused ?? false,
+        oncePerContent: r.condition?.oncePerContent ?? true,
+        notifyTo: (r.action as any)?.notifyTo || "Lark",
+        runSchedule: r.schedule === "0 0 * * *" ? "daily" : r.schedule === "*/30 * * * *" ? "continuous" : "custom",
+        targetCampaignId: (r.action as any)?.targetCampaignId || "",
+      });
+
+      const conds = r.condition?.conditionsList || [];
+      if (conds.length > 0) {
+        setConditionsList(conds.map((c: any, idx: number) => {
+          let val = c.value ?? "";
+          if ((c.type === "tags" || c.type === "team") && typeof val === "string") {
+            val = val.split(",").map((t: string) => t.trim()).filter(Boolean);
+          }
+          return {
+            id: String(idx + 1),
+            type: c.type || "views",
+            operator: c.operator || "gt",
+            value: val,
+            days: c.days ?? "7"
+          };
+        }));
+      } else {
+        setConditionsList([
+          {
+            id: "1",
+            type: r.condition?.metric || "views",
+            operator: r.condition?.operator || "gt",
+            value: r.condition?.value ?? "",
+            days: r.condition?.days ?? "7"
+          }
+        ]);
+      }
+
+      setWebhookList(Array.isArray((r.action as any)?.notifyHooks) ? (r.action as any).notifyHooks : []);
+      setShowCreateAdModal(true);
+    } else {
+      setMAdName(r.name || "");
+      setMAdPlatform(r.platform || "META");
+      setMAdAppliedTo(r.condition?.appliedTo || "Chiến dịch");
+
+      const conds = r.condition?.conditionsList || [];
+      if (conds.length > 0) {
+        setMAdConditions(conds.map((c: any, idx: number) => ({
+          id: String(idx + 1),
+          type: c.type || "spend",
+          operator: c.operator || "gt",
+          value: c.value ?? ""
+        })));
+      } else {
+        setMAdConditions([
+          {
+            id: "1",
+            type: r.condition?.metric || "spend",
+            operator: r.condition?.operator || "gt",
+            value: r.condition?.value ?? ""
+          }
+        ]);
+      }
+
+      const acts = (r.action as any)?.actionsList || [];
+      if (acts.length > 0) {
+        setMAdActions(acts.map((a: any, idx: number) => ({
+          id: String(idx + 1),
+          type: a.type || "lark",
+          label: a.label || "Gửi thông báo tới",
+          value: a.value ?? ""
+        })));
+      } else {
+        setMAdActions([
+          { id: "1", type: "lark", label: "Gửi thông báo tới", value: "" }
+        ]);
+      }
+
+      setMAdSchedule(r.schedule === "0 0 * * *" ? "daily" : "continuous");
+      setShowManageAdModal(true);
+    }
+  };
+
+  // Create / Update rule handler
   const handleCreateRule = async (type: "create_ad" | "manage_ad", setActive: boolean) => {
     const user = getAuthUser();
     const creatorName = user?.name || "Hệ thống";
@@ -413,16 +524,18 @@ export default function AutoRulesPage() {
           scheduleCron = "0 0 * * *"; // Daily 00:00
         }
 
-        const primaryCond = conditionsList.find(c => c.type === "views") || conditionsList[0];
+        const primaryCond = conditionsList.find(c => ["views", "likes", "impressions", "engagement", "comments"].includes(c.type)) || conditionsList[0] || {};
+        const isNumeric = ["views", "likes", "impressions", "engagement", "comments", "shares", "spend"].includes(primaryCond.type);
+        const condVal = isNumeric && primaryCond.value ? Number(primaryCond.value) : 0;
 
-        await apiPost("/rules", {
+        const payload = {
           name: generatedName,
           platform: cAdForm.platform,
           condition: {
             type: "organic_video",
-            metric: primaryCond.type === "views" ? "views" : "likes",
-            operator: primaryCond.operator,
-            value: Number(primaryCond.value),
+            metric: primaryCond.type || "views",
+            operator: primaryCond.operator || "gt",
+            value: isNaN(condVal) ? 0 : condVal,
             days: Number(primaryCond.days || 5),
             adAccountId: cAdForm.adAccountId,
             startDate: cAdForm.startDate || null,
@@ -436,7 +549,8 @@ export default function AutoRulesPage() {
             }))
           },
           action: {
-            type: "enable",
+            type: adConfigTab === "new_campaign" ? "create" : "enable",
+            mode: adConfigTab, // "new_campaign" (tạo mới) | "existing_campaign" (bật có sẵn)
             execute: true,
             optimizationGoal: cAdForm.optimizationGoal,
             budgetType: cAdForm.budgetType,
@@ -451,7 +565,13 @@ export default function AutoRulesPage() {
           schedule: scheduleCron,
           isActive: setActive,
           creator: creatorName,
-        });
+        };
+
+        if (editingRuleId) {
+          await apiPatch(`/rules/${editingRuleId}`, payload);
+        } else {
+          await apiPost("/rules", payload);
+        }
         setShowCreateAdModal(false);
       } else {
         const generatedName = mAdName || `Tắt chiến dịch tự động trên ${mAdPlatform}`;
@@ -461,7 +581,7 @@ export default function AutoRulesPage() {
 
         const primaryCond = mAdConditions[0] || { type: "spend", operator: "gt", value: "500000" };
 
-        await apiPost("/rules", {
+        const payload = {
           name: generatedName,
           platform: mAdPlatform,
           condition: {
@@ -487,12 +607,19 @@ export default function AutoRulesPage() {
           schedule: scheduleCron,
           isActive: setActive,
           creator: creatorName,
-        });
+        };
+
+        if (editingRuleId) {
+          await apiPatch(`/rules/${editingRuleId}`, payload);
+        } else {
+          await apiPost("/rules", payload);
+        }
         setShowManageAdModal(false);
       }
+      setEditingRuleId(null);
       load();
     } catch (e) {
-      alert("Lỗi tạo quy tắc: " + (e instanceof Error ? e.message : ""));
+      alert("Lỗi lưu quy tắc: " + (e instanceof Error ? e.message : ""));
     } finally {
       setSaving(false);
     }
@@ -665,6 +792,7 @@ export default function AutoRulesPage() {
               <div className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-lg shadow-xl z-50 py-1 overflow-hidden">
                  <button
                   onClick={() => {
+                    setEditingRuleId(null);
                     setCAdForm({
                       name: "",
                       platform: "TIKTOK",
@@ -697,6 +825,7 @@ export default function AutoRulesPage() {
                 </button>
                 <button
                   onClick={() => {
+                    setEditingRuleId(null);
                     setMAdName("");
                     setMAdPlatform("META");
                     setMAdAppliedTo("Chiến dịch");
@@ -750,7 +879,7 @@ export default function AutoRulesPage() {
               </thead>
               <tbody className="divide-y divide-border text-[11px]">
                 {filteredRules.map((r) => {
-                  const isOrganic = r.condition?.type === "organic_video";
+                  const isOrganic = checkIsOrganic(r);
                   return (
                     <tr key={r.id} className="hover:bg-muted/30 transition-colors">
                       {/* Active Status Switch */}
@@ -825,7 +954,8 @@ export default function AutoRulesPage() {
                       <td className="px-4 py-4 text-right relative">
                         <div className="flex items-center justify-end gap-2.5">
                           <button
-                            title="Chỉnh sửa nhanh"
+                            onClick={() => handleEditRule(r)}
+                            title="Chỉnh sửa quy tắc"
                             className="text-muted-foreground hover:text-foreground p-1 transition-colors"
                           >
                             <PencilSimple size={16} />
@@ -844,9 +974,15 @@ export default function AutoRulesPage() {
                               className="absolute right-4 top-12 bg-card border border-border rounded-lg shadow-xl z-50 py-1 w-28 overflow-hidden text-left"
                             >
                               <button
+                                onClick={() => handleEditRule(r)}
+                                className="w-full text-left px-3.5 py-1.5 hover:bg-muted text-[10px] text-foreground flex items-center gap-1.5"
+                              >
+                                <PencilSimple size={12} /> Chỉnh sửa
+                              </button>
+                              <button
                                 onClick={() => runNow(r)}
                                 disabled={busy === r.id}
-                                className="w-full text-left px-3.5 py-1.5 hover:bg-muted text-[10px] text-foreground flex items-center gap-1.5"
+                                className="w-full text-left px-3.5 py-1.5 hover:bg-muted text-[10px] text-foreground flex items-center gap-1.5 border-t border-border"
                               >
                                 <Play size={12} /> Chạy thử
                               </button>
@@ -951,7 +1087,9 @@ export default function AutoRulesPage() {
           <div className="bg-[#f1f2f5] border border-border w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col my-5">
             {/* Header */}
             <div className="flex justify-between items-center px-6 py-4.5 bg-white border-b border-border">
-              <h3 className="text-[#1a202c] font-bold text-[16px]">Tạo quy tắc tự động mới</h3>
+              <h3 className="text-[#1a202c] font-bold text-[16px]">
+                {editingRuleId ? "Chỉnh sửa quy tắc tự động" : "Tạo quy tắc tự động mới"}
+              </h3>
               <button
                 onClick={() => setShowCreateAdModal(false)}
                 className="text-muted-foreground hover:text-foreground transition-colors p-1"
