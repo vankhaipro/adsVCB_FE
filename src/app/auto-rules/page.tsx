@@ -127,6 +127,15 @@ const actLabel = (a: any) => {
   return "Chỉ cảnh báo";
 };
 
+const checkIsOrganic = (r: Rule) => {
+  if (!r) return false;
+  if (r.condition?.type === "organic_video") return true;
+  if (r.action?.type === "create" || r.action?.type === "enable") return true;
+  if ((r.action as any)?.mode === "new_campaign" || (r.action as any)?.mode === "existing_campaign") return true;
+  if (Array.isArray(r.condition?.conditionsList) && r.condition.conditionsList.some((c: any) => ["views", "likes", "page_name", "tags", "team", "days_since_created", "impressions", "engagement"].includes(c?.type))) return true;
+  return false;
+};
+
 export default function AutoRulesPage() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [adAccounts, setAdAccounts] = useState<any[]>([]);
@@ -233,7 +242,7 @@ export default function AutoRulesPage() {
         setAdAccounts(data);
         if (data.length > 0) {
           const matching = data.find((acc: any) => acc.platform === cAdForm.platform);
-          setCAdForm((prev) => ({ ...prev, adAccountId: matching ? matching.id : data[0].id }));
+          setCAdForm((prev) => ({ ...prev, adAccountId: prev.adAccountId || (matching ? matching.id : data[0].id) }));
         }
       })
       .catch(() => {});
@@ -375,14 +384,14 @@ export default function AutoRulesPage() {
     setEditingRuleId(r.id);
     setActiveRowMenu(null);
 
-    const isOrganic = r.condition?.type === "organic_video";
+    const isOrganic = checkIsOrganic(r);
     if (isOrganic) {
       const mode = (r.action as any)?.mode || ((r.action as any)?.targetCampaignId ? "existing_campaign" : "new_campaign");
       setAdConfigTab(mode as any);
 
       setCAdForm({
         name: r.name || "",
-        platform: r.platform || "TIKTOK",
+        platform: r.platform || "META",
         adAccountId: r.condition?.adAccountId || "",
         startDate: r.condition?.startDate || "",
         endDate: r.condition?.endDate || "",
@@ -394,19 +403,25 @@ export default function AutoRulesPage() {
         statusPaused: (r.action as any)?.statusPaused ?? false,
         oncePerContent: r.condition?.oncePerContent ?? true,
         notifyTo: (r.action as any)?.notifyTo || "Lark",
-        runSchedule: r.schedule === "0 0 * * *" ? "daily" : "continuous",
+        runSchedule: r.schedule === "0 0 * * *" ? "daily" : r.schedule === "*/30 * * * *" ? "continuous" : "custom",
         targetCampaignId: (r.action as any)?.targetCampaignId || "",
       });
 
       const conds = r.condition?.conditionsList || [];
       if (conds.length > 0) {
-        setConditionsList(conds.map((c: any, idx: number) => ({
-          id: String(idx + 1),
-          type: c.type || "views",
-          operator: c.operator || "gt",
-          value: c.value ?? "",
-          days: c.days ?? ""
-        })));
+        setConditionsList(conds.map((c: any, idx: number) => {
+          let val = c.value ?? "";
+          if ((c.type === "tags" || c.type === "team") && typeof val === "string") {
+            val = val.split(",").map((t: string) => t.trim()).filter(Boolean);
+          }
+          return {
+            id: String(idx + 1),
+            type: c.type || "views",
+            operator: c.operator || "gt",
+            value: val,
+            days: c.days ?? "7"
+          };
+        }));
       } else {
         setConditionsList([
           {
@@ -414,7 +429,7 @@ export default function AutoRulesPage() {
             type: r.condition?.metric || "views",
             operator: r.condition?.operator || "gt",
             value: r.condition?.value ?? "",
-            days: r.condition?.days ?? ""
+            days: r.condition?.days ?? "7"
           }
         ]);
       }
@@ -509,16 +524,18 @@ export default function AutoRulesPage() {
           scheduleCron = "0 0 * * *"; // Daily 00:00
         }
 
-        const primaryCond = conditionsList.find(c => c.type === "views") || conditionsList[0];
+        const primaryCond = conditionsList.find(c => ["views", "likes", "impressions", "engagement", "comments"].includes(c.type)) || conditionsList[0] || {};
+        const isNumeric = ["views", "likes", "impressions", "engagement", "comments", "shares", "spend"].includes(primaryCond.type);
+        const condVal = isNumeric && primaryCond.value ? Number(primaryCond.value) : 0;
 
         const payload = {
           name: generatedName,
           platform: cAdForm.platform,
           condition: {
             type: "organic_video",
-            metric: primaryCond.type === "views" ? "views" : "likes",
-            operator: primaryCond.operator,
-            value: Number(primaryCond.value),
+            metric: primaryCond.type || "views",
+            operator: primaryCond.operator || "gt",
+            value: isNaN(condVal) ? 0 : condVal,
             days: Number(primaryCond.days || 5),
             adAccountId: cAdForm.adAccountId,
             startDate: cAdForm.startDate || null,
@@ -862,7 +879,7 @@ export default function AutoRulesPage() {
               </thead>
               <tbody className="divide-y divide-border text-[11px]">
                 {filteredRules.map((r) => {
-                  const isOrganic = r.condition?.type === "organic_video";
+                  const isOrganic = checkIsOrganic(r);
                   return (
                     <tr key={r.id} className="hover:bg-muted/30 transition-colors">
                       {/* Active Status Switch */}
