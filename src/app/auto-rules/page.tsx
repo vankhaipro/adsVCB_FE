@@ -28,6 +28,7 @@ import {
   Database
 } from "@phosphor-icons/react";
 import { apiGet, apiPost, apiPatch, apiDelete, getAuthUser } from "@/lib/api";
+import Pagination from "@/components/Pagination";
 
 // Các chỉ số backend thực sự đọc được từ OrganicVideo và có ô "N ngày qua".
 // Phải khớp RulesService.WINDOWED_METRICS ở backend.
@@ -156,6 +157,10 @@ export default function AutoRulesPage() {
   // Dropdown states
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
   const [activeRowMenu, setActiveRowMenu] = useState<string | null>(null);
+
+  // Phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
   // Toạ độ menu 3 chấm. Menu phải render position:fixed vì bảng nằm trong hai lớp
   // overflow (card overflow-hidden + wrapper overflow-x-auto) sẽ cắt mất dropdown absolute.
   const [rowMenuPos, setRowMenuPos] = useState<{ top: number; right: number } | null>(null);
@@ -218,6 +223,13 @@ export default function AutoRulesPage() {
 
   const rowMenuRef = useRef<HTMLDivElement>(null);
   const templateInputRef = useRef<HTMLInputElement>(null);
+
+  // Đổi từ khoá tìm kiếm hoặc nền tảng → số quy tắc đổi, quay về trang 1 để không
+  // rơi vào trang không còn tồn tại.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCurrentPage(1);
+  }, [searchQuery, selectedPlatformFilter]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -707,6 +719,12 @@ export default function AutoRulesPage() {
     return nameMatch && platformMatch;
   });
 
+  // Cắt trang sau khi lọc. Xoá quy tắc cuối cùng của trang cuối có thể làm currentPage
+  // vượt quá số trang còn lại → kẹp lại để không hiện bảng rỗng.
+  const totalPages = Math.max(1, Math.ceil(filteredRules.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pagedRules = filteredRules.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   return (
     <div className="flex flex-col gap-6 pb-10">
       {/* Title Header */}
@@ -901,7 +919,7 @@ export default function AutoRulesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-[11px]">
-                {filteredRules.map((r) => {
+                {pagedRules.map((r) => {
                   const isOrganic = checkIsOrganic(r);
                   return (
                     <tr key={r.id} className="hover:bg-muted/30 transition-colors">
@@ -1034,6 +1052,15 @@ export default function AutoRulesPage() {
                 })}
               </tbody>
             </table>
+          </div>
+
+          <div className="px-4 pb-3">
+            <Pagination
+              page={safePage}
+              pageSize={PAGE_SIZE}
+              total={filteredRules.length}
+              onChange={setCurrentPage}
+            />
           </div>
         </div>
       )}
