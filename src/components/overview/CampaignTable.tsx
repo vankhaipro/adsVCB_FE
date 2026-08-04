@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
 import { Panel, Th, StatusPill, ChannelChip } from "./parts";
 import {
   fmtNum, fmtCompact, fmtVndShort, fmtPct, fmtRoas,
@@ -20,7 +20,7 @@ function roasColor(v: number) {
 
 export default function CampaignTable() {
   const [page, setPage] = useState(0);
-  const { filteredCampaigns, accountOptions, campaignOptions, filterState } = useTableInsights();
+  const { filteredCampaigns, accountOptions, campaignOptions, pageOptions, filterState } = useTableInsights();
 
   // Reset về trang đầu khi bộ lọc thay đổi danh sách.
   useEffect(() => {
@@ -70,9 +70,20 @@ export default function CampaignTable() {
     <Panel
       title="Bảng chi tiết chiến dịch"
       right={
-        <span className="text-xs text-muted-foreground">
-          Sắp xếp theo: <span className="text-foreground font-medium">Chi tiêu ↓</span> · Trang {page + 1}/{pages}
-        </span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-2.5 py-1.5">
+            <MagnifyingGlass size={14} className="text-muted-foreground" />
+            <input
+              value={filterState.keyword}
+              onChange={(e) => filterState.onKeywordChange(e.target.value)}
+              placeholder="Tìm chiến dịch..."
+              className="bg-transparent text-xs text-foreground outline-none w-36 placeholder:text-muted-foreground"
+            />
+          </div>
+          <span className="text-xs text-muted-foreground">
+            Sắp xếp theo: <span className="text-foreground font-medium">Chi tiêu ↓</span> · Trang {page + 1}/{pages}
+          </span>
+        </div>
       }
       bodyClassName="px-0 pb-0"
     >
@@ -81,6 +92,7 @@ export default function CampaignTable() {
           {...filterState}
           accountOptions={accountOptions}
           campaignOptions={campaignOptions}
+          pageOptions={pageOptions}
         />
 
         <span className="text-[14px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded shrink-0">

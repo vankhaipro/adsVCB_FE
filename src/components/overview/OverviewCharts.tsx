@@ -75,11 +75,18 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
     }));
   }, [breakdown]);
 
+  // Nhãn hiển thị trên trục X. Tên gốc từ backend dài nên Recharts bỏ bớt tick khi
+  // không đủ chỗ (đó là lý do "Team Đồ Da" không hiện chữ nào).
+  const TEAM_LABEL: Record<string, string> = {
+    "Khác": "Tự động",
+    "Team Đồ Da": "Đồ da",
+  };
+
   const teamSpendData = useMemo(() => {
     if (!breakdown?.byTeam?.length) return [];
     return breakdown.byTeam
       .map((t: any) => ({
-        name: t.name,
+        name: TEAM_LABEL[t.name] ?? t.name,
         spend: t.spend
       }))
       .sort((a: any, b: any) => b.spend - a.spend);
