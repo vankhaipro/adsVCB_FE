@@ -210,7 +210,7 @@ function OverviewInner() {
   const [teamOptions, setTeamOptions] = useState<{ id: string; label: string }[]>([]);
   // Toàn bộ kênh organic (từ /channels) và tập con thật sự có campaign khớp — chỉ tập con
   // được đổ vào dropdown "Kênh".
-  const [allOrganicChannels, setAllOrganicChannels] = useState<{ id: string; label: string; platform: string; team: string; hasPageId: boolean; linked: number }[]>([]);
+  const [allOrganicChannels, setAllOrganicChannels] = useState<{ id: string; label: string; platform: string; team: string; hasPageId: boolean; linked: number; pageId: string }[]>([]);
   const [organicChannels, setOrganicChannels] = useState<{ id: string; label: string; platform: string }[]>([]);
 
   const currentStaffs = useMemo(() => {
@@ -241,12 +241,16 @@ function OverviewInner() {
       // Gộp các bản ghi cùng trỏ về một page (vd "Nhạn Nhạn - Vân Phong Các" [YOUTUBE] và
       // "Nhạn Nhạn- Vân Phong Các" [FACEBOOK]): ưu tiên giữ bản có pageId, vì chỉ bản đó
       // mới nối được chính xác theo ID; các bản còn lại lùi về so tên.
-      const byKey = new Map<string, { id: string; label: string; platform: string; team: string; hasPageId: boolean; linked: number }>();
+      const byKey = new Map<string, { id: string; label: string; platform: string; team: string; hasPageId: boolean; linked: number; pageId: string }>();
       for (const ch of chs as any[]) {
         const name = ch?.channelName;
         if (!name || !ch?.id) continue;
-        const k = pageNameKey(name);
-        if (!k) continue;
+        // Khoá gộp: ưu tiên pageId — hai page KHÁC NHAU là hai kênh khác nhau kể cả trùng
+        // tên (vd "HuyK.เครื่องประดับทองและเงิน" và "HuyK - เครื่องประดับทองและเงิน" chuẩn
+        // hoá ra cùng khoá, gộp lại sẽ nuốt mất một page kèm hơn 13 triệu chi tiêu).
+        // Kênh chưa có pageId thì vẫn gộp theo tên như cũ (bản Instagram/YouTube trùng tên).
+        const k = ch.pageId ? `id:${ch.pageId}` : `name:${pageNameKey(name)}`;
+        if (k === "name:") continue;
         const cur = byKey.get(k);
         const hasPageId = Boolean(ch.pageId);
         const linked = Number(ch.adCampaignCount || 0);
@@ -260,10 +264,19 @@ function OverviewInner() {
         // Ưu tiên bản có ads thật, rồi mới tới bản có pageId — tránh chọn nhầm bản trống.
         const rank = (l: number, h: boolean) => (l > 0 ? 2 : h ? 1 : 0);
         if (!cur || rank(linked, hasPageId) > rank(cur.linked, cur.hasPageId)) {
-          byKey.set(k, { id: ch.id, label, platform: ch.platform || "", team: ch.team || "", hasPageId, linked });
+          byKey.set(k, { id: ch.id, label, platform: ch.platform || "", team: ch.team || "", hasPageId, linked, pageId: String(ch.pageId || "") });
         }
       }
-      setAllOrganicChannels([...byKey.values()]);
+
+      // Sau khi gộp theo pageId vẫn có thể còn hai dòng cùng nhãn (hai page trùng tên) —
+      // thêm 6 số cuối của pageId để người dùng phân biệt được chúng trên dropdown.
+      const list = [...byKey.values()];
+      const labelCount = new Map<string, number>();
+      for (const c of list) labelCount.set(c.label, (labelCount.get(c.label) || 0) + 1);
+      for (const c of list) {
+        if ((labelCount.get(c.label) || 0) > 1 && c.pageId) c.label = `${c.label} · ${c.pageId.slice(-6)}`;
+      }
+      setAllOrganicChannels(list);
     } catch {
       // Ignore errors
     } finally {
