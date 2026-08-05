@@ -10,9 +10,13 @@ export interface TableFilterState {
   to: string;
   accountId: string;
   campaignId: string;
+  pageName: string;
+  keyword: string;
   onDateApply: (v: { presetId: string; from: string; to: string }) => void;
   onAccountChange: (id: string) => void;
   onCampaignChange: (id: string) => void;
+  onPageNameChange: (v: string) => void;
+  onKeywordChange: (v: string) => void;
 }
 
 interface UseTableInsightsOptions {
@@ -30,6 +34,9 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
   const [to, setTo] = useState(initial.to);
   const [accountId, setAccountId] = useState("ALL");
   const [campaignId, setCampaignId] = useState("ALL");
+  // Kênh = Fanpage/kênh mà quảng cáo chạy trên đó (cột "Kênh" của bảng chiến dịch).
+  const [pageName, setPageName] = useState("ALL");
+  const [keyword, setKeyword] = useState("");
 
   const [rawCampaigns, setRawCampaigns] = useState<any[]>([]);
   // Danh mục mã gốc SKU -> tên sản phẩm (tĩnh, lấy từ Sapo OrderLineItem).
@@ -78,14 +85,33 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [rawCampaigns]);
 
-  // Lọc phía client theo tài khoản (theo name) + chiến dịch (theo id).
+  // Danh sách kênh/Fanpage cho dropdown — cùng giá trị đang hiển thị ở cột "Kênh".
+  const pageOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of rawCampaigns) {
+      const p = c.pageName || c.channel;
+      if (p) set.add(p);
+    }
+    return Array.from(set)
+      .sort((a, b) => a.localeCompare(b, "vi"))
+      .map((name) => ({ id: name, name }));
+  }, [rawCampaigns]);
+
+  // Lọc phía client theo tài khoản (theo name) + chiến dịch (theo id) + kênh + từ khoá.
   const filteredCampaigns = useMemo(() => {
+    const kw = keyword.trim().toLowerCase();
     return rawCampaigns.filter((c) => {
       if (accountId !== "ALL" && c.adAccount?.name !== accountId) return false;
       if (campaignId !== "ALL" && c.id !== campaignId) return false;
+      if (pageName !== "ALL" && (c.pageName || c.channel) !== pageName) return false;
+      if (kw) {
+        // Tìm trên tên chiến dịch + kênh, đủ để bắt cả mã SKU nằm cuối tên campaign.
+        const hay = `${c.name || ""} ${c.pageName || ""} ${c.channel || ""}`.toLowerCase();
+        if (!hay.includes(kw)) return false;
+      }
       return true;
     });
-  }, [rawCampaigns, accountId, campaignId]);
+  }, [rawCampaigns, accountId, campaignId, pageName, keyword]);
 
   const onDateApply = useCallback(
     (v: { presetId: string; from: string; to: string }) => {
@@ -102,9 +128,13 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
     to,
     accountId,
     campaignId,
+    pageName,
+    keyword,
     onDateApply,
     onAccountChange: setAccountId,
     onCampaignChange: setCampaignId,
+    onPageNameChange: setPageName,
+    onKeywordChange: setKeyword,
   };
 
   return {
@@ -112,6 +142,7 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
     skuCatalog,
     accountOptions,
     campaignOptions,
+    pageOptions,
     loading,
     filterState,
   };

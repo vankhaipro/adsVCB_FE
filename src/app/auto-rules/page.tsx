@@ -28,6 +28,11 @@ import {
   Database
 } from "@phosphor-icons/react";
 import { apiGet, apiPost, apiPatch, apiDelete, getAuthUser } from "@/lib/api";
+import Pagination from "@/components/Pagination";
+
+// Các chỉ số backend thực sự đọc được từ OrganicVideo và có ô "N ngày qua".
+// Phải khớp RulesService.WINDOWED_METRICS ở backend.
+const WINDOWED_METRICS = ["views", "likes", "comments", "shares"];
 
 type Rule = {
   id: string;
@@ -104,7 +109,7 @@ const condLabel = (c: any) => {
       c.operator === "gt" || c.operator === ">" ? ">" :
       c.operator === "gte" || c.operator === ">=" ? "≥" :
       c.operator === "lt" || c.operator === "<" ? "<" : "≤";
-    return `NẾU ${metricStr} ${opStr} ${Number(c.value).toLocaleString("vi-VN")} trong ${c.days || 5} ngày${c.keyword ? ` (chứa: ${c.keyword})` : ""}`;
+    return `NẾU ${metricStr} ${opStr} ${Number(c.value).toLocaleString("vi-VN")} trong ${c.days || 7} ngày${c.keyword ? ` (chứa: ${c.keyword})` : ""}`;
   }
   
   const fieldStr =
@@ -152,6 +157,13 @@ export default function AutoRulesPage() {
   // Dropdown states
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
   const [activeRowMenu, setActiveRowMenu] = useState<string | null>(null);
+
+  // Phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+  // Toạ độ menu 3 chấm. Menu phải render position:fixed vì bảng nằm trong hai lớp
+  // overflow (card overflow-hidden + wrapper overflow-x-auto) sẽ cắt mất dropdown absolute.
+  const [rowMenuPos, setRowMenuPos] = useState<{ top: number; right: number } | null>(null);
 
   // Modals state
   const [showCreateAdModal, setShowCreateAdModal] = useState(false); // Tạo quảng cáo mới
@@ -212,14 +224,29 @@ export default function AutoRulesPage() {
   const rowMenuRef = useRef<HTMLDivElement>(null);
   const templateInputRef = useRef<HTMLInputElement>(null);
 
+  // Đổi từ khoá tìm kiếm hoặc nền tảng → số quy tắc đổi, quay về trang 1 để không
+  // rơi vào trang không còn tồn tại.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCurrentPage(1);
+  }, [searchQuery, selectedPlatformFilter]);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (rowMenuRef.current && !rowMenuRef.current.contains(event.target as Node)) {
         setActiveRowMenu(null);
       }
     }
+    // Menu dùng position:fixed nên toạ độ sẽ lệch nếu trang cuộn hoặc đổi kích thước → đóng luôn
+    const close = () => setActiveRowMenu(null);
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
   }, []);
 
   const load = useCallback(() => {
@@ -275,17 +302,22 @@ export default function AutoRulesPage() {
     return cAdForm.adNameTemplate.includes(`{{${tag}}}`);
   };
 
+  // Khớp đúng renderAdName ở backend: {{createdAt}} là NGÀY TẠO CHIẾN DỊCH (không phải
+  // ngày đăng video), còn {{team}} và {{account}} backend luôn render rỗng.
   const getPreviewName = (template: string) => {
     if (!template) return "-";
     return template
-      .replace(/\{\{createdAt\}\}/g, "10/7/2026")
-      .replace(/\{\{team\}\}/g, "K1")
+      .replace(/\{\{createdAt\}\}/g, new Date().toLocaleDateString("vi-VN"))
+      .replace(/\{\{team\}\}/g, "")
       .replace(/\{\{page\}\}/g, "Page Name")
       .replace(/\{\{hashtag\}\}/g, "#vcb, #A1")
       .replace(/\{\{caption\}\}/g, "Sample caption text")
       .replace(/\{\{platform\}\}/g, "TikTok")
-      .replace(/\{\{account\}\}/g, "Viễn Chí Bảo.")
-      .replace(/\{\{id\}\}/g, "7496768450946");
+      .replace(/\{\{account\}\}/g, "")
+      .replace(/\{\{id\}\}/g, "7496768450946")
+      .replace(/\s{2,}/g, " ")
+      .replace(/(^[\s-]+|[\s-]+$)/g, "")
+      .trim();
   };
 
   // Conditions list handlers (Tạo quảng cáo mới)
@@ -536,7 +568,7 @@ export default function AutoRulesPage() {
             metric: primaryCond.type || "views",
             operator: primaryCond.operator || "gt",
             value: isNaN(condVal) ? 0 : condVal,
-            days: Number(primaryCond.days || 5),
+            days: Number(primaryCond.days || 7),
             adAccountId: cAdForm.adAccountId,
             startDate: cAdForm.startDate || null,
             endDate: cAdForm.endDate || null,
@@ -545,7 +577,10 @@ export default function AutoRulesPage() {
               type: c.type,
               operator: c.operator,
               value: c.value,
-              days: c.days ? Number(c.days) : null
+              // Chỉ điều kiện theo chỉ số mới có ô "N ngày qua" trên UI. Các điều kiện khác
+              // (tên trang, tag, ...) vẫn giữ days mặc định trong state — gửi lên sẽ nới rộng
+              // nhầm cửa sổ quét video ở backend.
+              days: c.days && WINDOWED_METRICS.includes(c.type) ? Number(c.days) : null
             }))
           },
           action: {
@@ -683,6 +718,12 @@ export default function AutoRulesPage() {
     }
     return nameMatch && platformMatch;
   });
+
+  // Cắt trang sau khi lọc. Xoá quy tắc cuối cùng của trang cuối có thể làm currentPage
+  // vượt quá số trang còn lại → kẹp lại để không hiện bảng rỗng.
+  const totalPages = Math.max(1, Math.ceil(filteredRules.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pagedRules = filteredRules.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <div className="flex flex-col gap-6 pb-10">
@@ -878,7 +919,7 @@ export default function AutoRulesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-[11px]">
-                {filteredRules.map((r) => {
+                {pagedRules.map((r) => {
                   const isOrganic = checkIsOrganic(r);
                   return (
                     <tr key={r.id} className="hover:bg-muted/30 transition-colors">
@@ -962,34 +1003,43 @@ export default function AutoRulesPage() {
                           </button>
                           
                           <button
-                            onClick={() => setActiveRowMenu(activeRowMenu === r.id ? null : r.id)}
+                            onClick={(e) => {
+                              if (activeRowMenu === r.id) {
+                                setActiveRowMenu(null);
+                                return;
+                              }
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const MENU_H = 68; // 2 mục × ~34px
+                              // Không đủ chỗ bên dưới thì lật lên trên nút
+                              const openUp = rect.bottom + MENU_H + 8 > window.innerHeight;
+                              setRowMenuPos({
+                                top: openUp ? rect.top - MENU_H - 6 : rect.bottom + 6,
+                                right: window.innerWidth - rect.right,
+                              });
+                              setActiveRowMenu(r.id);
+                            }}
                             className="text-muted-foreground hover:text-foreground p-1 transition-colors"
                           >
                             <DotsThreeVertical size={18} weight="bold" />
                           </button>
 
-                          {activeRowMenu === r.id && (
+                          {activeRowMenu === r.id && rowMenuPos && (
                             <div
                               ref={rowMenuRef}
-                              className="absolute right-4 top-12 bg-card border border-border rounded-lg shadow-xl z-50 py-1 w-28 overflow-hidden text-left"
+                              style={{ top: rowMenuPos.top, right: rowMenuPos.right }}
+                              className="fixed bg-card border border-border rounded-lg shadow-xl z-50 py-1 w-32 overflow-hidden text-left"
                             >
                               <button
-                                onClick={() => handleEditRule(r)}
-                                className="w-full text-left px-3.5 py-1.5 hover:bg-muted text-[10px] text-foreground flex items-center gap-1.5"
-                              >
-                                <PencilSimple size={12} /> Chỉnh sửa
-                              </button>
-                              <button
-                                onClick={() => runNow(r)}
+                                onClick={() => { setActiveRowMenu(null); runNow(r); }}
                                 disabled={busy === r.id}
-                                className="w-full text-left px-3.5 py-1.5 hover:bg-muted text-[10px] text-foreground flex items-center gap-1.5 border-t border-border"
+                                className="w-full text-left px-3.5 py-2 hover:bg-muted text-[11px] text-foreground flex items-center gap-1.5"
                               >
                                 <Play size={12} /> Chạy thử
                               </button>
                               <button
-                                onClick={() => remove(r)}
+                                onClick={() => { setActiveRowMenu(null); remove(r); }}
                                 disabled={busy === r.id}
-                                className="w-full text-left px-3.5 py-1.5 hover:bg-red-500/10 text-[10px] text-red-500 flex items-center gap-1.5 border-t border-border"
+                                className="w-full text-left px-3.5 py-2 hover:bg-red-500/10 text-[11px] text-red-500 flex items-center gap-1.5 border-t border-border"
                               >
                                 <Trash size={12} /> Xoá
                               </button>
@@ -1002,6 +1052,15 @@ export default function AutoRulesPage() {
                 })}
               </tbody>
             </table>
+          </div>
+
+          <div className="px-4 pb-3">
+            <Pagination
+              page={safePage}
+              pageSize={PAGE_SIZE}
+              total={filteredRules.length}
+              onChange={setCurrentPage}
+            />
           </div>
         </div>
       )}
@@ -1411,7 +1470,8 @@ export default function AutoRulesPage() {
                       Tạo quảng cáo
                     </div>
                     <span className="text-[10px] text-muted-foreground -mt-3">
-                      Thiết lập mục tiêu và cấu hình cho cấp chiến dịch/nhóm quảng cáo
+                      Thiết lập mục tiêu và cấu hình cho cấp chiến dịch/nhóm quảng cáo.
+                      Mỗi video đạt điều kiện sẽ tạo 1 chiến dịch + 1 nhóm quảng cáo + 1 quảng cáo riêng.
                     </span>
 
                     {/* Mục tiêu tối ưu hoá */}
@@ -1468,7 +1528,10 @@ export default function AutoRulesPage() {
                     {/* Mẫu tên quảng cáo */}
                     <div className="flex flex-col gap-1">
                       <label className="text-[11px] text-[#4a5568] font-medium">Mẫu tên quảng cáo</label>
-                      <span className="text-[10px] text-muted-foreground">Thiết lập mẫu cho tên quảng cáo</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        Đặt tên cho chiến dịch của mỗi video đạt điều kiện; nhóm quảng cáo và quảng cáo bên trong lấy theo tên này.
+                        Tag {"{{createdAt}}"} là ngày tạo chiến dịch, không phải ngày đăng video.
+                      </span>
                       <input
                         ref={templateInputRef}
                         type="text"

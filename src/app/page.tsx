@@ -9,6 +9,7 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import { apiGet, fmtVnd, datesToQuery } from "@/lib/api";
+import { pageNameKey } from "@/lib/pageNameKey";
 import { useChartColors } from "@/lib/chartTheme";
 import OrdersBreakdown from "@/components/OrdersBreakdown";
 import OverviewHeader, { type KpiItem } from "@/components/overview/OverviewHeader";
@@ -205,7 +206,12 @@ function OverviewInner() {
   const [channel, setChannel] = useState("ALL");
   const [staff, setStaff] = useState("ALL");
   const [pageName, setPageName] = useState("ALL");
-  const [organicChannels, setOrganicChannels] = useState<{ id: string; label: string }[]>([]);
+  const [team, setTeam] = useState("ALL");
+  const [teamOptions, setTeamOptions] = useState<{ id: string; label: string }[]>([]);
+  // Toàn bộ kênh organic (từ /channels) và tập con thật sự có campaign khớp — chỉ tập con
+  // được đổ vào dropdown "Kênh".
+  const [allOrganicChannels, setAllOrganicChannels] = useState<{ id: string; label: string; platform: string; team: string; hasPageId: boolean; linked: number; pageId: string }[]>([]);
+  const [organicChannels, setOrganicChannels] = useState<{ id: string; label: string; platform: string }[]>([]);
 
   const currentStaffs = useMemo(() => {
     if (selectedTab === "orders") {
@@ -227,12 +233,50 @@ function OverviewInner() {
       const [camps, accs, chs] = await Promise.all([
         apiGet("/mkt-api/campaigns"),
         apiGet("/mkt-api/accounts"),
-        apiGet("/channels").catch(() => [])
+        apiGet("/channels").catch(() => []),
       ]);
       setCampaigns(camps);
       setAccounts(accs);
-      const uniqueNames = Array.from(new Set(chs.map((c: any) => c.channelName))) as string[];
-      setOrganicChannels(uniqueNames.map(name => ({ id: name, label: name })));
+      // Dropdown "Kênh" gửi channelId — backend nối bằng Channel.pageId ↔ AdCampaign.pageId.
+      // Gộp các bản ghi cùng trỏ về một page (vd "Nhạn Nhạn - Vân Phong Các" [YOUTUBE] và
+      // "Nhạn Nhạn- Vân Phong Các" [FACEBOOK]): ưu tiên giữ bản có pageId, vì chỉ bản đó
+      // mới nối được chính xác theo ID; các bản còn lại lùi về so tên.
+      const byKey = new Map<string, { id: string; label: string; platform: string; team: string; hasPageId: boolean; linked: number; pageId: string }>();
+      for (const ch of chs as any[]) {
+        const name = ch?.channelName;
+        if (!name || !ch?.id) continue;
+        // Khoá gộp: ưu tiên pageId — hai page KHÁC NHAU là hai kênh khác nhau kể cả trùng
+        // tên (vd "HuyK.เครื่องประดับทองและเงิน" và "HuyK - เครื่องประดับทองและเงิน" chuẩn
+        // hoá ra cùng khoá, gộp lại sẽ nuốt mất một page kèm hơn 13 triệu chi tiêu).
+        // Kênh chưa có pageId thì vẫn gộp theo tên như cũ (bản Instagram/YouTube trùng tên).
+        const k = ch.pageId ? `id:${ch.pageId}` : `name:${pageNameKey(name)}`;
+        if (k === "name:") continue;
+        const cur = byKey.get(k);
+        const hasPageId = Boolean(ch.pageId);
+        const linked = Number(ch.adCampaignCount || 0);
+        // Nhãn nói rõ tình trạng nối, để người dùng biết trước khi bấm thay vì thấy 0 rồi
+        // không hiểu vì sao: kênh có ID nhưng chưa page nào chạy ads → "chưa có ads".
+        const label = !hasPageId
+          ? `${name} (so theo tên)`
+          : linked === 0
+            ? `${name} (chưa có ads)`
+            : name;
+        // Ưu tiên bản có ads thật, rồi mới tới bản có pageId — tránh chọn nhầm bản trống.
+        const rank = (l: number, h: boolean) => (l > 0 ? 2 : h ? 1 : 0);
+        if (!cur || rank(linked, hasPageId) > rank(cur.linked, cur.hasPageId)) {
+          byKey.set(k, { id: ch.id, label, platform: ch.platform || "", team: ch.team || "", hasPageId, linked, pageId: String(ch.pageId || "") });
+        }
+      }
+
+      // Sau khi gộp theo pageId vẫn có thể còn hai dòng cùng nhãn (hai page trùng tên) —
+      // thêm 6 số cuối của pageId để người dùng phân biệt được chúng trên dropdown.
+      const list = [...byKey.values()];
+      const labelCount = new Map<string, number>();
+      for (const c of list) labelCount.set(c.label, (labelCount.get(c.label) || 0) + 1);
+      for (const c of list) {
+        if ((labelCount.get(c.label) || 0) > 1 && c.pageId) c.label = `${c.label} · ${c.pageId.slice(-6)}`;
+      }
+      setAllOrganicChannels(list);
     } catch {
       // Ignore errors
     } finally {
@@ -268,7 +312,10 @@ function OverviewInner() {
     if (accountId !== "ALL") params.set("accountId", accountId);
     if (channel !== "ALL") params.set("channel", channel);
     if (staff !== "ALL") params.set("staff", staff);
-    if (pageName !== "ALL") params.set("pageName", pageName);
+    // pageName ở đây là Channel.id — backend nối qua Channel.pageId ↔ AdCampaign.pageId,
+    // lùi về so tên khi một trong hai phía chưa có ID.
+    if (pageName !== "ALL") params.set("channelId", pageName);
+    if (team !== "ALL") params.set("team", team);
     const q = params.toString();
     // Xóa số cũ trước khi tải để thẻ hiện "—" trong lúc fetch thay vì giữ lại
     // chỉ số của khoảng ngày trước (nguyên nhân trước đây "ngày 15 vẫn có data").
@@ -284,12 +331,41 @@ function OverviewInner() {
       setInsights(ins);
       setBreakdown(brk);
       setTrendData(trend);
+
+      // Chọn Team rồi thì dropdown Kênh chỉ hiện kênh của team đó.
+      // So khớp theo tiền tố đã chuẩn hoá vì hai bên khác định dạng: dropdown lấy team từ
+      // TÊN CHIẾN DỊCH ("Global JP") còn Channel.team do người dùng nhập ("Global - JP1/2/3").
+      // Team nào không có kênh nào (vd "Khác") thì giữ nguyên toàn bộ danh sách, tránh
+      // để người dùng kẹt với dropdown rỗng.
+      const teamKey = pageNameKey(team);
+      const matched =
+        team === "ALL"
+          ? allOrganicChannels
+          : allOrganicChannels.filter((c) => pageNameKey(c.team).startsWith(teamKey));
+      const visible = matched.length > 0 ? matched : allOrganicChannels;
+      setOrganicChannels(visible.map(({ id, label, platform }) => ({ id, label, platform })));
+
+      // Kênh đang chọn không còn trong danh sách sau khi đổi Team → bỏ chọn, nếu không
+      // bộ lọc sẽ âm thầm giữ một kênh không thuộc team đang xem.
+      if (pageName !== "ALL" && !visible.some((c) => c.id === pageName)) setPageName("ALL");
+
+      // Danh sách Team lấy từ chính breakdown.byTeam (backend suy Team từ tên chiến dịch).
+      // Chỉ cập nhật khi chưa lọc team, vì byTeam đã bị thu hẹp theo bộ lọc hiện tại —
+      // cập nhật lúc đang lọc sẽ khiến dropdown tụt còn đúng một lựa chọn.
+      if (team === "ALL") {
+        setTeamOptions(
+          (brk?.byTeam ?? [])
+            .filter((t: any) => t?.name)
+            .sort((a: any, b: any) => (b.spend || 0) - (a.spend || 0))
+            .map((t: any) => ({ id: t.name, label: t.name })),
+        );
+      }
     } catch {
       setInsights(null);
       setBreakdown(null);
       setTrendData([]);
     }
-  }, [customFrom, customTo, platform, objective, accountId, channel, staff, pageName]);
+  }, [customFrom, customTo, platform, objective, accountId, channel, staff, pageName, team, allOrganicChannels]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -417,6 +493,9 @@ function OverviewInner() {
         accounts={accounts}
         staffs={currentStaffs}
         organicChannels={organicChannels}
+        team={team}
+        teamOptions={teamOptions}
+        onTeamChange={setTeam}
         onPlatformChange={(v) => {
           setPlatform(v);
           setAccountId("ALL");
