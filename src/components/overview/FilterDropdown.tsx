@@ -1,9 +1,25 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { CaretDown } from "@phosphor-icons/react";
+import {
+  CaretDown, FacebookLogo, TiktokLogo, YoutubeLogo, InstagramLogo, GoogleLogo, ChatCircleDots,
+} from "@phosphor-icons/react";
 
-export type FilterPill = { id: string; label: string };
+export type FilterPill = { id: string; label: string; platform?: string | null };
+
+// Icon theo nền tảng của kênh — giúp phân biệt các kênh trùng tên khác nền tảng
+// (vd "Nhạn Nhạn - Xưởng Đồ Da" có cả bản FACEBOOK, TIKTOK, INSTAGRAM, YOUTUBE).
+function PlatformIcon({ platform }: { platform?: string | null }) {
+  const p = String(platform || "").toUpperCase();
+  const cls = "shrink-0";
+  if (p === "FACEBOOK" || p === "META") return <FacebookLogo size={13} weight="fill" className={`${cls} text-[#1877F2]`} />;
+  if (p === "TIKTOK") return <TiktokLogo size={13} weight="fill" className={`${cls} text-foreground`} />;
+  if (p === "YOUTUBE") return <YoutubeLogo size={13} weight="fill" className={`${cls} text-[#FF0000]`} />;
+  if (p === "INSTAGRAM") return <InstagramLogo size={13} weight="fill" className={`${cls} text-[#E1306C]`} />;
+  if (p === "GOOGLE") return <GoogleLogo size={13} weight="fill" className={`${cls} text-[#4285F4]`} />;
+  if (p === "ZALO" || p === "THREADS") return <ChatCircleDots size={13} weight="fill" className={`${cls} text-muted-foreground`} />;
+  return null;
+}
 
 type FilterDropdownProps = {
   label: string;
@@ -48,6 +64,7 @@ export default function FilterDropdown({ label, items, value, onChange, searchab
         className="flex items-center gap-1.5 bg-background border border-border hover:bg-card hover:border-border/80 transition-colors rounded-lg px-3 py-2 text-xs text-foreground cursor-pointer text-left select-none max-w-[240px] shadow-sm"
       >
         <span className="text-muted-foreground font-medium shrink-0">{label}</span>
+        {selectedOpt && <PlatformIcon platform={selectedOpt.platform} />}
         <span className="font-semibold truncate max-w-[130px]" title={displayLabel}>{displayLabel}</span>
         <CaretDown size={10} className="text-muted-foreground shrink-0" />
       </button>
@@ -88,14 +105,15 @@ export default function FilterDropdown({ label, items, value, onChange, searchab
                   onChange(item.id);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-2.5 py-1.5 text-xs rounded transition-colors truncate ${
+                className={`w-full text-left px-2.5 py-1.5 text-xs rounded transition-colors flex items-center gap-1.5 ${
                   value === item.id
                     ? "bg-blue-600/20 text-blue-400 font-semibold"
                     : "text-foreground hover:bg-muted"
                 }`}
                 title={item.label}
               >
-                {item.label}
+                <PlatformIcon platform={item.platform} />
+                <span className="truncate">{item.label}</span>
               </button>
             ))}
             {filtered.length === 0 && (

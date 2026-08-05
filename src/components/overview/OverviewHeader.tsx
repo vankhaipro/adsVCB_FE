@@ -93,6 +93,8 @@ type Props = {
   accountId: string;
   accounts?: { id: string; name: string | null; platform: string }[];
   staffs?: FilterPill[];
+  teamOptions?: FilterPill[];
+  team?: string;
   organicChannels?: FilterPill[];
   onPlatformChange: (v: string) => void;
   onPageNameChange: (v: string) => void;
@@ -100,6 +102,7 @@ type Props = {
   onObjectiveChange: (v: string) => void;
   onDateApply: (v: { presetId: string; from: string; to: string }) => void;
   onStaffChange: (v: string) => void;
+  onTeamChange?: (v: string) => void;
   onAccountIdChange: (v: string) => void;
   kpis?: KpiItem[];
   onExport?: () => void;
@@ -120,6 +123,8 @@ export default function OverviewHeader({
   accountId,
   accounts = [],
   staffs = [],
+  teamOptions = [],
+  team = "ALL",
   organicChannels = [],
   onPlatformChange,
   onPageNameChange,
@@ -127,6 +132,7 @@ export default function OverviewHeader({
   onObjectiveChange,
   onDateApply,
   onStaffChange,
+  onTeamChange,
   onAccountIdChange,
   kpis = [],
   onExport,
@@ -144,6 +150,9 @@ export default function OverviewHeader({
         {/* Nhóm bộ lọc dạng Select (Compact) */}
         <FilterDropdown label="Nền tảng:" items={CHANNELS} value={platform} onChange={onPlatformChange} searchable={false} />
         <FilterDropdown label="Kênh:" items={organicChannels} value={pageName} onChange={onPageNameChange} searchable={true} />
+        {onTeamChange && (
+          <FilterDropdown label="Team:" items={teamOptions} value={team} onChange={onTeamChange} searchable={false} />
+        )}
         
         <DateRangePicker
           presetId={dateRange}
