@@ -78,7 +78,9 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
   // Nhãn hiển thị trên trục X. Tên gốc từ backend dài nên Recharts bỏ bớt tick khi
   // không đủ chỗ (đó là lý do "Team Đồ Da" không hiện chữ nào).
   const TEAM_LABEL: Record<string, string> = {
-    "Khác": "Tự động",
+    // Backend trả "Không xác định" cho campaign không suy được team từ tên lẫn Fanpage.
+    // Trước đây nhãn này là "Tự động" — gây hiểu nhầm là nhóm chiến dịch chạy tự động.
+    "Không xác định": "Chưa rõ team",
     "Team Đồ Da": "Đồ da",
   };
 
