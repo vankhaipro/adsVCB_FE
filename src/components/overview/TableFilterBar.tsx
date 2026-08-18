@@ -10,6 +10,9 @@ interface TableFilterBarProps extends TableFilterState {
   campaignOptions: { id: string; name: string }[];
   // Bỏ trống thì không hiện dropdown Kênh (bảng SKU không cần).
   pageOptions?: { id: string; name: string }[];
+  // Cũng optional vì CreativeTable dùng chung thanh lọc này — truyền vô điều kiện sẽ làm
+  // dropdown Mục tiêu lòi sang bảng đó.
+  objectiveOptions?: { id: string; name: string }[];
 }
 
 // Thanh lọc dùng chung cho các bảng ở Tổng quan: ngày / chiến dịch / tài khoản QC / kênh.
@@ -27,6 +30,9 @@ export default function TableFilterBar({
   pageName,
   onPageNameChange,
   pageOptions,
+  objectiveLabel,
+  onObjectiveLabelChange,
+  objectiveOptions,
 }: TableFilterBarProps) {
   const campaignPills = useMemo<FilterPill[]>(
     () => campaignOptions.map((o) => ({ id: o.id, label: o.name })),
@@ -40,6 +46,10 @@ export default function TableFilterBar({
     () => (pageOptions ?? []).map((o) => ({ id: o.id, label: o.name })),
     [pageOptions],
   );
+  const objectivePills = useMemo<FilterPill[]>(
+    () => (objectiveOptions ?? []).map((o) => ({ id: o.id, label: o.name })),
+    [objectiveOptions],
+  );
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -48,6 +58,9 @@ export default function TableFilterBar({
       <FilterDropdown label="Tài khoản:" items={accountPills} value={accountId} onChange={onAccountChange} searchable />
       {pageOptions && (
         <FilterDropdown label="Kênh:" items={pagePills} value={pageName} onChange={onPageNameChange} searchable />
+      )}
+      {objectiveOptions && (
+        <FilterDropdown label="Mục tiêu:" items={objectivePills} value={objectiveLabel} onChange={onObjectiveLabelChange} />
       )}
     </div>
   );

@@ -65,10 +65,13 @@ const STATUSES: FilterPill[] = [
   { id: "ENDED", label: "Kết thúc" },
 ];
 
+// Nhãn phải khớp đúng nghĩa của id — trước đây LIKES ghi là "Nhận thức" và MESS ghi là
+// "Traffic", trong khi backend deriveObjective() sinh MESS từ tên có "Mess" và LIKES từ
+// "Like page". Chỉ đổi chuỗi hiển thị, id giữ nguyên nên hành vi lọc không đổi.
 const OBJECTIVES: FilterPill[] = [
-  { id: "CONV", label: "Chuyển đổi" },
-  { id: "LIKES", label: "Nhận thức" },
-  { id: "MESS", label: "Traffic" },
+  { id: "MESS", label: "Mess" },
+  { id: "LIKES", label: "Like page" },
+  { id: "CONV", label: "Còn lại" },
 ];
 
 const STAFFS: FilterPill[] = [

@@ -45,6 +45,7 @@ export function useProductInsights() {
   const [presetId, setPresetId] = useState("thisMonth");
   const [from, setFrom] = useState(initial.from);
   const [to, setTo] = useState(initial.to);
+  const [objectiveLabel, setObjectiveLabel] = useState("ALL");
 
   const [data, setData] = useState<ProductInsights | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,7 +53,11 @@ export function useProductInsights() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    apiGet(`/mkt-api/insights/by-product?${datesToQuery(from, to)}`)
+    // URLSearchParams chứ không nối chuỗi: nhãn có dấu tiếng Việt và khoảng trắng
+    // ("Chuyển đổi web") bắt buộc phải được encode.
+    const params = new URLSearchParams(datesToQuery(from, to));
+    if (objectiveLabel !== "ALL") params.set("objectiveLabel", objectiveLabel);
+    apiGet(`/mkt-api/insights/by-product?${params}`)
       .then((d) => {
         if (!cancelled) setData(d);
       })
@@ -65,7 +70,7 @@ export function useProductInsights() {
     return () => {
       cancelled = true;
     };
-  }, [from, to]);
+  }, [from, to, objectiveLabel]);
 
   return {
     rows: data?.rows ?? [],
@@ -73,6 +78,7 @@ export function useProductInsights() {
     totals: data?.totals ?? null,
     videoRange: data?.videoRange ?? null,
     loading,
+    objectiveState: { value: objectiveLabel, onChange: setObjectiveLabel },
     dateState: {
       presetId,
       from,

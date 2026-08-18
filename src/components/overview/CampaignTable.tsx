@@ -6,7 +6,7 @@ import { Panel, Th, StatusPill, ChannelChip } from "./parts";
 import {
   fmtNum, fmtCompact, fmtVndShort, fmtPct, fmtRoas,
 } from "./dashboardData";
-import { useTableInsights } from "./useTableInsights";
+import { useTableInsights, OBJECTIVE_LABELS } from "./useTableInsights";
 import TableFilterBar from "./TableFilterBar";
 
 const PER_PAGE = 8;
@@ -93,6 +93,7 @@ export default function CampaignTable() {
           accountOptions={accountOptions}
           campaignOptions={campaignOptions}
           pageOptions={pageOptions}
+          objectiveOptions={OBJECTIVE_LABELS.map((l) => ({ id: l, name: l }))}
         />
 
         <span className="text-[14px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded shrink-0">
@@ -137,7 +138,10 @@ export default function CampaignTable() {
                     <span className="scale-90 origin-left"><ChannelChip channel={c.channel} /></span>
                   </div>
                 </td>
-                <td className="px-3 py-2.5 text-muted-foreground">{c.objective}</td>
+                {/* Nhãn từ BE (Mess/Like page/Follow/Chuyển đổi web/Tương tác). Trước đây
+                    hiện c.objective = MESS/LIKES/CONV, trong đó CONV là nhánh mặc định gom
+                    lẫn cả Follow lẫn web nên không đọc được gì. */}
+                <td className="px-3 py-2.5 text-muted-foreground">{c.objectiveLabel}</td>
                 <td className="px-3 py-2.5"><StatusPill status={c.status} /></td>
                 <td className="px-3 py-2.5 text-right text-muted-foreground">
                   {c.budget > 0 ? fmtVndShort(c.budget) : "Tự động"}

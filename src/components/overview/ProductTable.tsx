@@ -6,6 +6,8 @@ import DateRangePicker from "@/components/DateRangePicker";
 import { Panel, Th } from "./parts";
 import { fmtNum, fmtVndShort } from "./dashboardData";
 import { useProductInsights } from "./useProductInsights";
+import { OBJECTIVE_LABELS } from "./useTableInsights";
+import FilterDropdown from "./FilterDropdown";
 
 const PER_PAGE = 10;
 const COL_COUNT = 11;
@@ -14,7 +16,7 @@ export default function ProductTable() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
 
-  const { rows: allRows, unmatched, videoRange, loading, dateState } = useProductInsights();
+  const { rows: allRows, unmatched, videoRange, loading, dateState, objectiveState } = useProductInsights();
 
   useEffect(() => {
     setPage(0);
@@ -82,7 +84,19 @@ export default function ProductTable() {
       bodyClassName="px-0 pb-0"
     >
       <div className="px-5 -mt-1 mb-3 flex flex-wrap items-center justify-between gap-3">
-        <DateRangePicker {...dateState} />
+        <div className="flex flex-wrap items-center gap-2">
+          <DateRangePicker {...dateState} />
+          {/* Lọc mục tiêu chạy ở BE (dữ liệu đã gộp theo sản phẩm nên không lọc client được).
+              Lưu ý ngữ nghĩa: bộ lọc chỉ tác động lên phần CHIẾN DỊCH; cột "Video organic"
+              gần như không đổi vì video không gắn với campaign nào. Đó là đúng — vd chọn
+              "Mess" nghĩa là "chi phí Mess của sản phẩm này", không phải "video Mess". */}
+          <FilterDropdown
+            label="Mục tiêu:"
+            items={OBJECTIVE_LABELS.map((l) => ({ id: l, label: l }))}
+            value={objectiveState.value}
+            onChange={objectiveState.onChange}
+          />
+        </div>
         <span className="text-[14px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded shrink-0">
           {filteredRows.length} sản phẩm
         </span>

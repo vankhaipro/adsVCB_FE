@@ -40,7 +40,9 @@ const platColor = (p: string) => (p === "META" ? "#60a5fa" : "#f472b6");
 // Bảng màu dùng chung cho các chiều phân loại.
 const SPENDER_COLORS: Record<string, string> = { "Việt": "#1e3a8a", "Thành": "#f59e0b", "SB": "#10b981", "Không xác định": "#ef4444" };
 const LINE_COLORS: Record<string, string> = { A4: "#ef4444", A1: "#10b981", A2: "#3b82f6", A3: "#8b5cf6", A5: "#f59e0b", "Không rõ": "#6b7280" };
-const OBJ_COLORS: Record<string, string> = { "Mess": "#f59e0b", "Like page": "#10b981", "Chuyển đổi web": "#ef4444", "Tương tác": "#3b82f6", "Không XĐ": "#6b7280" };
+// Khoá phải khớp CampaignObjectiveLabel ở adsVCB_BE/src/lib/campaign-objective.ts.
+// Thiếu khoá nào thì cột đó rơi về PALETTE[i] và đổi màu theo thứ tự sắp xếp.
+const OBJ_COLORS: Record<string, string> = { "Mess": "#f59e0b", "Like page": "#10b981", "Chuyển đổi web": "#ef4444", "Tương tác": "#3b82f6", "Follow": "#a855f7", "Khác": "#6b7280" };
 const NAMEQ_COLORS: Record<string, string> = { "Chuẩn": "#10b981", "SB tự động": "#3b82f6", "Thiếu thành phần": "#f59e0b", "Ngoài hệ thống / Rác": "#ef4444" };
 const PALETTE = ["#1e3a8a", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#3b82f6", "#14b8a6", "#f472b6", "#64748b"];
 
