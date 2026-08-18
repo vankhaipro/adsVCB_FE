@@ -20,7 +20,7 @@ function roasColor(v: number) {
 
 export default function CampaignTable() {
   const [page, setPage] = useState(0);
-  const { filteredCampaigns, accountOptions, campaignOptions, pageOptions, filterState } = useTableInsights();
+  const { filteredCampaigns, accountOptions, campaignOptions, pageOptions, teamOptions, filterState } = useTableInsights();
 
   // Reset về trang đầu khi bộ lọc thay đổi danh sách.
   useEffect(() => {
@@ -94,6 +94,7 @@ export default function CampaignTable() {
           campaignOptions={campaignOptions}
           pageOptions={pageOptions}
           objectiveOptions={OBJECTIVE_LABELS.map((l) => ({ id: l, name: l }))}
+          teamOptions={teamOptions}
         />
 
         <span className="text-[14px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded shrink-0">

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import DateRangePicker from "@/components/DateRangePicker";
 import FilterDropdown, { type FilterPill } from "./FilterDropdown";
+import MultiFilterDropdown from "./MultiFilterDropdown";
 import type { TableFilterState } from "./useTableInsights";
 
 interface TableFilterBarProps extends TableFilterState {
@@ -13,6 +14,7 @@ interface TableFilterBarProps extends TableFilterState {
   // Cũng optional vì CreativeTable dùng chung thanh lọc này — truyền vô điều kiện sẽ làm
   // dropdown Mục tiêu lòi sang bảng đó.
   objectiveOptions?: { id: string; name: string }[];
+  teamOptions?: { id: string; name: string }[];
 }
 
 // Thanh lọc dùng chung cho các bảng ở Tổng quan: ngày / chiến dịch / tài khoản QC / kênh.
@@ -33,6 +35,9 @@ export default function TableFilterBar({
   objectiveLabel,
   onObjectiveLabelChange,
   objectiveOptions,
+  teams,
+  onTeamsChange,
+  teamOptions,
 }: TableFilterBarProps) {
   const campaignPills = useMemo<FilterPill[]>(
     () => campaignOptions.map((o) => ({ id: o.id, label: o.name })),
@@ -50,6 +55,10 @@ export default function TableFilterBar({
     () => (objectiveOptions ?? []).map((o) => ({ id: o.id, label: o.name })),
     [objectiveOptions],
   );
+  const teamPills = useMemo<FilterPill[]>(
+    () => (teamOptions ?? []).map((o) => ({ id: o.id, label: o.name })),
+    [teamOptions],
+  );
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -61,6 +70,9 @@ export default function TableFilterBar({
       )}
       {objectiveOptions && (
         <FilterDropdown label="Mục tiêu:" items={objectivePills} value={objectiveLabel} onChange={onObjectiveLabelChange} />
+      )}
+      {teamOptions && (
+        <MultiFilterDropdown label="Team:" items={teamPills} values={teams} onChange={onTeamsChange} searchable />
       )}
     </div>
   );

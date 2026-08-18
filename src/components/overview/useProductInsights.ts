@@ -28,7 +28,7 @@ export type ProductTotals = Omit<ProductRow, "code" | "name" | "costPerMessage" 
 type ProductInsights = {
   range: { from: string; to: string };
   videoRange: { from: string; to: string };
-  meta: { catalogSize: number };
+  meta: { catalogSize: number; teams: string[] };
   rows: ProductRow[];
   unmatched: Omit<ProductRow, "code" | "name" | "costPerMessage" | "costPerLike" | "hasAds" | "hasVideo">;
   totals: ProductTotals;
@@ -46,6 +46,7 @@ export function useProductInsights() {
   const [from, setFrom] = useState(initial.from);
   const [to, setTo] = useState(initial.to);
   const [objectiveLabel, setObjectiveLabel] = useState("ALL");
+  const [teams, setTeams] = useState<string[]>([]);
 
   const [data, setData] = useState<ProductInsights | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,6 +58,8 @@ export function useProductInsights() {
     // ("Chuyển đổi web") bắt buộc phải được encode.
     const params = new URLSearchParams(datesToQuery(from, to));
     if (objectiveLabel !== "ALL") params.set("objectiveLabel", objectiveLabel);
+    // append chứ không set: BE nhận ?team=A&team=B rồi gom thành mảng.
+    for (const t of teams) params.append("team", t);
     apiGet(`/mkt-api/insights/by-product?${params}`)
       .then((d) => {
         if (!cancelled) setData(d);
@@ -70,15 +73,17 @@ export function useProductInsights() {
     return () => {
       cancelled = true;
     };
-  }, [from, to, objectiveLabel]);
+  }, [from, to, objectiveLabel, teams]);
 
   return {
     rows: data?.rows ?? [],
     unmatched: data?.unmatched ?? null,
     totals: data?.totals ?? null,
     videoRange: data?.videoRange ?? null,
+    teamOptions: (data?.meta?.teams ?? []).map((t) => ({ id: t, name: t })),
     loading,
     objectiveState: { value: objectiveLabel, onChange: setObjectiveLabel },
+    teamState: { values: teams, onChange: setTeams },
     dateState: {
       presetId,
       from,

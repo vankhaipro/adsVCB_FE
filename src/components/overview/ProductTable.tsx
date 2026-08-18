@@ -8,6 +8,7 @@ import { fmtNum, fmtVndShort } from "./dashboardData";
 import { useProductInsights } from "./useProductInsights";
 import { OBJECTIVE_LABELS } from "./useTableInsights";
 import FilterDropdown from "./FilterDropdown";
+import MultiFilterDropdown from "./MultiFilterDropdown";
 
 const PER_PAGE = 10;
 const COL_COUNT = 11;
@@ -16,7 +17,7 @@ export default function ProductTable() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
 
-  const { rows: allRows, unmatched, videoRange, loading, dateState, objectiveState } = useProductInsights();
+  const { rows: allRows, unmatched, videoRange, loading, dateState, objectiveState, teamState, teamOptions } = useProductInsights();
 
   useEffect(() => {
     setPage(0);
@@ -95,6 +96,13 @@ export default function ProductTable() {
             items={OBJECTIVE_LABELS.map((l) => ({ id: l, label: l }))}
             value={objectiveState.value}
             onChange={objectiveState.onChange}
+          />
+          <MultiFilterDropdown
+            label="Team:"
+            items={teamOptions.map((t) => ({ id: t.id, label: t.name }))}
+            values={teamState.values}
+            onChange={teamState.onChange}
+            searchable
           />
         </div>
         <span className="text-[14px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded shrink-0">

@@ -12,12 +12,15 @@ export interface TableFilterState {
   campaignId: string;
   pageName: string;
   objectiveLabel: string;
+  /** Mảng rỗng = không lọc. Đa chọn vì team gộp nhóm theo nhiều chiều (thị trường / ngành). */
+  teams: string[];
   keyword: string;
   onDateApply: (v: { presetId: string; from: string; to: string }) => void;
   onAccountChange: (id: string) => void;
   onCampaignChange: (id: string) => void;
   onPageNameChange: (v: string) => void;
   onObjectiveLabelChange: (v: string) => void;
+  onTeamsChange: (v: string[]) => void;
   onKeywordChange: (v: string) => void;
 }
 
@@ -47,6 +50,7 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
   // Kênh = Fanpage/kênh mà quảng cáo chạy trên đó (cột "Kênh" của bảng chiến dịch).
   const [pageName, setPageName] = useState("ALL");
   const [objectiveLabel, setObjectiveLabel] = useState("ALL");
+  const [teams, setTeams] = useState<string[]>([]);
   const [keyword, setKeyword] = useState("");
 
   const [rawCampaigns, setRawCampaigns] = useState<any[]>([]);
@@ -96,6 +100,16 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [rawCampaigns]);
 
+  // Danh sách Team cho dropdown — suy từ chính dữ liệu đang tải nên chỉ hiện team thực sự
+  // có chiến dịch trong khoảng ngày, thay vì liệt kê cả những nhóm "Chưa khai báo" 0đ.
+  const teamOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of rawCampaigns) if (c.team) set.add(c.team);
+    return Array.from(set)
+      .sort((a, b) => a.localeCompare(b, "vi"))
+      .map((t) => ({ id: t, name: t }));
+  }, [rawCampaigns]);
+
   // Danh sách kênh/Fanpage cho dropdown — cùng giá trị đang hiển thị ở cột "Kênh".
   const pageOptions = useMemo(() => {
     const set = new Set<string>();
@@ -116,6 +130,7 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
       if (campaignId !== "ALL" && c.id !== campaignId) return false;
       if (pageName !== "ALL" && (c.pageName || c.channel) !== pageName) return false;
       if (objectiveLabel !== "ALL" && c.objectiveLabel !== objectiveLabel) return false;
+      if (teams.length > 0 && !teams.includes(c.team)) return false;
       if (kw) {
         // Tìm trên tên chiến dịch + kênh, đủ để bắt cả mã SKU nằm cuối tên campaign.
         const hay = `${c.name || ""} ${c.pageName || ""} ${c.channel || ""}`.toLowerCase();
@@ -123,7 +138,7 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
       }
       return true;
     });
-  }, [rawCampaigns, accountId, campaignId, pageName, objectiveLabel, keyword]);
+  }, [rawCampaigns, accountId, campaignId, pageName, objectiveLabel, teams, keyword]);
 
   const onDateApply = useCallback(
     (v: { presetId: string; from: string; to: string }) => {
@@ -142,12 +157,14 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
     campaignId,
     pageName,
     objectiveLabel,
+    teams,
     keyword,
     onDateApply,
     onAccountChange: setAccountId,
     onCampaignChange: setCampaignId,
     onPageNameChange: setPageName,
     onObjectiveLabelChange: setObjectiveLabel,
+    onTeamsChange: setTeams,
     onKeywordChange: setKeyword,
   };
 
@@ -157,6 +174,7 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
     accountOptions,
     campaignOptions,
     pageOptions,
+    teamOptions,
     loading,
     filterState,
   };
