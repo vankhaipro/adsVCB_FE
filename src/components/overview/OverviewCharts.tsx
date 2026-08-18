@@ -63,9 +63,12 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
   const industrySplit = useMemo(() => {
     if (!breakdown?.byIndustry?.length) return [];
     const total = breakdown.byIndustry.reduce((s: number, ind: any) => s + ind.spend, 0) || 1;
+    // Khoá phải khớp TEAM_INDUSTRY ở adsVCB_BE/src/ads/ads.service.ts — thiếu khoá nào thì
+    // lát đó rơi về màu xám mặc định.
     const colors: Record<string, string> = {
       "Kim hoàn": "#f59e0b", // Amber/Gold
       "Đồ da": "#3b82f6",    // Blue
+      "Đá quý": "#8b5cf6",   // Purple
       "Khác": "#6b7280"      // Gray
     };
     return breakdown.byIndustry.map((ind: any) => ({
