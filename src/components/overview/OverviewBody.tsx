@@ -2,7 +2,7 @@
 
 import OverviewCharts from "./OverviewCharts";
 import CampaignTable from "./CampaignTable";
-import SkuTable from "./SkuTable";
+import ProductTable from "./ProductTable";
 
 interface OverviewBodyProps {
   trend: any[];
@@ -15,7 +15,7 @@ export default function OverviewBody({ trend, breakdown }: OverviewBodyProps) {
     <div className="flex flex-col gap-5">
       <OverviewCharts trend={trend} breakdown={breakdown} />
       <CampaignTable />
-      <SkuTable />
+      <ProductTable />
     </div>
   );
 }
