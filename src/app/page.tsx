@@ -355,7 +355,7 @@ function OverviewInner() {
       if (team === "ALL") {
         setTeamOptions(
           (brk?.byTeam ?? [])
-            .filter((t: any) => t?.name)
+            .filter((t: any) => t?.name && t.name !== "Không xác định" && !t.name.includes("Chưa khai báo"))
             .sort((a: any, b: any) => (b.spend || 0) - (a.spend || 0))
             .map((t: any) => ({ id: t.name, label: t.name })),
         );
@@ -803,18 +803,16 @@ function OverviewInner() {
             const likeRanking = [...channelRows].sort((a, b) => b.likes - a.likes);
             const messRanking = [...channelRows].sort((a, b) => b.messages - a.messages);
 
-            // Donut data: top channels + "Khác"
-            const TOP_N = 12;
-            const topChannels = channelRows.slice(0, TOP_N);
-            const restSpend = channelRows.slice(TOP_N).reduce((s, c) => s + c.spend, 0);
+            // Donut data: tất cả các kênh (không giới hạn)
             const DONUT_COLORS = [
               "#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4",
               "#f97316","#84cc16","#ec4899","#14b8a6","#a855f7","#fb923c","#94a3b8"
             ];
-            const donutData = [
-              ...topChannels.map((c, i) => ({ name: c.name, value: c.spend, color: DONUT_COLORS[i] })),
-              ...(restSpend > 0 ? [{ name: "Khác", value: restSpend, color: "#94a3b8" }] : [])
-            ];
+            const donutData = channelRows.map((c, i) => ({
+              name: c.name,
+              value: c.spend,
+              color: DONUT_COLORS[i % DONUT_COLORS.length]
+            }));
 
             // Horizontal bar: ngân sách theo mục tiêu (objective thật)
             const objBarData = (bd?.byObjective ?? []).map((o, i) => ({
@@ -884,9 +882,12 @@ function OverviewInner() {
                               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: d.color }}/>
                               <span className="text-muted-foreground truncate" title={d.name}>{d.name}</span>
                             </div>
-                            <span className="text-foreground shrink-0 font-medium ml-1">
-                              {totalSpend > 0 ? ((d.value / totalSpend) * 100).toFixed(1) : 0}%
-                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">{fmtVnd(d.value)}</span>
+                              <span className="text-foreground text-xs font-semibold bg-muted px-1.5 py-0.5 rounded">
+                                {totalSpend > 0 ? ((d.value / totalSpend) * 100).toFixed(1) : 0}%
+                              </span>
+                            </div>
                           </div>
                         ))}
                       </div>

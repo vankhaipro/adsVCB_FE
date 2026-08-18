@@ -104,7 +104,7 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
   // có chiến dịch trong khoảng ngày, thay vì liệt kê cả những nhóm "Chưa khai báo" 0đ.
   const teamOptions = useMemo(() => {
     const set = new Set<string>();
-    for (const c of rawCampaigns) if (c.team) set.add(c.team);
+    for (const c of rawCampaigns) if (c.team && c.team !== "Không xác định" && !c.team.includes("Chưa khai báo")) set.add(c.team);
     return Array.from(set)
       .sort((a, b) => a.localeCompare(b, "vi"))
       .map((t) => ({ id: t, name: t }));

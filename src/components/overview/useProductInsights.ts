@@ -80,7 +80,7 @@ export function useProductInsights() {
     unmatched: data?.unmatched ?? null,
     totals: data?.totals ?? null,
     videoRange: data?.videoRange ?? null,
-    teamOptions: (data?.meta?.teams ?? []).map((t) => ({ id: t, name: t })),
+    teamOptions: (data?.meta?.teams ?? []).filter((t) => t !== "Không xác định" && !t.includes("Chưa khai báo")).map((t) => ({ id: t, name: t })),
     loading,
     objectiveState: { value: objectiveLabel, onChange: setObjectiveLabel },
     teamState: { values: teams, onChange: setTeams },
