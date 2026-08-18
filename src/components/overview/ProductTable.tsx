@@ -132,24 +132,8 @@ export default function ProductTable() {
 
           {filteredRows.length > 0 && (
             <tfoot className="border-t border-border bg-card font-semibold text-foreground">
-              {/* Phần không gắn được mã SP — bắt buộc hiện, nếu giấu thì tổng bảng
-                  không khớp KPI ở đầu trang. Không tham gia tìm kiếm/phân trang. */}
-              {unmatched && (unmatched.spend > 0 || unmatched.videos > 0) && (
-                <tr className="bg-muted/30 font-normal text-muted-foreground">
-                  <td className="px-3 py-2.5 italic" colSpan={2}>
-                    (Không gắn được mã SP)
-                  </td>
-                  <td className="px-3 py-2.5 text-right">{fmtNum(unmatched.videos)}</td>
-                  <td className="px-3 py-2.5 text-right">{fmtNum(unmatched.campaigns)}</td>
-                  <td className="px-3 py-2.5 text-right">{fmtVndShort(unmatched.spend)}</td>
-                  <td className="px-3 py-2.5 text-right">{fmtNum(unmatched.likes)}</td>
-                  <td className="px-3 py-2.5" />
-                  <td className="px-3 py-2.5 text-right">{fmtNum(unmatched.messages)}</td>
-                  <td className="px-3 py-2.5" />
-                  <td className="px-3 py-2.5 text-right">{fmtNum(unmatched.comments)}</td>
-                  <td className="px-3 py-2.5 text-right">{fmtNum(unmatched.organicComments)}</td>
-                </tr>
-              )}
+              {/* Phần chưa gắn được mã SP KHÔNG nằm trong bảng — nó được nêu ở ghi chú bên
+                  dưới. TỔNG ở đây tính từ filteredRows nên vốn đã không bao gồm phần đó. */}
               <tr>
                 <td className="px-3 py-3" colSpan={2}>TỔNG ({filteredRows.length} sản phẩm)</td>
                 <td className="px-3 py-3 text-right">{fmtNum(totals.videos)}</td>
@@ -166,6 +150,17 @@ export default function ProductTable() {
           )}
         </table>
       </div>
+
+      {/* Phần chưa quy được về sản phẩm nào. Trước đây hiện thành một dòng trong bảng, nhưng
+          con số video ở đó gây hiểu nhầm: phần lớn là video tuyến A1/A2 vốn theo quy ước
+          không gắn mã SP (A1 chỉ 0,5% có mã, A4 là 65%), không phải dữ liệu lỗi. Chi phí
+          quảng cáo chưa quy được thì vẫn đáng biết nên giữ lại ở đây. */}
+      {unmatched && (unmatched.spend > 0 || unmatched.videos > 0) && (
+        <p className="px-5 pt-3 text-[13px] text-muted-foreground">
+          Ngoài bảng: {fmtNum(unmatched.campaigns)} chiến dịch · {fmtVndShort(unmatched.spend)} ·{" "}
+          {fmtNum(unmatched.videos)} video chưa gắn được mã sản phẩm.
+        </p>
+      )}
 
       {/* Video chỉ được đồng bộ trong "cửa sổ tháng" (channels.service computeSince), nên
           chọn khoảng cũ hơn sẽ ra 0 video — nói rõ thay vì để người dùng tưởng mất dữ liệu. */}
