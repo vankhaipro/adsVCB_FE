@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { apiGet, fmtVnd } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
 import { Storefront, UsersThree, UserCircle, CurrencyDollar, ShoppingBag, FacebookLogo, ChartPie } from "@phosphor-icons/react";
-import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Label, LabelList } from "recharts";
 
 const CHART_COLORS = ["#3b82f6", "#db2777", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#64748b"];
 
@@ -36,6 +36,14 @@ const CHANNEL_LABEL: Record<string, string> = {
 };
 
 const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n || 0));
+
+function fmtVndShort(n: number): string {
+  const abs = Math.abs(n || 0);
+  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}Bđ`;
+  if (abs >= 1e6) return `${(n / 1e6).toFixed(0)}Mđ`;
+  if (abs >= 1e3) return `${(n / 1e3).toFixed(0)}Kđ`;
+  return `${Math.round(n)}đ`;
+}
 
 function BreakdownCard({
   title,
@@ -138,25 +146,36 @@ export default function OrdersBreakdown({ query }: { query: string }) {
           <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
             <ChartPie size={18} className="text-violet-500" /> Tỉ trọng doanh thu theo kênh
           </h3>
-          <div className="h-[260px] w-full">
+          <div className="h-[210px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={channelPie} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={2}>
+                <Pie data={channelPie} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2}>
                   {channelPie.map((_, i) => (
                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                   ))}
+                  <Label value={fmtVndShort(data?.totalRevenue ?? 0)} position="center" fill={chart.labelFill} fontSize={12} fontWeight="bold" />
                 </Pie>
                 <Tooltip contentStyle={chart.tooltip} formatter={(v) => fmtVnd(Number(v))} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 gap-1.5 mt-2 text-[10px]">
-            {channelPie.map((c, i) => (
-              <div key={i} className="flex items-center gap-1.5 min-w-0">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
-                <span className="text-muted-foreground truncate">{c.name}</span>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 gap-1.5 mt-2 text-xs max-h-[140px] overflow-y-auto pr-1 custom-scrollbar">
+            {channelPie.map((c, i) => {
+              const totalRev = data?.totalRevenue || channelPie.reduce((s, x) => s + x.value, 0) || 1;
+              const pct = ((c.value / totalRev) * 100).toFixed(1);
+              return (
+                <div key={i} className="flex items-center justify-between gap-1.5 min-w-0 bg-muted/30 px-2 py-1 rounded">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+                    <span className="text-foreground font-medium text-xs truncate" title={c.name}>{c.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-blue-600 dark:text-blue-400 font-medium text-[11px]">{fmtVndShort(c.value)}</span>
+                    <span className="font-semibold text-foreground text-[10px] bg-background px-1 py-0.5 rounded border border-border">{pct}%</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -167,12 +186,14 @@ export default function OrdersBreakdown({ query }: { query: string }) {
           </h3>
           <div className="h-[260px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={teamBar} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <BarChart data={teamBar} margin={{ top: 25, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                 <XAxis dataKey="name" stroke="#6b7280" fontSize={11} tickLine={false} />
                 <YAxis stroke="#6b7280" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${Math.round(v / 1e6)}M`} />
                 <Tooltip contentStyle={chart.tooltip} formatter={(v) => fmtVnd(Number(v))} cursor={{ fill: "rgba(59,130,246,0.08)" }} />
-                <Bar dataKey="revenue" name="Doanh thu" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={34} />
+                <Bar dataKey="revenue" name="Doanh thu" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={34}>
+                  <LabelList dataKey="revenue" position="top" formatter={(v: any) => fmtVndShort(Number(v || 0))} style={{ fill: chart.labelFill, fontSize: "10px", fontWeight: "600" }} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

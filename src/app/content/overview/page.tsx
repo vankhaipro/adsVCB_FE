@@ -250,7 +250,7 @@ export default function ContentOverviewPage() {
     if (platform) filtered = filtered.filter((x) => x.platform.toUpperCase() === platform.toUpperCase());
     if (channel) filtered = filtered.filter((x) => x.channel === channel);
     if (staff) filtered = filtered.filter((x) => x.staff === staff);
-    return distinct(filtered.map((x) => x.team));
+    return distinct(filtered.map((x) => x.team)).filter((t) => t !== "Không xác định");
   }, [allList, platform, channel, staff]);
 
   const staffOptions = useMemo(() => {

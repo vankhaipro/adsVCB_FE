@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid,
-  PieChart, Pie, Legend, LabelList,
+  PieChart, Pie, Legend, LabelList, Label,
 } from "recharts";
 import { SpinnerGap, WarningOctagon, WarningCircle, CheckCircle } from "@phosphor-icons/react";
 import { apiGet, fmtVnd } from "@/lib/api";
@@ -40,12 +40,22 @@ const platColor = (p: string) => (p === "META" ? "#60a5fa" : "#f472b6");
 // Bảng màu dùng chung cho các chiều phân loại.
 const SPENDER_COLORS: Record<string, string> = { "Việt": "#1e3a8a", "Thành": "#f59e0b", "SB": "#10b981", "Không xác định": "#ef4444" };
 const LINE_COLORS: Record<string, string> = { A4: "#ef4444", A1: "#10b981", A2: "#3b82f6", A3: "#8b5cf6", A5: "#f59e0b", "Không rõ": "#6b7280" };
-const OBJ_COLORS: Record<string, string> = { "Mess": "#f59e0b", "Like page": "#10b981", "Chuyển đổi web": "#ef4444", "Tương tác": "#3b82f6", "Không XĐ": "#6b7280" };
+// Khoá phải khớp CampaignObjectiveLabel ở adsVCB_BE/src/lib/campaign-objective.ts.
+// Thiếu khoá nào thì cột đó rơi về PALETTE[i] và đổi màu theo thứ tự sắp xếp.
+const OBJ_COLORS: Record<string, string> = { "Mess": "#f59e0b", "Like page": "#10b981", "Chuyển đổi web": "#ef4444", "Tương tác": "#3b82f6", "Follow": "#a855f7", "Khác": "#6b7280" };
 const NAMEQ_COLORS: Record<string, string> = { "Chuẩn": "#10b981", "SB tự động": "#3b82f6", "Thiếu thành phần": "#f59e0b", "Ngoài hệ thống / Rác": "#ef4444" };
 const PALETTE = ["#1e3a8a", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#3b82f6", "#14b8a6", "#f472b6", "#64748b"];
 
 const fmtM = (n: number) => `${(n / 1e6).toFixed(1)}M`;
 const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n || 0));
+
+function fmtVndShort(n: number): string {
+  const abs = Math.abs(n || 0);
+  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}Bđ`;
+  if (abs >= 1e6) return `${(n / 1e6).toFixed(1)}Mđ`;
+  if (abs >= 1e3) return `${(n / 1e3).toFixed(0)}Kđ`;
+  return `${Math.round(n)}đ`;
+}
 
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
@@ -70,7 +80,7 @@ export default function ReportsPage() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      apiGet("/mkt-api/reports").then(setR).catch(() => {}),
+      apiGet(`/mkt-api/reports?from=${dateFrom}&to=${dateTo}`).then(setR).catch(() => {}),
       apiGet(`/mkt-api/reports/meta?from=${dateFrom}&to=${dateTo}`).then(setM).catch(() => setM(null)),
     ]).finally(() => setLoading(false));
   }, [dateFrom, dateTo]);
@@ -143,18 +153,38 @@ export default function ReportsPage() {
               {/* 1. Người chạy */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <Card title="Chi tiêu theo người chạy">
-                  <div className="h-72 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={m.bySpender} dataKey="spend" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={2}>
-                          {m.bySpender.map((s, i) => (
-                            <Cell key={i} fill={SPENDER_COLORS[s.name] || PALETTE[i % PALETTE.length]} />
-                          ))}
-                        </Pie>
-                        <Legend wrapperStyle={{ fontSize: 10 }} />
-                        <Tooltip formatter={(v) => fmtVnd(Number(v))} contentStyle={chart.tooltip} />
-                      </PieChart>
-                    </ResponsiveContainer>
+                  <div className="flex items-center gap-4 h-72">
+                    <div className="w-[180px] h-[180px] shrink-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={m.bySpender} dataKey="spend" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
+                            {m.bySpender.map((s, i) => (
+                              <Cell key={i} fill={SPENDER_COLORS[s.name] || PALETTE[i % PALETTE.length]} />
+                            ))}
+                            <Label value={fmtVndShort(m.kpis.totalSpend)} position="center" fill={chart.labelFill} fontSize={11} fontWeight="bold" />
+                          </Pie>
+                          <Tooltip formatter={(v) => fmtVnd(Number(v))} contentStyle={chart.tooltip} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2 max-h-[240px] overflow-y-auto pr-1 custom-scrollbar">
+                      {m.bySpender.map((s, i) => {
+                        const pct = m.kpis.totalSpend > 0 ? ((s.spend / m.kpis.totalSpend) * 100).toFixed(1) : "0";
+                        const color = SPENDER_COLORS[s.name] || PALETTE[i % PALETTE.length];
+                        return (
+                          <div key={i} className="flex items-center justify-between gap-1.5 min-w-0 bg-muted/30 px-2 py-1 rounded">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                              <span className="text-foreground font-medium text-xs truncate" title={s.name}>{s.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <span className="text-blue-600 dark:text-blue-400 font-medium text-[11px]">{fmtVndShort(s.spend)}</span>
+                              <span className="font-semibold text-foreground text-[10px] bg-background px-1 py-0.5 rounded border border-border">{pct}%</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </Card>
                 <Card title="CP / kết quả theo người chạy" subtitle="Chi phí trung bình cho mỗi kết quả — càng thấp càng hiệu quả.">
@@ -315,16 +345,35 @@ export default function ReportsPage() {
               {/* Chất lượng đặt tên */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <Card title="Chất lượng đặt tên" subtitle="Tỉ lệ chiến dịch đặt tên đúng chuẩn hệ thống.">
-                  <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={m.namingQuality} dataKey="count" nameKey="name" innerRadius={50} outerRadius={85} paddingAngle={2}>
-                          {m.namingQuality.map((q, i) => <Cell key={i} fill={NAMEQ_COLORS[q.name] || PALETTE[i % PALETTE.length]} />)}
-                        </Pie>
-                        <Legend wrapperStyle={{ fontSize: 10 }} />
-                        <Tooltip formatter={(v, _n, p) => [`${fmtNum(Number(v))} CK · ${(p?.payload as NameQ).pct.toFixed(1)}%`, "Số CK"]} contentStyle={chart.tooltip} />
-                      </PieChart>
-                    </ResponsiveContainer>
+                  <div className="flex items-center gap-4 h-64">
+                    <div className="w-[170px] h-[170px] shrink-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={m.namingQuality} dataKey="count" nameKey="name" innerRadius={45} outerRadius={75} paddingAngle={2}>
+                            {m.namingQuality.map((q, i) => <Cell key={i} fill={NAMEQ_COLORS[q.name] || PALETTE[i % PALETTE.length]} />)}
+                            <Label value={`${m.kpis.totalCampaigns} CK`} position="center" fill={chart.labelFill} fontSize={12} fontWeight="bold" />
+                          </Pie>
+                          <Tooltip formatter={(v, _n, p) => [`${fmtNum(Number(v))} CK · ${(p?.payload as NameQ).pct.toFixed(1)}%`, "Số CK"]} contentStyle={chart.tooltip} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+                      {m.namingQuality.map((q, i) => {
+                        const color = NAMEQ_COLORS[q.name] || PALETTE[i % PALETTE.length];
+                        return (
+                          <div key={i} className="flex items-center justify-between gap-1.5 min-w-0 bg-muted/30 px-2 py-1 rounded">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                              <span className="text-foreground font-medium text-xs truncate" title={q.name}>{q.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <span className="text-blue-600 dark:text-blue-400 font-medium text-[11px]">{q.count} CK</span>
+                              <span className="font-semibold text-foreground text-[10px] bg-background px-1 py-0.5 rounded border border-border">{q.pct.toFixed(1)}%</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </Card>
                 <Card title="Lỗi đặt tên — chiến dịch đang active" subtitle="CK active thiếu thành phần trong tên (ưu tiên chi tiêu cao).">
@@ -374,13 +423,14 @@ export default function ReportsPage() {
                 <Card title="Top tài khoản theo chi tiêu">
                   <div className="h-80 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={r.spendByAccount} margin={{ top: 8, right: 8, bottom: 60, left: 8 }}>
+                      <BarChart data={r.spendByAccount} margin={{ top: 22, right: 8, bottom: 60, left: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
                         <XAxis dataKey="name" angle={-30} textAnchor="end" interval={0} tick={{ ...axisTick }} height={70} />
                         <YAxis tick={axisTick} tickFormatter={fmtM} />
                         <Tooltip formatter={(v) => fmtVnd(Number(v))} contentStyle={chart.tooltip} cursor={{ fill: chart.cursor }} />
                         <Bar dataKey="spend" radius={[4, 4, 0, 0]}>
                           {r.spendByAccount.map((a, i) => <Cell key={i} fill={platColor(a.platform)} />)}
+                          <LabelList dataKey="spend" position="top" formatter={(v: any) => fmtVndShort(Number(v || 0))} style={{ fill: chart.axis, fontSize: 10, fontWeight: "600" }} />
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
