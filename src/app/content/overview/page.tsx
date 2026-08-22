@@ -366,21 +366,19 @@ export default function ContentOverviewPage() {
   const topVideosByView = report?.topVideos ? report.topVideos.map((v, i) => ({ id: i + 1, caption: v.caption || "", link: v.postUrl || "#", views: fmtNum(v.views) })) : [];
   const topChannelsByView = report?.topChannels ? report.topChannels.map((c) => ({ platform: PLATFORM_LABEL[c.platform] || c.platform, name: c.name, views: fmtNum(c.views), follows: fmtNum(c.followers) })) : [];
   const topStaffByView = report?.topStaff ? report.topStaff.map((s, i) => ({ id: i + 1, name: s.name, team: s.team || "-", views: fmtNum(s.views) })) : [];
-  // Top SKU thật (giữ 2 bảng "ghi nhận"/"thời gian tạo" cùng dữ liệu vì DB chỉ có 1 mốc ngày).
+  // Trước đây mỗi bảng dưới đây có 2 bản "(ghi nhận)" và "(thời gian tạo)" cùng trỏ vào một
+  // biến, nên hiện ra hai bảng số y hệt nhau — người xem tưởng là hai chỉ số khác nhau.
+  // OrganicVideo chỉ có postedAt (ngày đăng) và lastSyncedAt (@updatedAt, mốc kỹ thuật),
+  // không có mốc nào để phân biệt hai chiều đó, nên chỉ giữ một bảng cho mỗi loại.
   const realTopSkuData = report?.byProduct
     ? report.byProduct.filter((x) => x.name !== "Khác").slice(0, 10)
         .map((x) => ({ sku: x.name, count: x.count, views: fmtNum(x.views) }))
     : [];
-  const topSkuDataRecord = realTopSkuData;
-  const topSkuCreateRecord = realTopSkuData;
 
-  // Hiệu suất tuyến thật (cũng giữ 2 bảng cùng dữ liệu).
   const realLinePerf = report?.byLine
     ? report.byLine.filter((x) => x.name !== "Khác")
         .map((x) => ({ line: x.name, count: fmtNum(x.count), views: fmtNum(x.views), interactions: fmtNum(x.interactions) }))
     : [];
-  const linePerformanceDataRecord = realLinePerf;
-  const linePerformanceCreateRecord = realLinePerf;
 
   // Top nội dung trùng caption nhiều nhất.
   const topProductionContent = report?.topContent ? report.topContent.map((x) => ({ name: x.name, count: x.count })) : [];
@@ -854,8 +852,8 @@ export default function ContentOverviewPage() {
         </div>
       )}
 
-      {/* Section: Concept & SKU analysis */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+      {/* Section: Concept & SKU analysis — 3 cột từ khi bỏ bảng Top SKU trùng lặp */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         
         {/* Concept Distribution */}
         <div className="bg-card border border-border rounded-xl p-5 shadow-md flex flex-col justify-between">
@@ -920,9 +918,9 @@ export default function ContentOverviewPage() {
           </div>
         </div>
 
-        {/* Top Sku data record */}
+        {/* Top Sku */}
         <div className="bg-card border border-border rounded-xl p-5 shadow-md">
-          <h3 className="text-xs font-semibold text-foreground mb-3">Top sản phẩm sản xuất video nhiều nhất (ghi nhận)</h3>
+          <h3 className="text-xs font-semibold text-foreground mb-3">Top sản phẩm sản xuất video nhiều nhất</h3>
           <div className="overflow-y-auto max-h-[190px] text-[13px]">
             <table className="w-full text-left">
               <thead>
@@ -933,7 +931,7 @@ export default function ContentOverviewPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-foreground">
-                {topSkuDataRecord.map((row, idx) => (
+                {realTopSkuData.map((row, idx) => (
                   <tr key={idx} className="hover:bg-muted/20">
                     <td className="py-1.5 font-semibold text-foreground">{row.sku}</td>
                     <td className="py-1.5 text-right">{row.count}</td>
@@ -945,96 +943,36 @@ export default function ContentOverviewPage() {
           </div>
         </div>
 
-        {/* Top Sku create record */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-md">
-          <h3 className="text-xs font-semibold text-foreground mb-3">Top sản phẩm sản xuất video nhiều nhất (thời gian tạo)</h3>
-          <div className="overflow-y-auto max-h-[190px] text-[13px]">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="pb-1.5">SKU</th>
-                  <th className="pb-1.5 text-right">Videos</th>
-                  <th className="pb-1.5 text-right">Xem</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border text-foreground">
-                {topSkuCreateRecord.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-muted/20">
-                    <td className="py-1.5 font-semibold text-foreground">{row.sku}</td>
-                    <td className="py-1.5 text-right">{row.count}</td>
-                    <td className="py-1.5 text-right text-amber-500">{row.views}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       </div>
 
-      {/* Section: Tables grid (detailed line/format performance) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Hieu suat tuyen ghi du lieu */}
-        <div className="bg-card border border-border rounded-xl p-4 shadow-md">
-          <h4 className="text-xs font-bold text-foreground mb-3 flex items-center gap-1.5">
-            <Tag size={14} className="text-blue-500" />
-            Hiệu suất tuyến nội dung (Thời gian ghi dữ liệu)
-          </h4>
-          <div className="overflow-x-auto text-[13px]">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="pb-2 font-medium">Tuyến</th>
-                  <th className="pb-2 text-right">Số lượng</th>
-                  <th className="pb-2 text-right">Lượt xem</th>
-                  <th className="pb-2 text-right">Tương tác</th>
+      {/* Section: Hiệu suất tuyến nội dung */}
+      <div className="bg-card border border-border rounded-xl p-4 shadow-md">
+        <h4 className="text-xs font-bold text-foreground mb-3 flex items-center gap-1.5">
+          <Tag size={14} className="text-blue-500" />
+          Hiệu suất tuyến nội dung
+        </h4>
+        <div className="overflow-x-auto text-[13px]">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-border text-muted-foreground">
+                <th className="pb-2 font-medium">Tuyến</th>
+                <th className="pb-2 text-right">Số lượng</th>
+                <th className="pb-2 text-right">Lượt xem</th>
+                <th className="pb-2 text-right">Tương tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border text-foreground">
+              {realLinePerf.map((row, idx) => (
+                <tr key={idx} className="hover:bg-muted/20">
+                  <td className="py-2 font-bold text-foreground">{row.line}</td>
+                  <td className="py-2 text-right">{row.count}</td>
+                  <td className="py-2 text-right text-blue-400">{row.views}</td>
+                  <td className="py-2 text-right text-muted-foreground">{row.interactions}</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-border text-foreground">
-                {linePerformanceDataRecord.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-muted/20">
-                    <td className="py-2 font-bold text-foreground">{row.line}</td>
-                    <td className="py-2 text-right">{row.count}</td>
-                    <td className="py-2 text-right text-blue-400">{row.views}</td>
-                    <td className="py-2 text-right text-muted-foreground">{row.interactions}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-
-        {/* Hieu suat tuyen thoi gian tao */}
-        <div className="bg-card border border-border rounded-xl p-4 shadow-md">
-          <h4 className="text-xs font-bold text-foreground mb-3 flex items-center gap-1.5">
-            <Tag size={14} className="text-amber-500" />
-            Hiệu suất tuyến nội dung (Thời gian tạo nội dung)
-          </h4>
-          <div className="overflow-x-auto text-[13px]">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="pb-2 font-medium">Tuyến</th>
-                  <th className="pb-2 text-right">Số lượng</th>
-                  <th className="pb-2 text-right">Lượt xem</th>
-                  <th className="pb-2 text-right">Tương tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border text-foreground">
-                {linePerformanceCreateRecord.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-muted/20">
-                    <td className="py-2 font-bold text-foreground">{row.line}</td>
-                    <td className="py-2 text-right">{row.count}</td>
-                    <td className="py-2 text-right text-amber-500">{row.views}</td>
-                    <td className="py-2 text-right text-muted-foreground">{row.interactions}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       </div>
 
       {/* Section: Top Performance list grid */}
