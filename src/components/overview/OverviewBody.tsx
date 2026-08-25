@@ -3,10 +3,11 @@
 import OverviewCharts from "./OverviewCharts";
 import CampaignTable from "./CampaignTable";
 import ProductTable from "./ProductTable";
+import type { BreakdownData, TrendPoint } from "./dashboardData";
 
 interface OverviewBodyProps {
-  trend: any[];
-  breakdown: any;
+  trend: TrendPoint[];
+  breakdown: BreakdownData | null;
 }
 
 // 2 bảng chi tiết tự fetch dữ liệu + tự lọc (ngày/chiến dịch/tài khoản) độc lập với thanh lọc tổng.

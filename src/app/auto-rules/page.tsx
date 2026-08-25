@@ -2,11 +2,9 @@
 
 import { useCallback, useEffect, useState, useRef } from "react";
 import {
-  Plus,
   SpinnerGap,
   Play,
   Trash,
-  GitBranch,
   X,
   Gear,
   CaretDown,
@@ -23,8 +21,6 @@ import {
   FileText,
   Clock,
   ShareNetwork,
-  Calendar,
-  Envelope,
   Database
 } from "@phosphor-icons/react";
 import { apiGet, apiPost, apiPatch, apiDelete, getAuthUser } from "@/lib/api";
@@ -33,6 +29,33 @@ import Pagination from "@/components/Pagination";
 // Các chỉ số backend thực sự đọc được từ OrganicVideo và có ô "N ngày qua".
 // Phải khớp RulesService.WINDOWED_METRICS ở backend.
 const WINDOWED_METRICS = ["views", "likes", "comments", "shares"];
+
+// Một dòng điều kiện trong conditionsList (dựng ở modal, gửi nguyên vẹn xuống BE).
+type ConditionItem = {
+  // id do UI sinh khi thêm dòng, luôn có.
+  id: string;
+  // type và value luôn được đặt khi dựng dòng điều kiện (xem state khởi tạo + hàm add),
+  // nên để bắt buộc — code phía dưới vốn đã giả định vậy.
+  type: string;
+  value: string | number | string[];
+  operator?: string;
+  days?: string | number;
+  metric?: string;
+  field?: string;
+  keyword?: string;
+};
+
+// Một dòng hành động trong actionsList.
+type ActionItem = {
+  id: string;
+  type: string;
+  label?: string;
+  value?: string;
+};
+
+// Chỉ khai các field trang này thực sự dùng của /mkt-api/accounts và /mkt-api/campaigns.
+type AdAccountOption = { id: string; name: string | null; externalId: string; platform: string };
+type CampaignOption = { id: string; name: string; platform: string; status: string };
 
 type Rule = {
   id: string;
@@ -50,7 +73,7 @@ type Rule = {
     startDate?: string;
     endDate?: string;
     oncePerContent?: boolean;
-    conditionsList?: any[];
+    conditionsList?: ConditionItem[];
     appliedTo?: string;
   };
   action: { 
@@ -65,7 +88,10 @@ type Rule = {
     notifyTo?: string;
     notifyEmail?: string;
     notifyHooks?: string[];
-    actionsList?: any[];
+    actionsList?: ActionItem[];
+    // Nhánh "Tạo quảng cáo": tạo campaign mới hay bật campaign có sẵn.
+    mode?: "new_campaign" | "existing_campaign";
+    targetCampaignId?: string;
   };
   schedule: string | null;
   isActive: boolean;
@@ -74,10 +100,10 @@ type Rule = {
   updatedAt: string;
 };
 
-const condLabel = (c: any) => {
+const condLabel = (c: Rule["condition"] | null | undefined) => {
   if (!c) return "Mọi chiến dịch";
   if (c.conditionsList && c.conditionsList.length > 0) {
-    const parts = c.conditionsList.map((cond: any) => {
+    const parts = c.conditionsList.map((cond) => {
       if (cond.type === "days_since_created") {
         return `Ngày tạo < ${cond.value}`;
       }
@@ -124,7 +150,7 @@ const condLabel = (c: any) => {
   return `NẾU ${fieldStr} ${opStr} ${Number(c.value).toLocaleString("vi-VN")}`;
 };
 
-const actLabel = (a: any) => {
+const actLabel = (a: Rule["action"] | null | undefined) => {
   if (!a) return "Chỉ cảnh báo";
   if (a.type === "pause") return "Tắt";
   if (a.type === "enable") return "Bật";
@@ -136,15 +162,15 @@ const checkIsOrganic = (r: Rule) => {
   if (!r) return false;
   if (r.condition?.type === "organic_video") return true;
   if (r.action?.type === "create" || r.action?.type === "enable") return true;
-  if ((r.action as any)?.mode === "new_campaign" || (r.action as any)?.mode === "existing_campaign") return true;
-  if (Array.isArray(r.condition?.conditionsList) && r.condition.conditionsList.some((c: any) => ["views", "likes", "page_name", "tags", "team", "days_since_created", "impressions", "engagement"].includes(c?.type))) return true;
+  if (r.action?.mode === "new_campaign" || r.action?.mode === "existing_campaign") return true;
+  if (Array.isArray(r.condition?.conditionsList) && r.condition.conditionsList.some((c) => ["views", "likes", "page_name", "tags", "team", "days_since_created", "impressions", "engagement"].includes(c?.type))) return true;
   return false;
 };
 
 export default function AutoRulesPage() {
   const [rules, setRules] = useState<Rule[]>([]);
-  const [adAccounts, setAdAccounts] = useState<any[]>([]);
-  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [adAccounts, setAdAccounts] = useState<AdAccountOption[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -181,16 +207,16 @@ export default function AutoRulesPage() {
   const [adConfigTab, setAdConfigTab] = useState<"new_campaign" | "existing_campaign">("new_campaign");
 
   // Dynamic conditions list state for Tạo quảng cáo mới (Organic)
-  const [conditionsList, setConditionsList] = useState<any[]>([]);
+  const [conditionsList, setConditionsList] = useState<ConditionItem[]>([]);
 
   // Dynamic state for Quản lý quảng cáo (Pause/Manage modal)
   const [mAdName, setMAdName] = useState("");
   const [mAdPlatform, setMAdPlatform] = useState("META");
   const [mAdAppliedTo, setMAdAppliedTo] = useState("Chiến dịch");
-  const [mAdConditions, setMAdConditions] = useState<any[]>([
+  const [mAdConditions, setMAdConditions] = useState<ConditionItem[]>([
     { id: "1", type: "page_name", operator: "eq", value: "" }
   ]);
-  const [mAdActions, setMAdActions] = useState<any[]>([
+  const [mAdActions, setMAdActions] = useState<ActionItem[]>([
     { id: "1", type: "lark", label: "Gửi thông báo tới", value: "" }
   ]);
   const [mAdSchedule, setMAdSchedule] = useState("continuous");
@@ -249,9 +275,10 @@ export default function AutoRulesPage() {
     };
   }, []);
 
+  // Không setLoading(true) đồng bộ: load() được gọi thẳng trong useEffect nên sẽ tạo
+  // cascading render. loading khởi tạo true và chỉ tắt khi fetch xong.
   const load = useCallback(() => {
-    setLoading(true);
-    apiGet("/rules")
+    return apiGet("/rules")
       .then(setRules)
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -268,7 +295,7 @@ export default function AutoRulesPage() {
       .then((data) => {
         setAdAccounts(data);
         if (data.length > 0) {
-          const matching = data.find((acc: any) => acc.platform === cAdForm.platform);
+          const matching = data.find((acc: AdAccountOption) => acc.platform === cAdForm.platform);
           setCAdForm((prev) => ({ ...prev, adAccountId: prev.adAccountId || (matching ? matching.id : data[0].id) }));
         }
       })
@@ -328,7 +355,7 @@ export default function AutoRulesPage() {
     ]);
   };
 
-  const updateCondition = (id: string, key: string, val: any) => {
+  const updateCondition = (id: string, key: string, val: ConditionItem[keyof ConditionItem]) => {
     setConditionsList(prev => prev.map(c => c.id === id ? { ...c, [key]: val } : c));
   };
 
@@ -344,7 +371,7 @@ export default function AutoRulesPage() {
     ]);
   };
 
-  const updateMCondition = (id: string, key: string, val: any) => {
+  const updateMCondition = (id: string, key: string, val: ConditionItem[keyof ConditionItem]) => {
     setMAdConditions(prev => prev.map(c => c.id === id ? { ...c, [key]: val } : c));
   };
 
@@ -361,7 +388,7 @@ export default function AutoRulesPage() {
     ]);
   };
 
-  const updateMAction = (id: string, key: string, val: any) => {
+  const updateMAction = (id: string, key: string, val: ActionItem[keyof ActionItem]) => {
     setMAdActions(prev => prev.map(a => a.id === id ? { ...a, [key]: val } : a));
   };
 
@@ -418,8 +445,8 @@ export default function AutoRulesPage() {
 
     const isOrganic = checkIsOrganic(r);
     if (isOrganic) {
-      const mode = (r.action as any)?.mode || ((r.action as any)?.targetCampaignId ? "existing_campaign" : "new_campaign");
-      setAdConfigTab(mode as any);
+      const mode = r.action?.mode || (r.action?.targetCampaignId ? "existing_campaign" : "new_campaign");
+      setAdConfigTab(mode);
 
       setCAdForm({
         name: r.name || "",
@@ -427,21 +454,21 @@ export default function AutoRulesPage() {
         adAccountId: r.condition?.adAccountId || "",
         startDate: r.condition?.startDate || "",
         endDate: r.condition?.endDate || "",
-        optimizationGoal: (r.action as any)?.optimizationGoal || "Tối đa hoá Lượt thích trang",
-        budgetType: (r.action as any)?.budgetType || "daily",
-        budgetValue: (r.action as any)?.budgetValue ? String((r.action as any).budgetValue) : "",
-        savedAudience: (r.action as any)?.savedAudience || "",
-        adNameTemplate: (r.action as any)?.adNameTemplate || "SB - {{createdAt}} - {{team}} - {{page}} - {{hashtag}} - Follow - {{caption}}",
-        statusPaused: (r.action as any)?.statusPaused ?? false,
+        optimizationGoal: r.action?.optimizationGoal || "Tối đa hoá Lượt thích trang",
+        budgetType: r.action?.budgetType || "daily",
+        budgetValue: r.action?.budgetValue ? String(r.action.budgetValue) : "",
+        savedAudience: r.action?.savedAudience || "",
+        adNameTemplate: r.action?.adNameTemplate || "SB - {{createdAt}} - {{team}} - {{page}} - {{hashtag}} - Follow - {{caption}}",
+        statusPaused: r.action?.statusPaused ?? false,
         oncePerContent: r.condition?.oncePerContent ?? true,
-        notifyTo: (r.action as any)?.notifyTo || "Lark",
+        notifyTo: r.action?.notifyTo || "Lark",
         runSchedule: r.schedule === "0 0 * * *" ? "daily" : r.schedule === "*/30 * * * *" ? "continuous" : "custom",
-        targetCampaignId: (r.action as any)?.targetCampaignId || "",
+        targetCampaignId: r.action?.targetCampaignId || "",
       });
 
       const conds = r.condition?.conditionsList || [];
       if (conds.length > 0) {
-        setConditionsList(conds.map((c: any, idx: number) => {
+        setConditionsList(conds.map((c: ConditionItem, idx: number) => {
           let val = c.value ?? "";
           if ((c.type === "tags" || c.type === "team") && typeof val === "string") {
             val = val.split(",").map((t: string) => t.trim()).filter(Boolean);
@@ -466,7 +493,7 @@ export default function AutoRulesPage() {
         ]);
       }
 
-      setWebhookList(Array.isArray((r.action as any)?.notifyHooks) ? (r.action as any).notifyHooks : []);
+      setWebhookList(Array.isArray(r.action?.notifyHooks) ? r.action.notifyHooks : []);
       setShowCreateAdModal(true);
     } else {
       setMAdName(r.name || "");
@@ -475,7 +502,7 @@ export default function AutoRulesPage() {
 
       const conds = r.condition?.conditionsList || [];
       if (conds.length > 0) {
-        setMAdConditions(conds.map((c: any, idx: number) => ({
+        setMAdConditions(conds.map((c: ConditionItem, idx: number) => ({
           id: String(idx + 1),
           type: c.type || "spend",
           operator: c.operator || "gt",
@@ -492,9 +519,9 @@ export default function AutoRulesPage() {
         ]);
       }
 
-      const acts = (r.action as any)?.actionsList || [];
+      const acts = r.action?.actionsList || [];
       if (acts.length > 0) {
-        setMAdActions(acts.map((a: any, idx: number) => ({
+        setMAdActions(acts.map((a: ActionItem, idx: number) => ({
           id: String(idx + 1),
           type: a.type || "lark",
           label: a.label || "Gửi thông báo tới",
@@ -1588,7 +1615,7 @@ export default function AutoRulesPage() {
                           onChange={(e) => setCAdForm({ ...cAdForm, statusPaused: e.target.checked })}
                           className="rounded border-border text-blue-600 focus:ring-blue-500 w-4.5 h-4.5"
                         />
-                        <span>Tạo quảng cáo mới ở trạng thái "Tạm dừng"</span>
+                        <span>Tạo quảng cáo mới ở trạng thái &quot;Tạm dừng&quot;</span>
                       </label>
                       <label className="flex items-center gap-2.5 text-[11px] text-foreground cursor-pointer font-medium">
                         <input
@@ -1663,15 +1690,15 @@ export default function AutoRulesPage() {
                       >
                         <option value="">-- Tự động tìm theo mã liên kết (Hashtag/Mã video) --</option>
                         {campaigns
-                          .filter((c: any) => c.platform === cAdForm.platform && (c.status === "PAUSED" || c.status === "DISABLE" || c.status === "paused" || c.status === "disable" || c.status === "active" || c.status === "ACTIVE"))
-                          .map((c: any) => (
+                          .filter((c) => c.platform === cAdForm.platform && (c.status === "PAUSED" || c.status === "DISABLE" || c.status === "paused" || c.status === "disable" || c.status === "active" || c.status === "ACTIVE"))
+                          .map((c) => (
                             <option key={c.id} value={c.id}>
                               {c.name} ({c.platform})
                             </option>
                           ))}
                       </select>
                       <span className="text-[10px] text-muted-foreground mt-1 leading-normal">
-                        Nếu chọn một chiến dịch cụ thể, hệ thống sẽ kích hoạt đúng chiến dịch này. Nếu chọn "Tự động tìm...", hệ thống sẽ quét các chiến dịch khớp với mã/hashtag trong video organic để bật lên.
+                        Nếu chọn một chiến dịch cụ thể, hệ thống sẽ kích hoạt đúng chiến dịch này. Nếu chọn &quot;Tự động tìm...&quot;, hệ thống sẽ quét các chiến dịch khớp với mã/hashtag trong video organic để bật lên.
                       </span>
                     </div>
 

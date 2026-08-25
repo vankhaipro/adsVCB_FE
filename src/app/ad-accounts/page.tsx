@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SpinnerGap, MetaLogo, TiktokLogo } from "@phosphor-icons/react";
 import { apiGet, fmtVnd } from "@/lib/api";
 import DateRangePicker, { presetToDates } from "@/components/DateRangePicker";
@@ -18,28 +18,36 @@ type AdAccount = {
 };
 
 export default function AdAccountsPage() {
-  const [accounts, setAccounts] = useState<AdAccount[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState("thisMonth");
   const [dateFrom, setDateFrom] = useState(() => presetToDates("thisMonth").from);
   const [dateTo, setDateTo] = useState(() => presetToDates("thisMonth").to);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setAccounts(await apiGet(`/mkt-api/accounts?from=${dateFrom}&to=${dateTo}`));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
-    } finally {
-      setLoading(false);
-    }
-  }, [dateFrom, dateTo]);
+  // Lưu dữ liệu kèm URL đã sinh ra nó: "đang tải" suy ra bằng cách so URL, thay vì
+  // setLoading(true) đồng bộ trong effect (gây cascading render).
+  const url = `/mkt-api/accounts?from=${dateFrom}&to=${dateTo}`;
+  const [result, setResult] = useState<{ url: string; accounts: AdAccount[] } | null>(null);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    apiGet(url)
+      .then((d) => {
+        if (cancelled) return;
+        setResult({ url, accounts: d });
+        setError(null);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setResult({ url, accounts: [] });
+        setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  const loading = result?.url !== url;
+  const accounts = useMemo(() => result?.accounts ?? [], [result]);
 
   // Chỉ hiện tài khoản có tiêu tiền TRONG KỲ đang chọn. Tài khoản 0đ là đã ngừng dùng hoặc
   // chưa chạy gì trong kỳ — chúng chiếm chỗ trong lưới mà không mang thông tin gì.

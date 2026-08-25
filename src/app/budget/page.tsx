@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SpinnerGap, MagnifyingGlass, Check, MetaLogo, TiktokLogo, CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { apiGet, apiPatch, fmtVnd } from "@/lib/api";
 
@@ -24,26 +24,33 @@ export default function BudgetPage() {
   const [page, setPage] = useState(0);
   const BUDGET_PER_PAGE = 20;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setCampaigns(await apiGet("/mkt-api/campaigns"));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
-    } finally {
-      setLoading(false);
-    }
+  // Chỉ tải một lần khi vào trang; setState nằm trong .then() nên không có setState
+  // đồng bộ trong effect. loading khởi tạo true và chỉ tắt khi xong.
+  useEffect(() => {
+    let cancelled = false;
+    apiGet("/mkt-api/campaigns")
+      .then((d) => {
+        if (cancelled) return;
+        setCampaigns(d);
+        setError(null);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  // Reset trang về 0 khi tìm kiếm
-  useEffect(() => {
+  // Reset trang về 0 khi tìm kiếm (điều chỉnh state lúc render).
+  const [prevQ, setPrevQ] = useState(q);
+  if (prevQ !== q) {
+    setPrevQ(q);
     setPage(0);
-  }, [q]);
+  }
 
   const save = async (c: Campaign) => {
     const val = Number(edits[c.id]);
@@ -74,7 +81,7 @@ export default function BudgetPage() {
   const pageRange = [...Array(pages).keys()].filter(i => {
     const maxVisible = 5;
     let startPage = Math.max(0, page - 2);
-    let endPage = Math.min(pages - 1, startPage + maxVisible - 1);
+    const endPage = Math.min(pages - 1, startPage + maxVisible - 1);
     if (endPage - startPage < maxVisible - 1) {
       startPage = Math.max(0, endPage - maxVisible + 1);
     }

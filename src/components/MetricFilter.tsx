@@ -72,12 +72,13 @@ export default function MetricFilter({ value, onApply }: Props) {
   const [draft, setDraft] = useState<MetricCondition[]>(value);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Mở panel -> nạp lại draft từ giá trị đang áp dụng (thêm 1 dòng trống nếu rỗng)
-  useEffect(() => {
-    if (open) {
-      setDraft(value.length ? value : [{ metric: "spend", op: "gt", value: "" }]);
-    }
-  }, [open, value]);
+  // Mở panel -> nạp lại draft từ giá trị đang áp dụng (thêm 1 dòng trống nếu rỗng).
+  // Điều chỉnh state lúc render theo nhịp chuyển đóng→mở thay vì useEffect.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setDraft(value.length ? value : [{ metric: "spend", op: "gt", value: "" }]);
+  }
 
   useEffect(() => {
     if (!open) return;

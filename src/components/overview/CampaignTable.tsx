@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { CaretLeft, CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
 import { Panel, Th, StatusPill, ChannelChip } from "./parts";
 import {
@@ -22,10 +22,14 @@ export default function CampaignTable() {
   const [page, setPage] = useState(0);
   const { filteredCampaigns, accountOptions, campaignOptions, pageOptions, teamOptions, filterState } = useTableInsights();
 
-  // Reset về trang đầu khi bộ lọc thay đổi danh sách.
-  useEffect(() => {
+  // Reset về trang đầu khi bộ lọc thay đổi danh sách. Điều chỉnh state ngay trong
+  // render (pattern React khuyến nghị) thay vì useEffect: tránh một nhịp render thừa
+  // hiển thị trang cũ trên dữ liệu mới.
+  const [prevRows, setPrevRows] = useState(filteredCampaigns);
+  if (prevRows !== filteredCampaigns) {
+    setPrevRows(filteredCampaigns);
     setPage(0);
-  }, [filteredCampaigns]);
+  }
 
   const pages = Math.max(1, Math.ceil(filteredCampaigns.length / PER_PAGE));
   const start = page * PER_PAGE;
@@ -54,7 +58,7 @@ export default function CampaignTable() {
     const range = [];
     const maxVisible = 5;
     let startPage = Math.max(0, page - 2);
-    let endPage = Math.min(pages - 1, startPage + maxVisible - 1);
+    const endPage = Math.min(pages - 1, startPage + maxVisible - 1);
     
     if (endPage - startPage < maxVisible - 1) {
       startPage = Math.max(0, endPage - maxVisible + 1);

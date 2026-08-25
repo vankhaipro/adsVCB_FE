@@ -48,32 +48,37 @@ export function useProductInsights() {
   const [objectiveLabel, setObjectiveLabel] = useState("ALL");
   const [teams, setTeams] = useState<string[]>([]);
 
-  const [data, setData] = useState<ProductInsights | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    // URLSearchParams chứ không nối chuỗi: nhãn có dấu tiếng Việt và khoảng trắng
-    // ("Chuyển đổi web") bắt buộc phải được encode.
+  // URLSearchParams chứ không nối chuỗi: nhãn có dấu tiếng Việt và khoảng trắng
+  // ("Chuyển đổi web") bắt buộc phải được encode.
+  const query = useMemo(() => {
     const params = new URLSearchParams(datesToQuery(from, to));
     if (objectiveLabel !== "ALL") params.set("objectiveLabel", objectiveLabel);
     // append chứ không set: BE nhận ?team=A&team=B rồi gom thành mảng.
     for (const t of teams) params.append("team", t);
-    apiGet(`/mkt-api/insights/by-product?${params}`)
+    return params.toString();
+  }, [from, to, objectiveLabel, teams]);
+
+  // Lưu kèm query đã tạo ra dữ liệu, để suy ra "đang tải" thay vì setLoading(true)
+  // ngay trong effect (gây cascading render). Cách này còn đúng hơn: ngay ở lần
+  // render đổi bộ lọc đã là loading, không có nhịp hiện dữ liệu cũ với loading=false.
+  const [result, setResult] = useState<{ query: string; data: ProductInsights | null } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiGet(`/mkt-api/insights/by-product?${query}`)
       .then((d) => {
-        if (!cancelled) setData(d);
+        if (!cancelled) setResult({ query, data: d });
       })
       .catch(() => {
-        if (!cancelled) setData(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setResult({ query, data: null });
       });
     return () => {
       cancelled = true;
     };
-  }, [from, to, objectiveLabel, teams]);
+  }, [query]);
+
+  const loading = result?.query !== query;
+  const data = result?.data ?? null;
 
   return {
     rows: data?.rows ?? [],

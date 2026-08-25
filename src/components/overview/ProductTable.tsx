@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { MagnifyingGlass, Download, CaretLeft, CaretRight } from "@phosphor-icons/react";
 import DateRangePicker from "@/components/DateRangePicker";
 import { Panel, Th } from "./parts";
@@ -19,9 +19,12 @@ export default function ProductTable() {
 
   const { rows: allRows, unmatched, videoRange, loading, dateState, objectiveState, teamState, teamOptions } = useProductInsights();
 
-  useEffect(() => {
+  // Reset về trang đầu khi từ khoá hoặc dữ liệu đổi (điều chỉnh state lúc render).
+  const [prevKey, setPrevKey] = useState<[string, unknown]>([q, allRows]);
+  if (prevKey[0] !== q || prevKey[1] !== allRows) {
+    setPrevKey([q, allRows]);
     setPage(0);
-  }, [q, allRows]);
+  }
 
   const filteredRows = useMemo(() => {
     const kw = q.trim().toLowerCase();

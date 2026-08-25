@@ -46,20 +46,27 @@ export const KPIS: Kpi[] = [
   { label: "ROAS Trung bình", value: "2.96x", sub: "lợi nhuận/chi phí", change: 1.8, icon: "roas", color: "text-indigo-400", bg: "bg-indigo-500/15" },
 ];
 
-// ---- Biểu đồ: Xu hướng chi tiêu & doanh thu (theo ngày, tháng 6) ----
-export type TrendPoint = { day: string; spend: number; revenue: number };
-export const TREND: TrendPoint[] = Array.from({ length: 30 }, (_, i) => {
-  const d = i + 1;
-  const base = 200 + Math.sin(i / 3) * 35 + (i > 18 ? (i - 18) * 6 : 0);
-  return {
-    day: `${String(d).padStart(2, "0")}/06`,
-    spend: Math.round(base + Math.cos(i / 2) * 18),
-    revenue: Math.round(base + 25 + Math.sin(i / 2.4) * 30 + (i > 15 ? (i - 15) * 4 : 0)),
-  };
-});
-
 // ---- Biểu đồ: Phân bổ kênh (theo chi tiêu) ----
 export type ChannelSlice = { name: Channel; value: number; color: string };
+// ---- Kiểu dữ liệu API Tổng quan (khớp adsVCB_BE/src/ads/ads.service.ts) ----
+export type InsightAgg = {
+  spend: number; impressions: number; clicks: number; reach: number;
+  messages: number; likes: number; comments: number; conversions: number; campaigns: number;
+};
+export type TeamBreakdown = InsightAgg & { name: string };
+// Một điểm trên biểu đồ theo ngày — khớp trendMap ở getDailyTrend.
+export type TrendPoint = { day: string; spend: number; revenue: number; orders: number; conversions: number };
+export type BreakdownData = {
+  byPlatform: (InsightAgg & { platform: string })[];
+  byChannel: (InsightAgg & { name: string; platform: string })[];
+  byContentLine: (InsightAgg & { line: string })[];
+  byObjective: (InsightAgg & { objective: string })[];
+  byTeam?: TeamBreakdown[];
+  byMarket?: (InsightAgg & { name: string })[];
+  byIndustry?: (InsightAgg & { name: string })[];
+  hasData: boolean;
+};
+
 export const CHANNEL_SPLIT: ChannelSlice[] = [
   { name: "Facebook", value: 73.5, color: "#3b82f6" },
   { name: "TikTok", value: 15.5, color: "#ec4899" },

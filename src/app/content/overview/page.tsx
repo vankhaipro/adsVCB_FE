@@ -96,10 +96,12 @@ function FilterSelect({ label, value, onChange, options }: {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Reset search when opening/closing
-  useEffect(() => {
+  // Xoá ô tìm kiếm mỗi khi dropdown đóng (điều chỉnh state lúc render).
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen);
     if (!isOpen) setSearch("");
-  }, [isOpen]);
+  }
 
   const selectedOption = options.find((o) => o.value === value);
   const displayLabel = selectedOption ? selectedOption.label : "Tất cả";
@@ -215,14 +217,26 @@ export default function ContentOverviewPage() {
     return p.toString();
   })();
 
-  // Nạp lại dữ liệu hiển thị mỗi khi bộ lọc đổi.
+  // Nạp lại dữ liệu hiển thị mỗi khi bộ lọc đổi. Chỉ setState trong .then().
   useEffect(() => {
-    apiGet(`/content/report?${filterQuery}`).then(setReport).catch(() => {});
-    apiGet(`/content/list?${filterQuery}`).then(setList).catch(() => {});
+    let cancelled = false;
+    apiGet(`/content/report?${filterQuery}`)
+      .then((d) => { if (!cancelled) setReport(d); })
+      .catch(() => {});
+    apiGet(`/content/list?${filterQuery}`)
+      .then((d) => { if (!cancelled) setList(d); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [filterQuery]);
+
+  // Về trang 1 ở cả 3 bảng khi bộ lọc đổi (điều chỉnh state lúc render).
+  const [prevFilterQuery, setPrevFilterQuery] = useState(filterQuery);
+  if (prevFilterQuery !== filterQuery) {
+    setPrevFilterQuery(filterQuery);
     setMetaPage(1);
     setTiktokPage(1);
     setYoutubePage(1);
-  }, [filterQuery]);
+  }
 
   const distinct = (vals: (string | null)[]) =>
     [...new Set(vals.filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b));
@@ -315,13 +329,6 @@ export default function ContentOverviewPage() {
     }));
   }, [report]);
 
-  const marketBarData = useMemo(() => {
-    if (!report?.byMarket?.length) return [];
-    return report.byMarket.map((m) => ({
-      name: m.name,
-      views: m.views
-    }));
-  }, [report]);
 
   const industryDistributionData = useMemo(() => {
     if (!report?.byIndustry?.length) return [];
@@ -338,13 +345,6 @@ export default function ContentOverviewPage() {
     }));
   }, [report]);
 
-  const industryBarData = useMemo(() => {
-    if (!report?.byIndustry?.length) return [];
-    return report.byIndustry.map((ind: Grp) => ({
-      name: ind.name,
-      views: ind.views
-    }));
-  }, [report]);
 
   const marketIndustryBarData = useMemo(() => {
     const list: { name: string; views: number; fill: string }[] = [];
@@ -477,7 +477,7 @@ export default function ContentOverviewPage() {
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-4">Tổng lượt xem theo nền tảng</h3>
             <div className="relative w-full h-[160px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                 <PieChart>
                   <Pie
                     data={platformData}
@@ -557,7 +557,7 @@ export default function ContentOverviewPage() {
               <div className="flex flex-col items-center">
                 <p className="text-[13px] text-muted-foreground font-semibold mb-2">Nội dung đăng tải</p>
                 <div className="relative w-[180px] h-[160px] flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                     <PieChart>
                       <Pie
                         data={postContentData}
@@ -603,7 +603,7 @@ export default function ContentOverviewPage() {
             </h3>
           </div>
           <div className="h-[260px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
               <AreaChart data={viewsTrendData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorFacebook" x1="0" y1="0" x2="0" y2="1">
@@ -633,7 +633,7 @@ export default function ContentOverviewPage() {
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-4">Tổng số kênh</h3>
             <div className="relative w-full h-[180px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                 <PieChart>
                   <Pie
                     data={channelsDistributionData}
@@ -677,7 +677,7 @@ export default function ContentOverviewPage() {
         <div className="bg-card border border-border rounded-xl p-5 shadow-md">
           <h3 className="text-sm font-semibold text-foreground mb-4">Tổng lượt view theo team</h3>
           <div className="h-[220px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
               <BarChart data={viewsByTeamData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                 <XAxis dataKey="name" stroke="#6b7280" fontSize={9} />
@@ -693,7 +693,7 @@ export default function ContentOverviewPage() {
         <div className="bg-card border border-border rounded-xl p-5 shadow-md">
           <h3 className="text-sm font-semibold text-foreground mb-4">Tổng nội dung được tạo theo team</h3>
           <div className="h-[220px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
               <BarChart layout="vertical" data={contentByTeamData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                 <CartesianGrid stroke={chart.grid} horizontal={false} />
                 <XAxis type="number" stroke="#6b7280" fontSize={9} />
@@ -710,7 +710,7 @@ export default function ContentOverviewPage() {
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-4">Phân bổ theo tuyến nội dung</h3>
             <div className="relative w-full h-[150px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                 <PieChart>
                   <Pie
                     data={contentLineDistributionData}
@@ -755,7 +755,7 @@ export default function ContentOverviewPage() {
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-4">Phân bổ theo Thị trường</h3>
               <div className="relative w-full h-[150px] flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                   <PieChart>
                     <Pie
                       data={marketDistributionData}
@@ -795,7 +795,7 @@ export default function ContentOverviewPage() {
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-4">Phân bổ theo Ngành hàng</h3>
               <div className="relative w-full h-[150px] flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                   <PieChart>
                     <Pie
                       data={industryDistributionData}
@@ -806,7 +806,7 @@ export default function ContentOverviewPage() {
                       paddingAngle={2}
                       dataKey="value"
                     >
-                      {industryDistributionData.map((entry: any, index: number) => (
+                      {industryDistributionData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -820,7 +820,7 @@ export default function ContentOverviewPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-1.5 text-xs mt-3">
-              {industryDistributionData.map((item: any, idx: number) => (
+              {industryDistributionData.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                   <span className="text-muted-foreground truncate">{item.name}:</span>
@@ -834,14 +834,14 @@ export default function ContentOverviewPage() {
           <div className="bg-card border border-border rounded-xl p-5 shadow-md lg:col-span-6">
             <h3 className="text-sm font-semibold text-foreground mb-4">Tổng lượt xem theo Thị trường & Ngành hàng</h3>
             <div className="h-[220px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                 <BarChart data={marketIndustryBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                   <XAxis dataKey="name" stroke="#6b7280" fontSize={10} />
                   <YAxis stroke="#6b7280" fontSize={10} />
                   <Tooltip formatter={(val) => fmtNum(Number(val))} />
                   <Bar dataKey="views" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={35}>
-                    {marketIndustryBarData.map((entry: any, index: number) => (
+                    {marketIndustryBarData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                   </Bar>
@@ -860,7 +860,7 @@ export default function ContentOverviewPage() {
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-4">Phân bổ theo concept</h3>
             <div className="relative w-full h-[150px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                 <PieChart>
                   <Pie
                     data={conceptDistributionData}

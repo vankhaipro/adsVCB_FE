@@ -100,18 +100,30 @@ export default function ReportsPage() {
   const [dateRange, setDateRange] = useState("last30days");
   const [dateFrom, setDateFrom] = useState(() => presetToDates("last30days").from);
   const [dateTo, setDateTo] = useState(() => presetToDates("last30days").to);
-  const [loading, setLoading] = useState(true);
   // "" = tất cả ngành. Danh sách lựa chọn do BE trả về (m.industries) nên không hardcode.
   const [industry, setIndustry] = useState("");
 
+  // setLoading(true) đồng bộ trong effect gây cascading render. Thay bằng: lưu khoá
+  // truy vấn đã sinh ra dữ liệu hiện có, "đang tải" = khoá đó khác khoá cần tải.
+  const q = `from=${dateFrom}&to=${dateTo}${industry ? `&industry=${encodeURIComponent(industry)}` : ""}`;
+  const [loadedQ, setLoadedQ] = useState<string | null>(null);
+  const loading = loadedQ !== q;
+
   useEffect(() => {
-    setLoading(true);
-    const q = `from=${dateFrom}&to=${dateTo}${industry ? `&industry=${encodeURIComponent(industry)}` : ""}`;
+    let cancelled = false;
     Promise.all([
-      apiGet(`/mkt-api/reports?${q}`).then(setR).catch(() => {}),
-      apiGet(`/mkt-api/reports/meta?${q}`).then(setM).catch(() => setM(null)),
-    ]).finally(() => setLoading(false));
-  }, [dateFrom, dateTo, industry]);
+      apiGet(`/mkt-api/reports?${q}`).catch(() => null),
+      apiGet(`/mkt-api/reports/meta?${q}`).catch(() => null),
+    ]).then(([r, m]) => {
+      if (cancelled) return;
+      if (r) setR(r);
+      setM(m);
+      setLoadedQ(q);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [q]);
 
   const axisTick = { fill: chart.axis, fontSize: 10 };
 
@@ -204,7 +216,7 @@ export default function ReportsPage() {
                 <Card title="Chi tiêu theo người chạy">
                   <div className="flex items-center gap-4 h-72">
                     <div className="w-[180px] h-[180px] shrink-0">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                         <PieChart>
                           <Pie data={m.bySpender} dataKey="spend" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
                             {m.bySpender.map((s, i) => (
@@ -245,7 +257,7 @@ export default function ReportsPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <Card title="Chi tiêu theo mục tiêu">
                   <div className="h-72 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                       <BarChart data={m.byObjective} margin={{ top: 20, right: 8, bottom: 8, left: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                         <XAxis dataKey="name" tick={axisTick} interval={0} />
@@ -261,7 +273,7 @@ export default function ReportsPage() {
                 </Card>
                 <Card title="CP / kết quả theo mục tiêu" subtitle="VND cho mỗi kết quả của từng loại mục tiêu.">
                   <div className="h-72 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                       <BarChart data={m.byObjective} margin={{ top: 20, right: 8, bottom: 8, left: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                         <XAxis dataKey="name" tick={axisTick} interval={0} />
@@ -280,7 +292,7 @@ export default function ReportsPage() {
               {/* 3. Team */}
               <Card title="Chi tiêu theo Team" subtitle="Tổng chi tiêu mỗi team trong kỳ (tất cả tài khoản).">
                 <div style={{ height: Math.max(240, m.byTeam.length * 34) }} className="w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                     <BarChart data={m.byTeam} layout="vertical" margin={{ top: 4, right: 60, bottom: 4, left: 8 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={false} />
                       <XAxis type="number" tick={axisTick} tickFormatter={fmtM} />
@@ -303,7 +315,7 @@ export default function ReportsPage() {
                 <Card title="Chi tiêu theo tuyến nội dung" subtitle="Ngân sách theo tuyến A1–A5, tách Meta &amp; TikTok. Không gồm CK Website (không dùng hệ tuyến).">
                   {/* ?? [] : backend cũ chưa có byLine dạng mới / byLineObjective — thà vẽ rỗng còn hơn vỡ trang */}
                   <div style={{ height: Math.max(200, (m.byLine ?? []).length * 44) }} className="w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                       <BarChart data={m.byLine ?? []} layout="vertical" margin={{ top: 4, right: 64, bottom: 4, left: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={false} />
                         <XAxis type="number" tick={axisTick} tickFormatter={fmtM} />
@@ -362,7 +374,7 @@ export default function ReportsPage() {
                   <div className="text-sm text-muted-foreground">Chưa có campaign Mess trong kỳ.</div>
                 ) : (
                   <div style={{ height: Math.max(240, m.topMess.length * 36) }} className="w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                       <BarChart data={m.topMess} layout="vertical" margin={{ top: 4, right: 90, bottom: 4, left: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={false} />
                         <XAxis type="number" tick={axisTick} tickFormatter={(v) => fmtNum(v)} />
@@ -387,7 +399,7 @@ export default function ReportsPage() {
                 <Card title="Chất lượng đặt tên" subtitle="Tỉ lệ chiến dịch đặt tên đúng chuẩn hệ thống.">
                   <div className="flex items-center gap-4 h-64">
                     <div className="w-[170px] h-[170px] shrink-0">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                         <PieChart>
                           <Pie data={m.namingQuality} dataKey="count" nameKey="name" innerRadius={45} outerRadius={75} paddingAngle={2}>
                             {m.namingQuality.map((q, i) => <Cell key={i} fill={NAMEQ_COLORS[q.name] || PALETTE[i % PALETTE.length]} />)}
@@ -442,7 +454,7 @@ export default function ReportsPage() {
               {r && r.spendByAccount.length > 0 && (
                 <Card title="Top tài khoản theo chi tiêu">
                   <div className="h-80 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                       <BarChart data={r.spendByAccount} margin={{ top: 22, right: 8, bottom: 60, left: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
                         <XAxis dataKey="name" angle={-30} textAnchor="end" interval={0} tick={{ ...axisTick }} height={70} />
@@ -450,7 +462,7 @@ export default function ReportsPage() {
                         <Tooltip formatter={(v) => fmtVnd(Number(v))} contentStyle={chart.tooltip} cursor={{ fill: chart.cursor }} />
                         <Bar dataKey="spend" radius={[4, 4, 0, 0]}>
                           {r.spendByAccount.map((a, i) => <Cell key={i} fill={platColor(a.platform)} />)}
-                          <LabelList dataKey="spend" position="top" formatter={(v: any) => fmtVndShort(Number(v || 0))} style={{ fill: chart.axis, fontSize: 10, fontWeight: "600" }} />
+                          <LabelList dataKey="spend" position="top" formatter={(v) => fmtVndShort(Number(v ?? 0))} style={{ fill: chart.axis, fontSize: 10, fontWeight: "600" }} />
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
@@ -575,7 +587,7 @@ function LineCpCard({
         <div className="text-sm text-muted-foreground">Không có tuyến nào có kết quả cho mục tiêu này.</div>
       ) : (
         <div style={{ height: Math.max(160, rows.length * 44) }} className="w-full">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
             <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 64, bottom: 4, left: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={false} />
               <XAxis type="number" tick={axisTick} tickFormatter={(v) => fmtNum(v)} />
@@ -614,7 +626,7 @@ function HBar({
 }) {
   return (
     <div style={{ height: Math.max(200, data.length * 44) }} className="w-full">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
         <BarChart data={data} layout="vertical" margin={{ top: 4, right: 56, bottom: 4, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={false} />
           <XAxis type="number" tick={axisTick} tickFormatter={valueFmt} />

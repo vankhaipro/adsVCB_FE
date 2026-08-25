@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Plus, Trash, SpinnerGap, UsersThree, User, Trophy, Key, FloppyDisk, Tag, PencilSimple, X, Check, MagnifyingGlass } from "@phosphor-icons/react";
-import { apiGet, apiPost, apiPatch, apiDelete, getAuthRole } from "@/lib/api";
+import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api";
+import { useAuthRole } from "@/lib/useAuthUser";
 import Pagination from "@/components/Pagination";
 
 type Team = { id: string; name: string; industry: string | null; market: string | null; _count: { employees: number } };
@@ -15,12 +16,12 @@ const inputCls =
   "bg-card border border-border rounded-md px-3 py-2 text-sm text-foreground outline-none focus:border-blue-500 placeholder:text-muted-foreground";
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<Tab>("employees");
+  const [rawTab, setTab] = useState<Tab>("employees");
   const [error, setError] = useState<string | null>(null);
-  // Chỉ ADMIN được xem/quản lý tab "Tài khoản".
-  const [isAdmin, setIsAdmin] = useState(false);
-  useEffect(() => { setIsAdmin(getAuthRole() === "ADMIN"); }, []);
-  useEffect(() => { if (!isAdmin && tab === "accounts") setTab("employees"); }, [isAdmin, tab]);
+  // Chỉ ADMIN được xem/quản lý tab "Tài khoản". Cả hai giá trị đều suy ra được từ
+  // state sẵn có nên không cần useState/useEffect nào.
+  const isAdmin = useAuthRole() === "ADMIN";
+  const tab = !isAdmin && rawTab === "accounts" ? "employees" : rawTab;
 
   // --- Nhân viên / Team ---
   const [teams, setTeams] = useState<Team[]>([]);
@@ -47,7 +48,13 @@ export default function SettingsPage() {
   const [empPage, setEmpPage] = useState(1);
   const TEAM_PER_PAGE = 8;
   const EMP_GROUPS_PER_PAGE = 5;
-  useEffect(() => { setEmpPage(1); }, [empSearch, empFilterTeam]);
+  // Về trang 1 khi đổi bộ lọc (điều chỉnh state lúc render, không dùng effect).
+  const empFilterKey = `${empSearch}|${empFilterTeam}`;
+  const [prevEmpFilterKey, setPrevEmpFilterKey] = useState(empFilterKey);
+  if (prevEmpFilterKey !== empFilterKey) {
+    setPrevEmpFilterKey(empFilterKey);
+    setEmpPage(1);
+  }
 
   // --- Ngưỡng Win ---
   const [winViews, setWinViews] = useState("");
@@ -72,27 +79,58 @@ export default function SettingsPage() {
   const [newIndustry, setNewIndustry] = useState("");
   const [newMarket, setNewMarket] = useState("");
  
+  // fetchAll thuần: chỉ lấy dữ liệu, KHÔNG đụng vào state. Nhờ vậy effect dưới có thể
+  // gọi nó rồi mới setState trong .then() — không còn setState đồng bộ trong effect.
+  const fetchAll = useCallback(async () => {
+    const [t, e, s, u] = await Promise.all([
+      apiGet("/teams"),
+      apiGet("/employees"),
+      apiGet("/settings"),
+      // /users chỉ ADMIN gọi được (BE trả 403 cho STAFF). Nuốt lỗi để trang
+      // Cài đặt vẫn tải được phần Nhân viên/Team cho STAFF.
+      apiGet("/users").catch(() => []),
+    ]);
+    return { teams: t, employees: e, settings: s, users: u };
+  }, []);
+
+  const apply = useCallback((d: Awaited<ReturnType<typeof fetchAll>>) => {
+    setTeams(d.teams); setEmployees(d.employees); setAccounts(d.users);
+    setWinViews(String(d.settings.win_min_views ?? ""));
+    setWinEng(String(d.settings.win_min_engagement_rate ?? ""));
+    setIndustries(d.settings.industries ? JSON.parse(d.settings.industries) : []);
+    setMarkets(d.settings.markets ? JSON.parse(d.settings.markets) : []);
+  }, []);
+
+  // Dùng trong các handler (thêm/sửa/xoá) để tải lại sau khi đổi dữ liệu.
   const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     try {
-      const [t, e, s, u] = await Promise.all([
-        apiGet("/teams"), apiGet("/employees"), apiGet("/settings"), apiGet("/users"),
-      ]);
-      setTeams(t); setEmployees(e); setAccounts(u);
-      setWinViews(String(s.win_min_views ?? "")); setWinEng(String(s.win_min_engagement_rate ?? ""));
-      const industriesData = s.industries ? JSON.parse(s.industries) : [];
-      const marketsData = s.markets ? JSON.parse(s.markets) : [];
-      setIndustries(industriesData);
-      setMarkets(marketsData);
+      apply(await fetchAll());
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Lỗi tải dữ liệu");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchAll, apply]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let cancelled = false;
+    fetchAll()
+      .then((d) => {
+        if (cancelled) return;
+        apply(d);
+        setError(null);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Lỗi tải dữ liệu");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchAll, apply]);
 
   const guard = (fn: () => Promise<void>, msg: string) => async () => {
     try { await fn(); setError(null); } catch (err) { setError(err instanceof Error ? err.message : msg); }

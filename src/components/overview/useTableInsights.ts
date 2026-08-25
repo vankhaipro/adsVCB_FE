@@ -4,6 +4,45 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiGet, datesToQuery } from "@/lib/api";
 import { presetToDates } from "@/components/DateRangePicker";
 
+// Một dòng insight chiến dịch từ /mkt-api/campaigns/insights.
+// Khớp đúng object mà ads.service.ts#getCampaignsWithInsights dựng: các chỉ số luôn
+// có mặt (BE gán từ tổng đã tính, mặc định 0) nên để non-optional.
+export interface CampaignInsight {
+  id: string;
+  name: string;
+  platform: string;
+  status: string;
+  budget: number;
+  budgetMode?: string | null;
+  adAccount?: { name?: string } | null;
+  channel: string;
+  objective: string | null;
+  objectiveLabel: string;
+  team: string;
+  staff: string;
+  contentLine: string;
+  pageName: string;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  reach: number;
+  messages: number;
+  likes: number;
+  comments: number;
+  conversions: number;
+  revenue: number;
+  ordersCount: number;
+  ctr: number;
+  cpc: number;
+  cpm: number;
+  cpa: number;
+  roas: number;
+  frequency: number;
+  createdTime: number;
+  /** BE hiện KHÔNG trả field này — cột "Chia sẻ" ở CampaignTable luôn rỗng. */
+  shares?: number;
+}
+
 export interface TableFilterState {
   presetId: string;
   from: string;
@@ -53,32 +92,38 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
   const [teams, setTeams] = useState<string[]>([]);
   const [keyword, setKeyword] = useState("");
 
-  const [rawCampaigns, setRawCampaigns] = useState<any[]>([]);
-  // Danh mục mã gốc SKU -> tên sản phẩm (tĩnh, lấy từ Sapo OrderLineItem).
-  const [skuCatalog, setSkuCatalog] = useState<{ sku: string; name: string }[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Gộp dữ liệu tải về vào MỘT state kèm khoá đã sinh ra nó. "Đang tải" được suy ra
+  // bằng cách so khoá, thay vì gọi setLoading(true) ngay trong effect (cascading render).
+  const fetchKey = `${datesToQuery(from, to)}|${withSapo}`;
+  const [result, setResult] = useState<{
+    key: string;
+    campaigns: CampaignInsight[];
+    catalog: { sku: string; name: string }[];
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const q = datesToQuery(from, to);
-    setLoading(true);
     const fetchCamps = apiGet(`/mkt-api/campaigns/insights?${q}`).catch(() => []);
     const fetchCatalog = withSapo ? apiGet(`/sapo/sku-catalog`).catch(() => []) : Promise.resolve([]);
 
-    Promise.all([fetchCamps, fetchCatalog])
-      .then(([camps, catalog]) => {
-        if (cancelled) return;
-        setRawCampaigns(Array.isArray(camps) ? camps : []);
-        setSkuCatalog(Array.isArray(catalog) ? catalog : []);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+    Promise.all([fetchCamps, fetchCatalog]).then(([camps, catalog]) => {
+      if (cancelled) return;
+      setResult({
+        key: fetchKey,
+        campaigns: Array.isArray(camps) ? camps : [],
+        catalog: Array.isArray(catalog) ? catalog : [],
       });
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [from, to, withSapo]);
+  }, [from, to, withSapo, fetchKey]);
+
+  const loading = result?.key !== fetchKey;
+  const rawCampaigns = useMemo(() => result?.campaigns ?? [], [result]);
+  const skuCatalog = useMemo(() => result?.catalog ?? [], [result]);
 
   // Danh sách tài khoản QC lấy từ dữ liệu đã tải. Endpoint chỉ trả adAccount.name (không có id),
   // nên dùng name làm khoá lọc (đủ duy nhất theo từng tài khoản, và cũng là giá trị đang hiển thị).
