@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiGet, datesToQuery } from "@/lib/api";
 import { presetToDates } from "@/components/DateRangePicker";
 
@@ -33,6 +33,9 @@ type ProductInsights = {
   unmatched: Omit<ProductRow, "code" | "name" | "costPerMessage" | "costPerLike" | "hasAds" | "hasVideo">;
   totals: ProductTotals;
 };
+
+const EMPTY_ROWS: ProductRow[] = [];
+const EMPTY_TEAMS: { id: string; name: string }[] = [];
 
 // Dữ liệu cho bảng "Hiệu quả theo sản phẩm".
 //
@@ -80,24 +83,43 @@ export function useProductInsights() {
   const loading = result?.query !== query;
   const data = result?.data ?? null;
 
-  return {
-    rows: data?.rows ?? [],
-    unmatched: data?.unmatched ?? null,
-    totals: data?.totals ?? null,
-    videoRange: data?.videoRange ?? null,
-    teamOptions: (data?.meta?.teams ?? []).filter((t) => t !== "Không xác định" && !t.includes("Chưa khai báo")).map((t) => ({ id: t, name: t })),
-    loading,
-    objectiveState: { value: objectiveLabel, onChange: setObjectiveLabel },
-    teamState: { values: teams, onChange: setTeams },
-    dateState: {
-      presetId,
-      from,
-      to,
-      onApply: (v: { presetId: string; from: string; to: string }) => {
-        setPresetId(v.presetId);
-        setFrom(v.from);
-        setTo(v.to);
+  const rows = useMemo(() => data?.rows ?? EMPTY_ROWS, [data]);
+  const unmatched = data?.unmatched ?? null;
+  const totals = data?.totals ?? null;
+  const videoRange = data?.videoRange ?? null;
+  const teamOptions = useMemo(() => {
+    if (!data?.meta?.teams) return EMPTY_TEAMS;
+    return data.meta.teams
+      .filter((t) => t !== "Không xác định" && !t.includes("Chưa khai báo"))
+      .map((t) => ({ id: t, name: t }));
+  }, [data]);
+
+  const dateStateOnApply = useCallback((v: { presetId: string; from: string; to: string }) => {
+    setPresetId(v.presetId);
+    setFrom(v.from);
+    setTo(v.to);
+  }, []);
+
+  return useMemo(
+    () => ({
+      rows,
+      unmatched,
+      totals,
+      videoRange,
+      teamOptions,
+      loading,
+      // Danh tính bộ lọc dạng chuỗi (chính là query gửi lên BE) — ProductTable dùng làm
+      // mốc reset phân trang. Phải là nguyên thuỷ vì được so ngay trong thân render.
+      filterKey: query,
+      objectiveState: { value: objectiveLabel, onChange: setObjectiveLabel },
+      teamState: { values: teams, onChange: setTeams },
+      dateState: {
+        presetId,
+        from,
+        to,
+        onApply: dateStateOnApply,
       },
-    },
-  };
+    }),
+    [rows, unmatched, totals, videoRange, teamOptions, loading, query, objectiveLabel, teams, presetId, from, to, dateStateOnApply]
+  );
 }

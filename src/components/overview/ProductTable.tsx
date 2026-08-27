@@ -17,12 +17,13 @@ export default function ProductTable() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
 
-  const { rows: allRows, unmatched, videoRange, loading, dateState, objectiveState, teamState, teamOptions } = useProductInsights();
+  const { rows: allRows, unmatched, videoRange, loading, dateState, objectiveState, teamState, teamOptions, filterKey } = useProductInsights();
 
-  // Reset về trang đầu khi từ khoá hoặc dữ liệu đổi (điều chỉnh state lúc render).
-  const [prevKey, setPrevKey] = useState<[string, unknown]>([q, allRows]);
-  if (prevKey[0] !== q || prevKey[1] !== allRows) {
-    setPrevKey([q, allRows]);
+  // Reset về trang đầu khi từ khoá hoặc bộ lọc đổi (khoá là chuỗi — xem CampaignTable).
+  const resetKey = `${q}|${filterKey}|${allRows.length}`;
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (prevResetKey !== resetKey) {
+    setPrevResetKey(resetKey);
     setPage(0);
   }
 

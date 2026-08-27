@@ -20,14 +20,14 @@ function roasColor(v: number) {
 
 export default function CampaignTable() {
   const [page, setPage] = useState(0);
-  const { filteredCampaigns, accountOptions, campaignOptions, pageOptions, teamOptions, filterState } = useTableInsights();
+  const { filteredCampaigns, accountOptions, campaignOptions, pageOptions, teamOptions, filterState, filterKey } = useTableInsights();
 
-  // Reset về trang đầu khi bộ lọc thay đổi danh sách. Điều chỉnh state ngay trong
-  // render (pattern React khuyến nghị) thay vì useEffect: tránh một nhịp render thừa
-  // hiển thị trang cũ trên dữ liệu mới.
-  const [prevRows, setPrevRows] = useState(filteredCampaigns);
-  if (prevRows !== filteredCampaigns) {
-    setPrevRows(filteredCampaigns);
+  // Reset về trang đầu khi bộ lọc đổi. Khoá phải là CHUỖI: nó được so ngay trong thân
+  // render, nếu so bằng tham chiếu mảng thì mỗi render ra tham chiếu mới -> lặp vô hạn.
+  const resetKey = `${filterKey}|${filteredCampaigns.length}`;
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (prevResetKey !== resetKey) {
+    setPrevResetKey(resetKey);
     setPage(0);
   }
 

@@ -75,6 +75,9 @@ interface UseTableInsightsOptions {
   withSapo?: boolean;
 }
 
+const EMPTY_CAMPAIGNS: CampaignInsight[] = [];
+const EMPTY_CATALOG: { sku: string; name: string }[] = [];
+
 // Hook độc lập cho từng bảng ở Tổng quan: tự quản lý bộ lọc (ngày/tài khoản/chiến dịch)
 // và tự fetch dữ liệu insight campaign (+ Sapo SKU nếu cần). Ngày lọc bằng cách gọi lại API;
 // tài khoản và chiến dịch lọc phía client trên mảng đã tải.
@@ -122,8 +125,8 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
   }, [from, to, withSapo, fetchKey]);
 
   const loading = result?.key !== fetchKey;
-  const rawCampaigns = useMemo(() => result?.campaigns ?? [], [result]);
-  const skuCatalog = useMemo(() => result?.catalog ?? [], [result]);
+  const rawCampaigns = useMemo(() => result?.campaigns ?? EMPTY_CAMPAIGNS, [result]);
+  const skuCatalog = useMemo(() => result?.catalog ?? EMPTY_CATALOG, [result]);
 
   // Danh sách tài khoản QC lấy từ dữ liệu đã tải. Endpoint chỉ trả adAccount.name (không có id),
   // nên dùng name làm khoá lọc (đủ duy nhất theo từng tài khoản, và cũng là giá trị đang hiển thị).
@@ -194,33 +197,48 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
     [],
   );
 
-  const filterState: TableFilterState = {
-    presetId,
-    from,
-    to,
-    accountId,
-    campaignId,
-    pageName,
-    objectiveLabel,
-    teams,
-    keyword,
-    onDateApply,
-    onAccountChange: setAccountId,
-    onCampaignChange: setCampaignId,
-    onPageNameChange: setPageName,
-    onObjectiveLabelChange: setObjectiveLabel,
-    onTeamsChange: setTeams,
-    onKeywordChange: setKeyword,
-  };
+  const filterState: TableFilterState = useMemo(
+    () => ({
+      presetId,
+      from,
+      to,
+      accountId,
+      campaignId,
+      pageName,
+      objectiveLabel,
+      teams,
+      keyword,
+      onDateApply,
+      onAccountChange: setAccountId,
+      onCampaignChange: setCampaignId,
+      onPageNameChange: setPageName,
+      onObjectiveLabelChange: setObjectiveLabel,
+      onTeamsChange: setTeams,
+      onKeywordChange: setKeyword,
+    }),
+    [presetId, from, to, accountId, campaignId, pageName, objectiveLabel, teams, keyword, onDateApply]
+  );
 
-  return {
-    filteredCampaigns,
-    skuCatalog,
-    accountOptions,
-    campaignOptions,
-    pageOptions,
-    teamOptions,
-    loading,
-    filterState,
-  };
+  // Danh tính bộ lọc dưới dạng CHUỖI, để bảng dùng làm mốc reset phân trang.
+  // Bắt buộc là giá trị nguyên thuỷ: các bảng so khoá này ngay trong thân render, so bằng
+  // tham chiếu mảng/đối tượng sẽ lặp vô hạn khi tham chiếu đổi mỗi lần render.
+  const filterKey = useMemo(
+    () => [from, to, accountId, campaignId, pageName, objectiveLabel, keyword, teams.join(",")].join("|"),
+    [from, to, accountId, campaignId, pageName, objectiveLabel, keyword, teams],
+  );
+
+  return useMemo(
+    () => ({
+      filteredCampaigns,
+      skuCatalog,
+      accountOptions,
+      campaignOptions,
+      pageOptions,
+      teamOptions,
+      loading,
+      filterState,
+      filterKey,
+    }),
+    [filteredCampaigns, skuCatalog, accountOptions, campaignOptions, pageOptions, teamOptions, loading, filterState, filterKey]
+  );
 }

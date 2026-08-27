@@ -45,13 +45,14 @@ function getSku(name: string, id: string) {
 export default function CreativeTable() {
   const [page, setPage] = useState(0);
   const PER_PAGE = 10;
-  const { filteredCampaigns: campaigns, accountOptions, campaignOptions, filterState } =
+  const { filteredCampaigns: campaigns, accountOptions, campaignOptions, filterState, filterKey } =
     useTableInsights();
 
-  // Reset về trang đầu khi bộ lọc thay đổi danh sách (điều chỉnh state lúc render).
-  const [prevRows, setPrevRows] = useState(campaigns);
-  if (prevRows !== campaigns) {
-    setPrevRows(campaigns);
+  // Reset về trang đầu khi bộ lọc đổi (khoá là chuỗi — xem chú thích ở CampaignTable).
+  const resetKey = `${filterKey}|${campaigns.length}`;
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (prevResetKey !== resetKey) {
+    setPrevResetKey(resetKey);
     setPage(0);
   }
 
