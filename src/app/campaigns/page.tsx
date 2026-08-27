@@ -4,12 +4,32 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   SpinnerGap, MagnifyingGlass, MetaLogo, TiktokLogo, GoogleLogo, Plus, X,
 } from "@phosphor-icons/react";
-import { apiGet, apiPatch, apiPost, fmtVnd } from "@/lib/api";
+import { apiGet, apiPatch, apiPost } from "@/lib/api";
 import DateRangePicker, { presetToDates } from "@/components/DateRangePicker";
 import MetricFilter, { matchMetric, type MetricCondition } from "@/components/MetricFilter";
 import CopyableText from "@/components/CopyableText";
 import Pagination from "@/components/Pagination";
 
+// Quảng cáo / nhóm quảng cáo lồng trong campaign khi gọi ?includeDetails=true.
+type RawAd = {
+  id: string;
+  name: string;
+  status: string | null;
+  platform?: string;
+  type?: "Video" | "Hình ảnh" | "Carousel";
+};
+type RawAdSet = {
+  id: string;
+  name: string;
+  status: string | null;
+  platform?: string;
+  budget: number;
+  targeting?: string;
+  ads?: RawAd[];
+};
+
+// /mkt-api/campaigns/insights?includeDetails=true — campaign kèm chỉ số đã tổng hợp.
+// Các chỉ số luôn có mặt (BE gán từ tổng đã tính, mặc định 0).
 type Campaign = {
   id: string;
   platform: string;
@@ -19,6 +39,18 @@ type Campaign = {
   budget: number;
   adAccount: { name: string | null; platform: string } | null;
   staff?: string | null;
+  sku?: string;
+  adSets?: RawAdSet[];
+  spend: number;
+  impressions: number;
+  reach: number;
+  clicks: number;
+  conversions: number;
+  messages: number;
+  ctr: number;
+  cpc: number;
+  cpm: number;
+  cpa: number;
 };
 
 type AdSet = {
@@ -99,21 +131,6 @@ function hashString(str: string): number {
   return Math.abs(hash);
 }
 
-// Map ranges to number of days
-function getDaysCount(range: string): number {
-  switch (range) {
-    case "today": return 1;
-    case "yesterday": return 1;
-    case "last7days": return 7;
-    case "last30days": return 30;
-    case "thisMonth": {
-      const now = new Date();
-      return now.getDate();
-    }
-    case "lastMonth": return 30;
-    default: return 30;
-  }
-}
 
 
 
@@ -147,40 +164,70 @@ export default function CampaignsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
 
-  useEffect(() => {
+  // Về trang 1 khi đổi bất kỳ bộ lọc nào (điều chỉnh state lúc render, không dùng effect).
+  const pageResetKey = JSON.stringify([
+    activeTab, platform, accountFilter, staffFilter, q,
+    selectedCampaignId, selectedCampaignIds, selectedAdSetId, selectedAdSetIds, metricConds,
+  ]);
+  const [prevPageResetKey, setPrevPageResetKey] = useState(pageResetKey);
+  if (prevPageResetKey !== pageResetKey) {
+    setPrevPageResetKey(pageResetKey);
     setCurrentPage(1);
-  }, [activeTab, platform, accountFilter, staffFilter, q, selectedCampaignId, selectedCampaignIds, selectedAdSetId, selectedAdSetIds, metricConds]);
+  }
 
   // create modal
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ accountId: "", name: "", objective: "", budget: "" });
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  // fetchAll thuần (không đụng state) để effect gọi rồi setState trong .then() —
+  // tránh setState đồng bộ trong effect body.
+  const fetchAll = useCallback(async () => {
     const start = new Date(`${customFrom}T00:00:00`);
     const end = new Date(`${customTo}T23:59:59.999`);
     const params = new URLSearchParams({ from: start.toISOString(), to: end.toISOString() });
     if (platform !== "ALL") params.set("platform", platform);
     const qStr = params.toString();
+    const [c, a] = await Promise.all([
+      apiGet(`/mkt-api/campaigns/insights?includeDetails=true&${qStr}`),
+      apiGet("/mkt-api/accounts"),
+    ]);
+    return { campaigns: c, accounts: a };
+  }, [platform, customFrom, customTo]);
+
+  // Dùng trong các handler (tạo/bật/tắt chiến dịch) để tải lại sau khi đổi dữ liệu.
+  const load = useCallback(async () => {
     try {
-      const [c, a] = await Promise.all([
-        apiGet(`/mkt-api/campaigns/insights?includeDetails=true&${qStr}`),
-        apiGet("/mkt-api/accounts")
-      ]);
-      setCampaigns(c);
-      setAccounts(a);
+      const d = await fetchAll();
+      setCampaigns(d.campaigns);
+      setAccounts(d.accounts);
+      setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
     } finally {
       setLoading(false);
     }
-  }, [platform, customFrom, customTo]);
+  }, [fetchAll]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    fetchAll()
+      .then((d) => {
+        if (cancelled) return;
+        setCampaigns(d.campaigns);
+        setAccounts(d.accounts);
+        setError(null);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchAll]);
 
 
   const toggle = async (c: Campaign) => {
@@ -217,84 +264,14 @@ export default function CampaignsPage() {
     }
   };
 
-  // Deterministic performance metrics helper matching the main dashboard logic
-  const getMetrics = useCallback((entityId: string, baseDailySpend: number, isAct: boolean, objective: string | null, name: string, range: string) => {
-    const days = getDaysCount(range);
-    const hash = hashString(entityId);
-    
-    // Active days logic
-    let activeDays = days;
-    if (!isAct) {
-      if (range === "today" || range === "yesterday") {
-        activeDays = 0;
-      } else {
-        activeDays = Math.max(0, Math.floor(days * (0.1 + (hash % 30) / 100)));
-      }
-    } else {
-      activeDays = Math.max(1, days - (hash % 2));
-    }
-    
-    let spend = activeDays * baseDailySpend;
-    if (spend === 0 && isAct) spend = 50000 * days;
-    
-    const cpm = 25000 + (hash % 20000);
-    const impressions = Math.floor((spend / cpm) * 1000);
-    const frequency = 1.05 + ((hash % 8) / 10);
-    const reach = Math.floor(impressions / frequency);
-    const ctr = 1.8 + ((hash % 40) / 10);
-    const clicks = Math.floor(impressions * (ctr / 100));
-    
-    const upperName = name.toUpperCase();
-    const isMess = upperName.includes("MESS") || upperName.includes("TIN NHAN") || objective?.includes("ENGAGEMENT");
-    const isLike = upperName.includes("LIKE PAGE") || upperName.includes("THICH TRANG");
-
-    let messages = 0;
-    let likes = 0;
-    let conversions = 0;
-
-    if (spend > 0) {
-      if (isMess) {
-        messages = Math.floor(clicks * (0.15 + (hash % 10) / 100));
-        likes = Math.floor(clicks * 0.02);
-        conversions = Math.max(1, Math.floor(messages * (0.05 + (hash % 5) / 100)));
-      } else if (isLike) {
-        likes = Math.floor(clicks * (0.45 + (hash % 20) / 100));
-        messages = Math.floor(clicks * 0.01);
-        conversions = Math.max(0, Math.floor(likes * 0.01));
-      } else {
-        conversions = Math.max(1, Math.floor(clicks * (0.02 + (hash % 4) / 100)));
-        messages = Math.floor(clicks * (0.08 + (hash % 6) / 100));
-        likes = Math.floor(clicks * 0.04);
-      }
-    }
-
-    const results = isLike ? likes : conversions;
-    const rateMess = clicks > 0 ? (messages / clicks) * 100 : 0;
-    
-    return {
-      spend,
-      impressions,
-      reach,
-      clicks,
-      results,
-      messages,
-      likes,
-      rateMess,
-      ctr,
-      cpc: clicks > 0 ? spend / clicks : 0,
-      cpm,
-      costPerResult: results > 0 ? spend / results : 0
-    };
-  }, []);
 
 
   // Generate AdSets from Campaigns
   const adSets = useMemo<AdSet[]>(() => {
     const list: AdSet[] = [];
-    campaigns.forEach((c: any) => {
-      const hasRealAdSets = c.adSets && Array.isArray(c.adSets) && c.adSets.length > 0;
-      if (hasRealAdSets) {
-        c.adSets.forEach((as: any) => {
+    campaigns.forEach((c) => {
+      if (c.adSets?.length) {
+        c.adSets.forEach((as) => {
           list.push({
             id: as.id,
             campaignId: c.id,
@@ -330,13 +307,11 @@ export default function CampaignsPage() {
   // Generate Ads from Campaigns (via AdSets)
   const ads = useMemo<Ad[]>(() => {
     const list: Ad[] = [];
-    campaigns.forEach((c: any) => {
-      const hasRealAdSets = c.adSets && Array.isArray(c.adSets) && c.adSets.length > 0;
-      if (hasRealAdSets) {
-        c.adSets.forEach((as: any) => {
-          const hasRealAds = as.ads && Array.isArray(as.ads) && as.ads.length > 0;
-          if (hasRealAds) {
-            as.ads.forEach((ad: any) => {
+    campaigns.forEach((c) => {
+      if (c.adSets?.length) {
+        c.adSets.forEach((as) => {
+          if (as.ads?.length) {
+            as.ads.forEach((ad) => {
               list.push({
                 id: ad.id,
                 adSetId: as.id,
@@ -346,7 +321,7 @@ export default function CampaignsPage() {
                 platform: ad.platform || c.platform,
                 name: ad.name,
                 status: ad.status,
-                type: (ad.type as any) || 'Hình ảnh',
+                type: ad.type || 'Hình ảnh',
                 adAccountName: c.adAccount?.name ?? "—",
           staff: c.staff ?? "—"
               });
@@ -420,12 +395,11 @@ export default function CampaignsPage() {
     return adSets.filter((as) => as.campaignId === selectedCampaignId);
   }, [adSets, selectedCampaignId]);
 
-  // Reset selected AdSet if it's no longer in the filtered list
-  useEffect(() => {
-    if (selectedAdSetId !== "ALL" && !availableAdSets.some((as) => as.id === selectedAdSetId)) {
-      setSelectedAdSetId("ALL");
-    }
-  }, [availableAdSets, selectedAdSetId]);
+  // AdSet đang chọn không còn trong danh sách đã lọc -> quay về "ALL".
+  // Điều chỉnh state ngay trong render thay vì effect.
+  if (selectedAdSetId !== "ALL" && !availableAdSets.some((as) => as.id === selectedAdSetId)) {
+    setSelectedAdSetId("ALL");
+  }
 
   // Danh sách nền tảng có trong dữ liệu (kèm số lượng) -> render nút lọc động.
   const platformList = useMemo(() => {
@@ -492,7 +466,7 @@ export default function CampaignsPage() {
 
   // Compute metrics for the rendered lists
   const campaignsWithMetrics = useMemo(() => {
-    return filteredCampaigns.map((c: any) => {
+    return filteredCampaigns.map((c) => {
       return {
         ...c,
         sku: c.sku || getSku(c.name, c.id),
@@ -520,7 +494,7 @@ export default function CampaignsPage() {
     });
 
     return filteredAdSets.map((as) => {
-      const camp = campaigns.find((c) => c.id === as.campaignId) as any;
+      const camp = campaigns.find((c) => c.id === as.campaignId);
       const count = adSetsCountMap.get(as.campaignId) || 1;
       
       const spend = (camp?.spend || 0) / count;

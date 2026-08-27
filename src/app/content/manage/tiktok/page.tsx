@@ -5,10 +5,10 @@ import {
   MagnifyingGlass,
   FloppyDisk,
   DownloadSimple,
-  X,
   ArrowsDownUp,
   TiktokLogo
 } from "@phosphor-icons/react";
+import type { ContentListRow } from "@/lib/contentTypes";
 import { apiGet } from "@/lib/api";
 import ContentFilterDropdowns, { matchContentFilters, EMPTY_DIM_FILTERS } from "@/components/ContentFilterDropdowns";
 import CopyableText from "@/components/CopyableText";
@@ -360,7 +360,7 @@ export default function TiktokContentPage() {
   // Nạp data thật từ BE (TikTok organic).
   useEffect(() => {
     apiGet("/content/list?platform=TIKTOK")
-      .then((rows: any[]) => setVideos(rows.map((r) => ({
+      .then((rows: ContentListRow[]) => setVideos(rows.map((r) => ({
         id: r.videoId, caption: r.caption ?? "", permalink: r.link ?? "#", channel: r.channel ?? "", format: "VIDEO", date: r.date ?? "",
         staff: r.staff ?? "-", concept: r.concept ?? "-", line: r.line ?? "-", productCode: r.productCode ?? "", productName: r.productName ?? "",
         totalViews: r.views ?? 0, totalViewsPaid: 0, totalViewsOrganic: r.views ?? 0, totalReach: r.reach ?? 0, totalLikes: r.likes ?? 0, totalComments: r.comments ?? 0, totalShares: r.shares ?? 0,
@@ -370,7 +370,8 @@ export default function TiktokContentPage() {
   }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const [dimFilters, setDimFilters] = useState(EMPTY_DIM_FILTERS);
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+  type SortKey = keyof (typeof videos)[number];
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: "asc" | "desc" } | null>(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -392,14 +393,14 @@ export default function TiktokContentPage() {
 
 
   // Handle Sort
-  function requestSort(key: string) {
+  function requestSort(key: SortKey) {
     let direction: "asc" | "desc" = "asc";
     if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
       direction = "desc";
     }
     setSortConfig({ key, direction });
 
-    const sortedData = [...videos].sort((a: any, b: any) => {
+    const sortedData = [...videos].sort((a, b) => {
       if (a[key] === undefined || b[key] === undefined) return 0;
       if (typeof a[key] === "number" && typeof b[key] === "number") {
         return direction === "asc" ? a[key] - b[key] : b[key] - a[key];
@@ -461,10 +462,13 @@ export default function TiktokContentPage() {
 
   const avgWatchTimeTotal = filteredVideos.length > 0 ? filteredVideos.reduce((sum, v) => sum + (v.avgWatchTime || 0), 0) / filteredVideos.length : 0;
 
-  // Reset page when search or filters change
-  useEffect(() => {
+  // Về trang 1 khi đổi tìm kiếm/bộ lọc (điều chỉnh state lúc render, không dùng effect).
+  const pageResetKey = `${searchQuery}|${JSON.stringify(dimFilters)}`;
+  const [prevPageResetKey, setPrevPageResetKey] = useState(pageResetKey);
+  if (prevPageResetKey !== pageResetKey) {
+    setPrevPageResetKey(pageResetKey);
     setCurrentPage(1);
-  }, [searchQuery, dimFilters]);
+  }
 
   // Pagination logic
   const totalPages = Math.max(1, Math.ceil(filteredVideos.length / itemsPerPage));
@@ -527,7 +531,7 @@ export default function TiktokContentPage() {
                 </th>
 
                 {/* Column Headers */}
-                {[
+                {([
                   { key: "caption", label: "Caption" },
                   { key: "permalink", label: "permalink" },
                   { key: "channel", label: "Kênh" },
@@ -553,7 +557,7 @@ export default function TiktokContentPage() {
                   { key: "comments", label: "Lượt Bình luận" },
                   { key: "shares", label: "Lượt chia sẻ" },
                   { key: "avgWatchTime", label: "Thời gian xem trung bình" }
-                ].map((col) => (
+                ] as { key: SortKey; label: string }[]).map((col) => (
                   <th
                     key={col.key}
                     onClick={() => col.key && requestSort(col.key)}

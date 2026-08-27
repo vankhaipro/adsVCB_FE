@@ -165,8 +165,8 @@ export default function ChannelsPage() {
   const [staff, setStaff] = useState("");
   const [team, setTeam] = useState("");
   const [channelName, setChannelName] = useState("");
-  const [industry, setIndustry] = useState("");
-  const [market, setMarket] = useState("");
+  const [, setIndustry] = useState("");
+  const [, setMarket] = useState("");
 
   // Form chỉnh sửa kênh
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
@@ -176,8 +176,8 @@ export default function ChannelsPage() {
   const [editStaff, setEditStaff] = useState("");
   const [editTeam, setEditTeam] = useState("");
   const [editChannelName, setEditChannelName] = useState("");
-  const [editIndustry, setEditIndustry] = useState("");
-  const [editMarket, setEditMarket] = useState("");
+  const [, setEditIndustry] = useState("");
+  const [, setEditMarket] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Master data nhân sự & cài đặt (gợi ý)
@@ -186,33 +186,55 @@ export default function ChannelsPage() {
   const [industryList, setIndustryList] = useState<string[]>([]);
   const [marketList, setMarketList] = useState<string[]>([]);
 
+  // fetchAll thuần (không đụng state), để effect setState trong .then().
+  const fetchAll = useCallback(async () => {
+    const [chs, teams, emps, settings] = await Promise.all([
+      apiGet("/channels"),
+      apiGet("/teams"),
+      apiGet("/employees"),
+      apiGet("/settings"),
+    ]);
+    return { channels: chs, teams, emps, settings };
+  }, []);
+
+  const apply = useCallback((d: Awaited<ReturnType<typeof fetchAll>>) => {
+    setChannels(d.channels);
+    setTeamList(d.teams);
+    setEmpList(d.emps);
+    setIndustryList(d.settings.industries ? JSON.parse(d.settings.industries) : []);
+    setMarketList(d.settings.markets ? JSON.parse(d.settings.markets) : []);
+  }, []);
+
+  // Dùng trong các handler (thêm/sửa/xoá kênh) để tải lại sau khi đổi dữ liệu.
   const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     try {
-      const [chs, teams, emps, settings] = await Promise.all([
-        apiGet("/channels"),
-        apiGet("/teams"),
-        apiGet("/employees"),
-        apiGet("/settings"),
-      ]);
-      setChannels(chs);
-      setTeamList(teams);
-      setEmpList(emps);
-      const industriesData = settings.industries ? JSON.parse(settings.industries) : [];
-      const marketsData = settings.markets ? JSON.parse(settings.markets) : [];
-      setIndustryList(industriesData);
-      setMarketList(marketsData);
+      apply(await fetchAll());
+      setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchAll, apply]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    fetchAll()
+      .then((d) => {
+        if (cancelled) return;
+        apply(d);
+        setError(null);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchAll, apply]);
 
   // Áp bộ lọc (client-side)
   const filtered = channels.filter((c) => {
@@ -229,10 +251,13 @@ export default function ChannelsPage() {
     return true;
   });
 
-  // Reset về trang đầu khi bộ lọc đổi
-  useEffect(() => {
+  // Reset về trang đầu khi bộ lọc đổi (điều chỉnh state lúc render).
+  const filterKey = [fPlatform, fTeam, fStaff, fIndustry, fMarket, fSearch].join("|");
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
     setPage(0);
-  }, [fPlatform, fTeam, fStaff, fIndustry, fMarket, fSearch]);
+  }
 
   const pages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const start = page * PER_PAGE;
@@ -243,7 +268,7 @@ export default function ChannelsPage() {
   const pageRange = [...Array(pages).keys()].filter(i => {
     const maxVisible = 5;
     let startPage = Math.max(0, page - 2);
-    let endPage = Math.min(pages - 1, startPage + maxVisible - 1);
+    const endPage = Math.min(pages - 1, startPage + maxVisible - 1);
     if (endPage - startPage < maxVisible - 1) {
       startPage = Math.max(0, endPage - maxVisible + 1);
     }

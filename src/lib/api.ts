@@ -9,8 +9,50 @@ function cleanApiUrl(url: string): string {
 
 export const API_URL = cleanApiUrl(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001");
 
+// --- Token đăng nhập ---
+// Nguồn sự thật là localStorage; cookie "token" chỉ để middleware chặn điều hướng.
+function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem("token");
+  } catch {
+    return null;
+  }
+}
+
+// Mọi request đều phải kèm Bearer token — BE khóa toàn bộ endpoint bằng JwtAuthGuard.
+function authHeaders(extra?: Record<string, string>): Record<string, string> {
+  const token = getToken();
+  return { ...extra, ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+}
+
+// Xoá phiên và đưa về trang đăng nhập. Dùng khi BE trả 401 (token hết hạn/không hợp lệ).
+export function clearSession() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem("token");
+  } catch {
+    /* ignore */
+  }
+  document.cookie = "token=; path=/; max-age=0";
+  invalidateGetCache();
+}
+
 async function handle(res: Response) {
   if (!res.ok) {
+    // Token hết hạn hoặc bị thu hồi → dọn phiên và về /login.
+    // Bỏ qua khi đang ở chính trang login: ở đó 401 nghĩa là sai mật khẩu,
+    // cần hiện thông báo lỗi chứ không phải reload trang.
+    if (
+      res.status === 401 &&
+      typeof window !== "undefined" &&
+      window.location.pathname !== "/login"
+    ) {
+      clearSession();
+      // Điều hướng cứng (không dùng router) để xoá sạch state React trong bộ nhớ
+      // của phiên cũ. URL tuyệt đối để không bị hiểu là đường dẫn tương đối.
+      window.location.assign(new URL("/login", window.location.origin));
+    }
     let msg = `API ${res.status}`;
     try {
       const j = await res.json();
@@ -49,7 +91,7 @@ export const apiGet = (path: string, opts?: { cache?: boolean }) => {
     const flying = inflight.get(path);
     if (flying) return flying;
   }
-  const p = fetch(`${API_URL}${path}`)
+  const p = fetch(`${API_URL}${path}`, { headers: authHeaders() })
     .then(handle)
     .then((data) => {
       if (useCache) getCache.set(path, { at: Date.now(), data });
@@ -67,7 +109,7 @@ export const apiGet = (path: string, opts?: { cache?: boolean }) => {
 export const apiPost = (path: string, body?: unknown) =>
   fetch(`${API_URL}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: body ? JSON.stringify(body) : undefined,
   })
     .then(handle)
@@ -79,7 +121,7 @@ export const apiPost = (path: string, body?: unknown) =>
 export const apiPatch = (path: string, body?: unknown) =>
   fetch(`${API_URL}${path}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: body ? JSON.stringify(body) : undefined,
   })
     .then(handle)
@@ -89,7 +131,7 @@ export const apiPatch = (path: string, body?: unknown) =>
     });
 
 export const apiDelete = (path: string) =>
-  fetch(`${API_URL}${path}`, { method: "DELETE" })
+  fetch(`${API_URL}${path}`, { method: "DELETE", headers: authHeaders() })
     .then(handle)
     .then((r) => {
       invalidateGetCache();

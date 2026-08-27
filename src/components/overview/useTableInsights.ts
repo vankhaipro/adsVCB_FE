@@ -4,6 +4,45 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiGet, datesToQuery } from "@/lib/api";
 import { presetToDates } from "@/components/DateRangePicker";
 
+// Một dòng insight chiến dịch từ /mkt-api/campaigns/insights.
+// Khớp đúng object mà ads.service.ts#getCampaignsWithInsights dựng: các chỉ số luôn
+// có mặt (BE gán từ tổng đã tính, mặc định 0) nên để non-optional.
+export interface CampaignInsight {
+  id: string;
+  name: string;
+  platform: string;
+  status: string;
+  budget: number;
+  budgetMode?: string | null;
+  adAccount?: { name?: string } | null;
+  channel: string;
+  objective: string | null;
+  objectiveLabel: string;
+  team: string;
+  staff: string;
+  contentLine: string;
+  pageName: string;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  reach: number;
+  messages: number;
+  likes: number;
+  comments: number;
+  conversions: number;
+  revenue: number;
+  ordersCount: number;
+  ctr: number;
+  cpc: number;
+  cpm: number;
+  cpa: number;
+  roas: number;
+  frequency: number;
+  createdTime: number;
+  /** BE hiện KHÔNG trả field này — cột "Chia sẻ" ở CampaignTable luôn rỗng. */
+  shares?: number;
+}
+
 export interface TableFilterState {
   presetId: string;
   from: string;
@@ -36,6 +75,9 @@ interface UseTableInsightsOptions {
   withSapo?: boolean;
 }
 
+const EMPTY_CAMPAIGNS: CampaignInsight[] = [];
+const EMPTY_CATALOG: { sku: string; name: string }[] = [];
+
 // Hook độc lập cho từng bảng ở Tổng quan: tự quản lý bộ lọc (ngày/tài khoản/chiến dịch)
 // và tự fetch dữ liệu insight campaign (+ Sapo SKU nếu cần). Ngày lọc bằng cách gọi lại API;
 // tài khoản và chiến dịch lọc phía client trên mảng đã tải.
@@ -53,32 +95,38 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
   const [teams, setTeams] = useState<string[]>([]);
   const [keyword, setKeyword] = useState("");
 
-  const [rawCampaigns, setRawCampaigns] = useState<any[]>([]);
-  // Danh mục mã gốc SKU -> tên sản phẩm (tĩnh, lấy từ Sapo OrderLineItem).
-  const [skuCatalog, setSkuCatalog] = useState<{ sku: string; name: string }[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Gộp dữ liệu tải về vào MỘT state kèm khoá đã sinh ra nó. "Đang tải" được suy ra
+  // bằng cách so khoá, thay vì gọi setLoading(true) ngay trong effect (cascading render).
+  const fetchKey = `${datesToQuery(from, to)}|${withSapo}`;
+  const [result, setResult] = useState<{
+    key: string;
+    campaigns: CampaignInsight[];
+    catalog: { sku: string; name: string }[];
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const q = datesToQuery(from, to);
-    setLoading(true);
     const fetchCamps = apiGet(`/mkt-api/campaigns/insights?${q}`).catch(() => []);
     const fetchCatalog = withSapo ? apiGet(`/sapo/sku-catalog`).catch(() => []) : Promise.resolve([]);
 
-    Promise.all([fetchCamps, fetchCatalog])
-      .then(([camps, catalog]) => {
-        if (cancelled) return;
-        setRawCampaigns(Array.isArray(camps) ? camps : []);
-        setSkuCatalog(Array.isArray(catalog) ? catalog : []);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+    Promise.all([fetchCamps, fetchCatalog]).then(([camps, catalog]) => {
+      if (cancelled) return;
+      setResult({
+        key: fetchKey,
+        campaigns: Array.isArray(camps) ? camps : [],
+        catalog: Array.isArray(catalog) ? catalog : [],
       });
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [from, to, withSapo]);
+  }, [from, to, withSapo, fetchKey]);
+
+  const loading = result?.key !== fetchKey;
+  const rawCampaigns = useMemo(() => result?.campaigns ?? EMPTY_CAMPAIGNS, [result]);
+  const skuCatalog = useMemo(() => result?.catalog ?? EMPTY_CATALOG, [result]);
 
   // Danh sách tài khoản QC lấy từ dữ liệu đã tải. Endpoint chỉ trả adAccount.name (không có id),
   // nên dùng name làm khoá lọc (đủ duy nhất theo từng tài khoản, và cũng là giá trị đang hiển thị).
@@ -149,33 +197,48 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
     [],
   );
 
-  const filterState: TableFilterState = {
-    presetId,
-    from,
-    to,
-    accountId,
-    campaignId,
-    pageName,
-    objectiveLabel,
-    teams,
-    keyword,
-    onDateApply,
-    onAccountChange: setAccountId,
-    onCampaignChange: setCampaignId,
-    onPageNameChange: setPageName,
-    onObjectiveLabelChange: setObjectiveLabel,
-    onTeamsChange: setTeams,
-    onKeywordChange: setKeyword,
-  };
+  const filterState: TableFilterState = useMemo(
+    () => ({
+      presetId,
+      from,
+      to,
+      accountId,
+      campaignId,
+      pageName,
+      objectiveLabel,
+      teams,
+      keyword,
+      onDateApply,
+      onAccountChange: setAccountId,
+      onCampaignChange: setCampaignId,
+      onPageNameChange: setPageName,
+      onObjectiveLabelChange: setObjectiveLabel,
+      onTeamsChange: setTeams,
+      onKeywordChange: setKeyword,
+    }),
+    [presetId, from, to, accountId, campaignId, pageName, objectiveLabel, teams, keyword, onDateApply]
+  );
 
-  return {
-    filteredCampaigns,
-    skuCatalog,
-    accountOptions,
-    campaignOptions,
-    pageOptions,
-    teamOptions,
-    loading,
-    filterState,
-  };
+  // Danh tính bộ lọc dưới dạng CHUỖI, để bảng dùng làm mốc reset phân trang.
+  // Bắt buộc là giá trị nguyên thuỷ: các bảng so khoá này ngay trong thân render, so bằng
+  // tham chiếu mảng/đối tượng sẽ lặp vô hạn khi tham chiếu đổi mỗi lần render.
+  const filterKey = useMemo(
+    () => [from, to, accountId, campaignId, pageName, objectiveLabel, keyword, teams.join(",")].join("|"),
+    [from, to, accountId, campaignId, pageName, objectiveLabel, keyword, teams],
+  );
+
+  return useMemo(
+    () => ({
+      filteredCampaigns,
+      skuCatalog,
+      accountOptions,
+      campaignOptions,
+      pageOptions,
+      teamOptions,
+      loading,
+      filterState,
+      filterKey,
+    }),
+    [filteredCampaigns, skuCatalog, accountOptions, campaignOptions, pageOptions, teamOptions, loading, filterState, filterKey]
+  );
 }

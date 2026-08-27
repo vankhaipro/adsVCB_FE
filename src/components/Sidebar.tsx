@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import {
   House,
   Megaphone,
   GitBranch,
-  CurrencyCircleDollar,
   ChartBar,
   Warning,
   Scroll,
@@ -18,6 +18,7 @@ import {
   CaretDown,
   type Icon,
 } from "@phosphor-icons/react";
+import { clearSession } from "@/lib/api";
 
 type NavSubChild = { href: string; label: string };
 type NavChild = { href: string; label: string } | { label: string; children: NavSubChild[] };
@@ -90,13 +91,9 @@ function SidebarContent() {
   }
 
   // Recursive helper to check if item or any of its children are active
-  function isItemActive(item: any): boolean {
-    if (item.href) {
-      return isLinkActive(item.href);
-    }
-    if (item.children) {
-      return item.children.some((child: any) => isItemActive(child));
-    }
+  function isItemActive(item: NavItem | NavChild | NavSubChild): boolean {
+    if ("href" in item) return isLinkActive(item.href);
+    if ("children" in item) return item.children.some((child) => isItemActive(child));
     return false;
   }
 
@@ -122,8 +119,9 @@ function SidebarContent() {
   }
 
   function handleLogout() {
-    localStorage.removeItem("token");
-    document.cookie = "token=; path=/; max-age=0";
+    // clearSession xoá cả cache GET phía client — nếu không, người đăng nhập
+    // tiếp theo trên cùng máy sẽ thấy dữ liệu còn lại của phiên trước.
+    clearSession();
     router.push("/login");
   }
 
@@ -132,9 +130,12 @@ function SidebarContent() {
       {/* Logo */}
       <div className="h-[52px] flex items-center px-4 font-bold text-foreground text-[12px] whitespace-nowrap border-b border-border">
         <span className="relative w-6 h-6 mr-2 rounded-full overflow-hidden inline-flex flex-shrink-0">
-          <img
+          <Image
             src="/logoN-VienChiBao.png"
             alt="VCB Ads Manager Logo"
+            width={110}
+            height={110}
+            priority
             className="absolute max-w-none"
             style={{ width: "110px", height: "110px", left: "-12px", top: "-44px" }}
           />

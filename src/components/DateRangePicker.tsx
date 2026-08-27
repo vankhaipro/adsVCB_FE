@@ -176,17 +176,20 @@ export default function DateRangePicker({ presetId, from, to, onApply }: Props) 
     return new Date(f.getFullYear(), f.getMonth(), 1);
   });
 
-  // Mỗi lần mở panel → nạp lại draft từ giá trị hiện tại
-  useEffect(() => {
+  // Mỗi lần mở panel → nạp lại draft từ giá trị hiện tại. Bắt đúng nhịp chuyển
+  // đóng→mở và điều chỉnh state ngay trong render: dùng useEffect ở đây sẽ vẽ panel
+  // một nhịp với draft cũ rồi mới ghi đè.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) {
       const f = parseYmd(from);
-      const t = parseYmd(to);
       setDraftFrom(f);
-      setDraftTo(t);
+      setDraftTo(parseYmd(to));
       setDraftPreset(presetId);
       setViewMonth(new Date(f.getFullYear(), f.getMonth(), 1));
     }
-  }, [open, from, to, presetId]);
+  }
 
   // Đóng khi click ra ngoài / nhấn Esc
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, SpinnerGap, ArrowSquareOut } from "@phosphor-icons/react";
 import { apiGet } from "@/lib/api";
@@ -35,28 +35,37 @@ function VideosInner() {
   const channelId = params.get("channelId") || "";
   const platform = params.get("platform") || "";
 
-  const [rows, setRows] = useState<VideoRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const q = new URLSearchParams();
-      if (channelId) q.set("channelId", channelId);
-      if (platform) q.set("platform", platform);
-      setRows(await apiGet(`/organic/videos?${q.toString()}`));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
-    } finally {
-      setLoading(false);
-    }
+  // "Đang tải" suy ra từ URL đang hiển thị so với URL cần tải (xem ad-accounts).
+  const url = useMemo(() => {
+    const q = new URLSearchParams();
+    if (channelId) q.set("channelId", channelId);
+    if (platform) q.set("platform", platform);
+    return `/organic/videos?${q.toString()}`;
   }, [channelId, platform]);
+  const [result, setResult] = useState<{ url: string; rows: VideoRow[] } | null>(null);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    apiGet(url)
+      .then((d) => {
+        if (cancelled) return;
+        setResult({ url, rows: d });
+        setError(null);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setResult({ url, rows: [] });
+        setError(e instanceof Error ? e.message : "Lỗi tải dữ liệu");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  const loading = result?.url !== url;
+  const rows = useMemo(() => result?.rows ?? [], [result]);
 
   const title = rows[0]?.channelName || "Video organic";
 

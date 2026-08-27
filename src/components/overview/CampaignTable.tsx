@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { CaretLeft, CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
 import { Panel, Th, StatusPill, ChannelChip } from "./parts";
 import {
@@ -20,12 +20,16 @@ function roasColor(v: number) {
 
 export default function CampaignTable() {
   const [page, setPage] = useState(0);
-  const { filteredCampaigns, accountOptions, campaignOptions, pageOptions, teamOptions, filterState } = useTableInsights();
+  const { filteredCampaigns, accountOptions, campaignOptions, pageOptions, teamOptions, filterState, filterKey } = useTableInsights();
 
-  // Reset về trang đầu khi bộ lọc thay đổi danh sách.
-  useEffect(() => {
+  // Reset về trang đầu khi bộ lọc đổi. Khoá phải là CHUỖI: nó được so ngay trong thân
+  // render, nếu so bằng tham chiếu mảng thì mỗi render ra tham chiếu mới -> lặp vô hạn.
+  const resetKey = `${filterKey}|${filteredCampaigns.length}`;
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (prevResetKey !== resetKey) {
+    setPrevResetKey(resetKey);
     setPage(0);
-  }, [filteredCampaigns]);
+  }
 
   const pages = Math.max(1, Math.ceil(filteredCampaigns.length / PER_PAGE));
   const start = page * PER_PAGE;
@@ -54,7 +58,7 @@ export default function CampaignTable() {
     const range = [];
     const maxVisible = 5;
     let startPage = Math.max(0, page - 2);
-    let endPage = Math.min(pages - 1, startPage + maxVisible - 1);
+    const endPage = Math.min(pages - 1, startPage + maxVisible - 1);
     
     if (endPage - startPage < maxVisible - 1) {
       startPage = Math.max(0, endPage - maxVisible + 1);

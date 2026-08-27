@@ -1,16 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+
 import { Bell, List, CheckCircle, Sun, Moon } from "@phosphor-icons/react";
 import { useTheme } from "./ThemeProvider";
-import { getAuthUser } from "@/lib/api";
+import { useAuthUser } from "@/lib/useAuthUser";
 
 const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", STAFF: "Nhân viên" };
 
+// Chữ cái đầu của tên, vd "Bùi Duy Cường" -> "BC".
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  const first = parts[0][0];
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return (first + last).toUpperCase();
+}
+
+// Màu nền ổn định theo tên (cùng một người luôn ra cùng màu).
+const AVATAR_COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#06b6d4"];
+function colorOf(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
 export default function Header() {
   const { theme, toggleTheme } = useTheme();
-  const [user, setUser] = useState<{ name?: string; role?: string } | null>(null);
-  useEffect(() => { setUser(getAuthUser()); }, []);
+  const user = useAuthUser();
   const displayName = user?.name || "Người dùng";
   const roleLabel = user?.role ? (ROLE_LABEL[user.role] ?? user.role) : "";
 
@@ -47,8 +63,14 @@ export default function Header() {
 
         {/* User Profile */}
         <div className="flex items-center gap-2 pl-2 border-l border-border">
-          <div className="w-8 h-8 rounded-full bg-muted overflow-hidden">
-            <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`} alt="User Avatar" />
+          {/* Avatar vẽ tại chỗ thay vì gọi ui-avatars.com — bỏ một request ra
+              dịch vụ ngoài mỗi lần tải trang, và không gửi tên người dùng ra bên thứ ba. */}
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold select-none"
+            style={{ backgroundColor: colorOf(displayName) }}
+            aria-label={`Ảnh đại diện của ${displayName}`}
+          >
+            {initialsOf(displayName)}
           </div>
           <div className="hidden md:flex flex-col">
             <span className="text-sm font-medium text-foreground leading-tight">{displayName}</span>

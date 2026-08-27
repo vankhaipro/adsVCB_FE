@@ -1,7 +1,7 @@
 "use client";
 
 import { CaretUp, CaretDown, type Icon } from "@phosphor-icons/react";
-import { CHANNEL_STYLE, type Channel, type CampaignStatus } from "./dashboardData";
+import { CHANNEL_STYLE, type CampaignStatus } from "./dashboardData";
 
 // Panel nền tối dùng chung cho mọi khối của dashboard.
 export function Panel({
@@ -60,7 +60,30 @@ export function Th({
   );
 }
 
-export function StatusPill({ status }: { status: CampaignStatus }) {
+// BE trả status theo nền tảng (ACTIVE/ENABLE/PAUSED/...), không phải nhãn tiếng Việt.
+// Trước đây prop khai kiểu CampaignStatus nhưng thực tế nhận chuỗi thô, nên tra bảng màu
+// luôn trượt và pill hiện chữ "ACTIVE" không màu. Chuẩn hoá tại đây.
+const STATUS_LABEL: Record<string, CampaignStatus> = {
+  ACTIVE: "Đang chạy",
+  ENABLE: "Đang chạy",
+  RUNNING: "Đang chạy",
+  PAUSED: "Tạm dừng",
+  DISABLE: "Tạm dừng",
+  ARCHIVED: "Kết thúc",
+  COMPLETED: "Kết thúc",
+  DELETED: "Kết thúc",
+};
+
+export function normalizeStatus(status: string): CampaignStatus | null {
+  if (!status) return null;
+  const s = status.toUpperCase();
+  if (STATUS_LABEL[s]) return STATUS_LABEL[s];
+  // Đã là nhãn tiếng Việt sẵn (dữ liệu mẫu / chỗ gọi khác).
+  if (status === "Đang chạy" || status === "Tạm dừng" || status === "Kết thúc") return status;
+  return null;
+}
+
+export function StatusPill({ status }: { status: string }) {
   const map: Record<CampaignStatus, string> = {
     "Đang chạy": "text-green-400",
     "Tạm dừng": "text-amber-400",
@@ -71,16 +94,41 @@ export function StatusPill({ status }: { status: CampaignStatus }) {
     "Tạm dừng": "bg-amber-400",
     "Kết thúc": "bg-muted",
   };
+  const label = normalizeStatus(status);
+  // Không nhận diện được thì hiện nguyên trạng thái thô, màu trung tính — vẫn đọc được
+  // thay vì mất màu im lặng.
+  if (!label) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <span className="w-1.5 h-1.5 rounded-full bg-muted" />
+        {status || "—"}
+      </span>
+    );
+  }
   return (
-    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${map[status]}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${dot[status]}`} />
-      {status}
+    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${map[label]}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${dot[label]}`} />
+      {label}
     </span>
   );
 }
 
-export function ChannelChip({ channel }: { channel: Channel }) {
-  return <span className={`text-xs font-medium ${CHANNEL_STYLE[channel]}`}>{channel}</span>;
+// deriveChannel ở BE trả "Messenger" / "Facebook Feed" / "Facebook Page Likes" /
+// "Instagram" / "TikTok Ads" — không phải union Channel, nên CHANNEL_STYLE luôn trượt
+// và chip mất màu. Quy về nền tảng gốc để lấy màu, vẫn hiện nguyên nhãn chi tiết.
+function channelStyleOf(channel: string): string {
+  const c = (channel || "").toLowerCase();
+  if (c.includes("tiktok")) return CHANNEL_STYLE.TikTok;
+  if (c.includes("google") || c.includes("youtube")) return CHANNEL_STYLE.Google;
+  if (c.includes("zalo")) return CHANNEL_STYLE.Zalo;
+  if (c.includes("facebook") || c.includes("messenger") || c.includes("instagram")) {
+    return CHANNEL_STYLE.Facebook;
+  }
+  return "text-muted-foreground";
+}
+
+export function ChannelChip({ channel }: { channel: string }) {
+  return <span className={`text-xs font-medium ${channelStyleOf(channel)}`}>{channel}</span>;
 }
 
 // Chip % thay đổi (xanh tăng / đỏ giảm) cho thẻ KPI.

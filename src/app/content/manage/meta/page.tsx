@@ -5,11 +5,11 @@ import {
   MagnifyingGlass,
   FloppyDisk,
   DownloadSimple,
-  X,
   ArrowsDownUp,
   FacebookLogo,
   InstagramLogo
 } from "@phosphor-icons/react";
+import type { ContentListRow } from "@/lib/contentTypes";
 import { apiGet } from "@/lib/api";
 import ContentFilterDropdowns, { matchContentFilters, EMPTY_DIM_FILTERS } from "@/components/ContentFilterDropdowns";
 import CopyableText from "@/components/CopyableText";
@@ -313,7 +313,7 @@ export default function MetaContentPage() {
   // Nạp data thật từ BE (Meta = Facebook + Instagram organic).
   useEffect(() => {
     apiGet("/content/list?platform=META")
-      .then((rows: any[]) => setPosts(rows.map((r) => ({
+      .then((rows: ContentListRow[]) => setPosts(rows.map((r) => ({
         id: r.videoId, caption: r.caption ?? "", link: r.link ?? "#", channel: r.channel ?? "", platform: r.platform ?? "facebook",
         date: r.date ?? "", productCode: r.productCode ?? "", productName: r.productName ?? "", concept: r.concept ?? "-",
         line: r.line ?? "-", team: r.team ?? "-", staff: r.staff ?? "-",
@@ -324,7 +324,8 @@ export default function MetaContentPage() {
   }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const [dimFilters, setDimFilters] = useState(EMPTY_DIM_FILTERS);
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+  type SortKey = keyof (typeof posts)[number];
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: "asc" | "desc" } | null>(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -345,14 +346,14 @@ export default function MetaContentPage() {
   }, []);
 
   // Handle Sort
-  function requestSort(key: string) {
+  function requestSort(key: SortKey) {
     let direction: "asc" | "desc" = "asc";
     if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
       direction = "desc";
     }
     setSortConfig({ key, direction });
 
-    const sortedData = [...posts].sort((a: any, b: any) => {
+    const sortedData = [...posts].sort((a, b) => {
       if (a[key] === undefined || b[key] === undefined) return 0;
       if (typeof a[key] === "number" && typeof b[key] === "number") {
         return direction === "asc" ? a[key] - b[key] : b[key] - a[key];
@@ -404,10 +405,13 @@ export default function MetaContentPage() {
     return acc;
   }, { totalViews: 0, totalReach: 0, totalLikes: 0, totalComments: 0, totalShares: 0, views: 0, reach: 0, likes: 0, comments: 0 });
 
-  // Reset page when search or filters change
-  useEffect(() => {
+  // Về trang 1 khi đổi tìm kiếm/bộ lọc (điều chỉnh state lúc render, không dùng effect).
+  const pageResetKey = `${searchQuery}|${JSON.stringify(dimFilters)}`;
+  const [prevPageResetKey, setPrevPageResetKey] = useState(pageResetKey);
+  if (prevPageResetKey !== pageResetKey) {
+    setPrevPageResetKey(pageResetKey);
     setCurrentPage(1);
-  }, [searchQuery, dimFilters]);
+  }
 
   // Pagination logic
   const totalPages = Math.max(1, Math.ceil(filteredPosts.length / itemsPerPage));
@@ -471,7 +475,7 @@ export default function MetaContentPage() {
                 </th>
 
                 {/* Column Headers */}
-                {[
+                {([
                   { key: "caption", label: "Caption" },
                   { key: "link", label: "Link" },
                   { key: "channel", label: "Kênh" },
@@ -493,7 +497,7 @@ export default function MetaContentPage() {
                   { key: "likes", label: "Lượt thích" },
                   { key: "comments", label: "Lượt bình luận" },
                   { key: "productLine", label: "Dòng sản phẩm" }
-                ].map((col) => (
+                ] as { key: SortKey; label: string }[]).map((col) => (
                   <th
                     key={col.key}
                     onClick={() => col.key && requestSort(col.key)}

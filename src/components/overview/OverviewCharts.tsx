@@ -10,37 +10,33 @@ import {
 } from "recharts";
 import { Panel } from "./parts";
 import { CHANNEL_SPLIT, fmtCompact, fmtNum, fmtVndShort } from "./dashboardData";
+import type { BreakdownData, InsightAgg, TrendPoint } from "./dashboardData";
 import { useChartColors } from "@/lib/chartTheme";
 
 interface OverviewChartsProps {
-  trend: any[];
-  breakdown: any;
+  trend: TrendPoint[];
+  breakdown: BreakdownData | null;
 }
-
-const PLATFORM_COLORS: Record<string, string> = {
-  META: "#3b82f6",
-  TIKTOK: "#db2777",
-  GOOGLE: "#f59e0b",
-  ZALO: "#10b981",
-  UNKNOWN: "#6b7280"
-};
 
 export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps) {
   const { axis: AXIS, grid: GRID, cursor, tooltip: tooltipStyle, labelFill } = useChartColors();
 
   // Dynamic channel split from real ad spend breakdown (by real Fanpage / Channel)
   const channelSplit = useMemo(() => {
-    if (!breakdown?.byChannel?.length) return CHANNEL_SPLIT;
-    const total = breakdown.byChannel.reduce((s: number, c: any) => s + c.spend, 0) || 1;
+    // Dữ liệu mẫu không có `spend` -> gắn undefined để union giữ đúng hình dạng.
+    if (!breakdown?.byChannel?.length) {
+      return CHANNEL_SPLIT.map((c) => ({ ...c, name: c.name as string, spend: undefined as number | undefined }));
+    }
+    const total = breakdown.byChannel.reduce((s: number, c: InsightAgg) => s + c.spend, 0) || 1;
     const COLORS = [
       "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4",
       "#f97316", "#84cc16", "#14b8a6", "#a855f7", "#fb923c", "#0284c7", "#6b7280"
     ];
 
-    return breakdown.byChannel.map((c: any, i: number) => ({
-      name: c.name,
+    return breakdown.byChannel.map((c, i) => ({
+      name: c.name as string,
       value: Number(((c.spend / total) * 100).toFixed(1)),
-      spend: c.spend,
+      spend: c.spend as number | undefined,
       color: COLORS[i % COLORS.length]
     }));
   }, [breakdown]);
@@ -48,18 +44,18 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
   // Aggregate total spend from channel split to show in the center of the Donut
   const totalSpend = useMemo(() => {
     if (!breakdown?.byChannel?.length) return 0;
-    return breakdown.byChannel.reduce((s: number, c: any) => s + c.spend, 0);
+    return breakdown.byChannel.reduce((s: number, c: InsightAgg) => s + c.spend, 0);
   }, [breakdown]);
 
   const marketSplit = useMemo(() => {
     if (!breakdown?.byMarket?.length) return [];
-    const total = breakdown.byMarket.reduce((s: number, m: any) => s + m.spend, 0) || 1;
+    const total = breakdown.byMarket.reduce((s: number, m: InsightAgg) => s + m.spend, 0) || 1;
     const colors: Record<string, string> = {
       "Việt Nam": "#10b981", // Green
       "Global": "#8b5cf6",   // Purple
       "Khác": "#6b7280"      // Gray
     };
-    return breakdown.byMarket.map((m: any) => ({
+    return breakdown.byMarket.map((m) => ({
       name: m.name,
       value: Number(((m.spend / total) * 100).toFixed(1)),
       spend: m.spend,
@@ -69,7 +65,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
 
   const industrySplit = useMemo(() => {
     if (!breakdown?.byIndustry?.length) return [];
-    const total = breakdown.byIndustry.reduce((s: number, ind: any) => s + ind.spend, 0) || 1;
+    const total = breakdown.byIndustry.reduce((s: number, ind: InsightAgg) => s + ind.spend, 0) || 1;
     // Khoá phải khớp TEAM_INDUSTRY ở adsVCB_BE/src/ads/ads.service.ts — thiếu khoá nào thì
     // lát đó rơi về màu xám mặc định.
     const colors: Record<string, string> = {
@@ -78,7 +74,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
       "Đá quý": "#8b5cf6",   // Purple
       "Khác": "#6b7280"      // Gray
     };
-    return breakdown.byIndustry.map((ind: any) => ({
+    return breakdown.byIndustry.map((ind) => ({
       name: ind.name,
       value: Number(((ind.spend / total) * 100).toFixed(1)),
       spend: ind.spend,
@@ -89,12 +85,12 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
   const teamSpendData = useMemo(() => {
     if (!breakdown?.byTeam?.length) return [];
     return breakdown.byTeam
-      .filter((t: any) => t?.name && t.name !== "Không xác định" && !t.name.includes("Chưa khai báo"))
-      .map((t: any) => ({
+      .filter((t) => t?.name && t.name !== "Không xác định" && !t.name.includes("Chưa khai báo"))
+      .map((t) => ({
         name: t.name,
         spend: t.spend
       }))
-      .sort((a: any, b: any) => b.spend - a.spend);
+      .sort((a, b) => b.spend - a.spend);
   }, [breakdown]);
 
   const hasData = trend.length > 0;
@@ -131,7 +127,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
           bodyClassName="px-3 pb-4"
         >
           <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
               <LineChart data={trend} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
                 <XAxis dataKey="day" stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} ticks={ticks} />
@@ -148,10 +144,10 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
         <Panel className="lg:col-span-4" title="Phân bổ kênh" subtitle="Theo chi tiêu quảng cáo thực tế">
           <div className="flex items-center gap-4">
             <div className="w-[150px] h-[150px] shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                 <PieChart>
                   <Pie data={channelSplit} cx="50%" cy="50%" innerRadius={45} outerRadius={68} paddingAngle={2} dataKey="value" stroke="none">
-                    {channelSplit.map((c: any) => <Cell key={c.name} fill={c.color} />)}
+                    {channelSplit.map((c) => <Cell key={c.name} fill={c.color} />)}
                     <Label value={totalSpend > 0 ? fmtCompact(totalSpend) : "100%"} position="center" fill={labelFill} fontSize={totalSpend > 0 ? 11 : 14} fontWeight="bold" />
                   </Pie>
                   <RTooltip contentStyle={tooltipStyle} formatter={(v) => `${v}%`} />
@@ -159,7 +155,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
               </ResponsiveContainer>
             </div>
             <div className="flex-1 flex flex-col gap-2.5 max-h-[170px] overflow-y-auto pr-1 custom-scrollbar">
-              {channelSplit.map((c: any) => (
+              {channelSplit.map((c) => (
                 <div key={c.name} className="flex flex-col gap-1">
                   <div className="flex items-center justify-between text-[14px]">
                     <span className="flex items-center gap-1.5 text-foreground font-medium">
@@ -185,7 +181,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
         {/* Chuyển đổi theo ngày */}
         <Panel className="lg:col-span-3" title="Chuyển đổi theo ngày" subtitle="Tổng đơn hàng ghi nhận (thật)" bodyClassName="px-3 pb-4">
           <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
               <BarChart data={trend} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
                 <XAxis dataKey="day" stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} ticks={ticks} />
@@ -199,16 +195,16 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
       </div>
 
       {/* Hàng 2: Phân bổ thị trường, ngành và chi tiêu team */}
-      {breakdown?.byMarket?.length > 0 && (
+      {(breakdown?.byMarket?.length ?? 0) > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Phân bổ theo Thị trường */}
           <Panel className="lg:col-span-3" title="Phân bổ thị trường" subtitle="Chi phí theo thị trường">
             <div className="flex flex-col gap-3">
               <div className="w-full h-[120px] flex justify-center">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                   <PieChart>
                     <Pie data={marketSplit} cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={2} dataKey="value" stroke="none">
-                      {marketSplit.map((c: any) => <Cell key={c.name} fill={c.color} />)}
+                      {marketSplit.map((c) => <Cell key={c.name} fill={c.color} />)}
                       <Label value="Thị trường" position="center" fill={labelFill} fontSize={10} fontWeight="bold" />
                     </Pie>
                     <RTooltip contentStyle={tooltipStyle} formatter={(v) => `${v}%`} />
@@ -216,7 +212,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
                 </ResponsiveContainer>
               </div>
               <div className="flex flex-col gap-1.5 px-2">
-                {marketSplit.map((c: any) => (
+                {marketSplit.map((c) => (
                   <div key={c.name} className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-1 text-foreground">
                       <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
@@ -233,10 +229,10 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
           <Panel className="lg:col-span-3" title="Phân bổ ngành hàng" subtitle="Chi phí theo ngành">
             <div className="flex flex-col gap-3">
               <div className="w-full h-[120px] flex justify-center">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                   <PieChart>
                     <Pie data={industrySplit} cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={2} dataKey="value" stroke="none">
-                      {industrySplit.map((c: any) => <Cell key={c.name} fill={c.color} />)}
+                      {industrySplit.map((c) => <Cell key={c.name} fill={c.color} />)}
                       <Label value="Ngành hàng" position="center" fill={labelFill} fontSize={10} fontWeight="bold" />
                     </Pie>
                     <RTooltip contentStyle={tooltipStyle} formatter={(v) => `${v}%`} />
@@ -244,7 +240,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
                 </ResponsiveContainer>
               </div>
               <div className="flex flex-col gap-1.5 px-2">
-                {industrySplit.map((c: any) => (
+                {industrySplit.map((c) => (
                   <div key={c.name} className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-1 text-foreground">
                       <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
@@ -260,14 +256,14 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
           {/* Chi phí quảng cáo theo Team */}
           <Panel className="lg:col-span-6" title="Chi phí quảng cáo theo Team" subtitle="Ngân sách quảng cáo thực tế cho các nhóm">
             <div className="h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                 <BarChart data={teamSpendData} margin={{ top: 22, right: 8, left: -10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
                   <XAxis dataKey="name" stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={45} />
                   <YAxis stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => fmtCompact(v)} />
                   <RTooltip contentStyle={tooltipStyle} cursor={{ fill: cursor }} formatter={(v) => [fmtNum(Number(v)) + "đ", "Chi phí"]} />
                   <Bar dataKey="spend" fill="#10b981" radius={[4, 4, 0, 0]}>
-                    <LabelList dataKey="spend" position="top" formatter={(v: any) => fmtVndShort(Number(v || 0))} style={{ fill: labelFill, fontSize: "10px", fontWeight: "600" }} />
+                    <LabelList dataKey="spend" position="top" formatter={(v) => fmtVndShort(Number(v ?? 0))} style={{ fill: labelFill, fontSize: "10px", fontWeight: "600" }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>

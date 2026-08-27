@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { API_URL } from "@/lib/api";
 
 export default function LoginPage() {
@@ -24,12 +25,15 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Đăng nhập thất bại");
 
-      // Lưu token vào localStorage và cookie
+      // Lưu token vào localStorage (để gắn header Authorization) và cookie
+      // (để middleware chặn điều hướng). SameSite=Lax chặn gửi cookie khi bị
+      // site khác nhúng; Secure khi chạy https.
       localStorage.setItem("token", data.token);
-      document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 3600}`;
+      const secure = window.location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax${secure}`;
       router.push("/");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Đăng nhập thất bại");
     } finally {
       setLoading(false);
     }
@@ -47,9 +51,14 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-card border border-border mb-4 shadow-lg overflow-hidden">
-            <img
+            {/* next/image: file gốc 798KB nhưng chỉ hiển thị 56x56 — để Next
+                resize/nén thay vì bắt trình duyệt tải nguyên ảnh gốc. */}
+            <Image
               src="/logoads.png"
               alt="VCB Ads Manager Logo"
+              width={56}
+              height={56}
+              priority
               className="w-full h-full object-contain"
             />
           </div>

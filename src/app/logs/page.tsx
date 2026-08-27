@@ -82,7 +82,7 @@ function parseErrorDetail(detail: string | null): string {
         const parsedJson = JSON.parse(jsonPart);
         if (parsedJson.message) return `Lỗi API (${statusCode}): ${parsedJson.message}`;
         if (parsedJson.error) return `Lỗi API (${statusCode}): ${parsedJson.error}`;
-      } catch (e) {
+      } catch {
         // bỏ qua
       }
       
@@ -99,7 +99,8 @@ export default function LogsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"sync" | "raw">("sync");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "SUCCESS" | "FAILED" | "PENDING">("ALL");
+  type StatusFilter = "ALL" | "SUCCESS" | "FAILED" | "PENDING";
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
 
   // Phân trang
   const [syncPage, setSyncPage] = useState(0);
@@ -113,17 +114,20 @@ export default function LogsPage() {
       .then(([l, c]) => {
         setLogs(l);
         // Loại bỏ các kênh có platform UNKNOWN
-        setChannels(c.filter((ch: any) => ch.platform && ch.platform.toUpperCase() !== "UNKNOWN"));
+        setChannels(c.filter((ch: Channel) => ch.platform && ch.platform.toUpperCase() !== "UNKNOWN"));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  // Reset trang về 0 khi thay đổi bộ lọc hoặc tab
-  useEffect(() => {
+  // Reset trang về 0 khi thay đổi bộ lọc hoặc tab (điều chỉnh state lúc render).
+  const filterKey = `${search}|${statusFilter}|${activeTab}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
     setSyncPage(0);
     setRawPage(0);
-  }, [search, statusFilter, activeTab]);
+  }
 
   const syncStatuses = channels.map((c) => {
     const relevantLog = logs.find((l) => {
@@ -220,7 +224,7 @@ export default function LogsPage() {
   const syncPageRange = [...Array(syncPages).keys()].filter(i => {
     const maxVisible = 5;
     let startPage = Math.max(0, syncPage - 2);
-    let endPage = Math.min(syncPages - 1, startPage + maxVisible - 1);
+    const endPage = Math.min(syncPages - 1, startPage + maxVisible - 1);
     if (endPage - startPage < maxVisible - 1) {
       startPage = Math.max(0, endPage - maxVisible + 1);
     }
@@ -235,7 +239,7 @@ export default function LogsPage() {
   const rawPageRange = [...Array(rawPages).keys()].filter(i => {
     const maxVisible = 5;
     let startPage = Math.max(0, rawPage - 2);
-    let endPage = Math.min(rawPages - 1, startPage + maxVisible - 1);
+    const endPage = Math.min(rawPages - 1, startPage + maxVisible - 1);
     if (endPage - startPage < maxVisible - 1) {
       startPage = Math.max(0, endPage - maxVisible + 1);
     }
@@ -297,7 +301,7 @@ export default function LogsPage() {
             </div>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
               className="bg-background border border-border rounded-md px-3 py-1.5 text-xs text-foreground outline-none cursor-pointer focus:border-blue-500"
             >
               <option value="ALL">Trạng thái: Tất cả</option>

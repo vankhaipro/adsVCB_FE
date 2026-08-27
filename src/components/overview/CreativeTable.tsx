@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Download, CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { Panel, Th, StatusPill } from "./parts";
 import { fmtNum, fmtVndShort } from "./dashboardData";
@@ -45,13 +45,16 @@ function getSku(name: string, id: string) {
 export default function CreativeTable() {
   const [page, setPage] = useState(0);
   const PER_PAGE = 10;
-  const { filteredCampaigns: campaigns, accountOptions, campaignOptions, filterState } =
+  const { filteredCampaigns: campaigns, accountOptions, campaignOptions, filterState, filterKey } =
     useTableInsights();
 
-  // Reset về trang đầu khi bộ lọc thay đổi danh sách.
-  useEffect(() => {
+  // Reset về trang đầu khi bộ lọc đổi (khoá là chuỗi — xem chú thích ở CampaignTable).
+  const resetKey = `${filterKey}|${campaigns.length}`;
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (prevResetKey !== resetKey) {
+    setPrevResetKey(resetKey);
     setPage(0);
-  }, [campaigns]);
+  }
 
   const pages = Math.max(1, Math.ceil(campaigns.length / PER_PAGE));
   const start = page * PER_PAGE;
@@ -62,7 +65,7 @@ export default function CreativeTable() {
     const range = [];
     const maxVisible = 5;
     let startPage = Math.max(0, page - 2);
-    let endPage = Math.min(pages - 1, startPage + maxVisible - 1);
+    const endPage = Math.min(pages - 1, startPage + maxVisible - 1);
     
     if (endPage - startPage < maxVisible - 1) {
       startPage = Math.max(0, endPage - maxVisible + 1);

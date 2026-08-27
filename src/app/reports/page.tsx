@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid,
   PieChart, Pie, Legend, LabelList, Label,
 } from "recharts";
-import { SpinnerGap, WarningOctagon, WarningCircle, CheckCircle } from "@phosphor-icons/react";
+import { SpinnerGap } from "@phosphor-icons/react";
 import { apiGet, fmtVnd } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
 import DateRangePicker, { presetToDates } from "@/components/DateRangePicker";
@@ -16,7 +16,14 @@ type Report = {
 };
 
 type Grp = { name: string; spend: number; result: number; campaigns: number; cp: number };
-type Acct = { name: string; spend: number; result: number; active: number; total: number; cp: number; pct: number };
+// Tuyến nội dung tách riêng khỏi Grp: chi tiêu gồm cả TikTok, còn CP/kết quả phải tách theo
+// mục tiêu (mỗi mục tiêu một đơn vị kết quả — xem ghi chú byLine ở adsVCB_BE/ads.service.ts).
+type LineSpend = { name: string; spend: number; spendMeta: number; spendTiktok: number; campaigns: number };
+type LineObj = { line: string; objective: string; spend: number; result: number; campaigns: number; cp: number };
+// Kết quả của tài khoản tách theo mục tiêu — không còn cột "kết quả" gộp, vì mỗi tài khoản
+// chạy nhiều mục tiêu và mỗi mục tiêu một đơn vị (tin nhắn / like / đơn hàng).
+type AcctObj = { spend: number; result: number; campaigns: number; cp: number };
+type Acct = { name: string; spend: number; active: number; total: number; pct: number; byObjective: Record<string, AcctObj> };
 type TopSpend = { name: string; account: string; spend: number; result: number; resultLabel: string; cp: number; spender: string };
 type NameQ = { name: string; count: number; pct: number };
 type NameErr = { name: string; cls: string; missing: string[]; spend: number };
@@ -25,13 +32,16 @@ type MetaReport = {
   bySpender: Grp[];
   byObjective: Grp[];
   byTeam: Grp[];
-  byLine: Grp[];
+  byLine: LineSpend[];
+  byLineObjective: LineObj[];
   byAccount: Acct[];
   topSpend: TopSpend[];
   topMess: { name: string; cp: number; messages: number }[];
   namingQuality: NameQ[];
   namingErrors: NameErr[];
   messThreshold: number;
+  industries: string[];
+  industry: string | null;
   warnings: { level: "danger" | "warn" | "ok"; text: string }[];
 };
 
@@ -39,11 +49,25 @@ const platColor = (p: string) => (p === "META" ? "#60a5fa" : "#f472b6");
 
 // Bảng màu dùng chung cho các chiều phân loại.
 const SPENDER_COLORS: Record<string, string> = { "Việt": "#1e3a8a", "Thành": "#f59e0b", "SB": "#10b981", "Không xác định": "#ef4444" };
-const LINE_COLORS: Record<string, string> = { A4: "#ef4444", A1: "#10b981", A2: "#3b82f6", A3: "#8b5cf6", A5: "#f59e0b", "Không rõ": "#6b7280" };
+// "Chưa khai tuyến" = CK có dùng hệ tuyến nhưng tên thiếu A1–A5 (BE gắn nhãn này sau khi đã
+// loại CK Website ra khỏi hệ tuyến). Xám để không bị nhìn nhầm là một tuyến thật.
+const LINE_COLORS: Record<string, string> = { A4: "#ef4444", A1: "#10b981", A2: "#3b82f6", A3: "#8b5cf6", A5: "#f59e0b", "Chưa khai tuyến": "#6b7280" };
 // Khoá phải khớp CampaignObjectiveLabel ở adsVCB_BE/src/lib/campaign-objective.ts.
 // Thiếu khoá nào thì cột đó rơi về PALETTE[i] và đổi màu theo thứ tự sắp xếp.
 const OBJ_COLORS: Record<string, string> = { "Mess": "#f59e0b", "Like page": "#10b981", "Chuyển đổi web": "#ef4444", "Tương tác": "#3b82f6", "Follow": "#a855f7", "Khác": "#6b7280" };
 const NAMEQ_COLORS: Record<string, string> = { "Chuẩn": "#10b981", "SB tự động": "#3b82f6", "Thiếu thành phần": "#f59e0b", "Ngoài hệ thống / Rác": "#ef4444" };
+// Đơn vị của "kết quả" từng mục tiêu — ghi rõ trên card CP để không ai cộng chúng với nhau.
+const RESULT_UNIT: Record<string, string> = {
+  "Mess": "tin nhắn", "Like page": "like trang", "Chuyển đổi web": "đơn hàng",
+  "Tương tác": "click", "Follow": "follow", "Khác": "kết quả",
+};
+// Cột kết quả của bảng "Theo tài khoản", theo thứ tự hiển thị. Mục tiêu nào không có tài khoản
+// nào chạy thì cột đó tự ẩn; mục tiêu ngoài danh sách này hiện ở dòng phụ dưới tên tài khoản.
+const ACCT_OBJ_COLS = [
+  { key: "Mess", result: "Tin nhắn", cp: "CP/tin nhắn" },
+  { key: "Like page", result: "Like page", cp: "CP/like" },
+  { key: "Chuyển đổi web", result: "Đơn web", cp: "CP/đơn" },
+] as const;
 const PALETTE = ["#1e3a8a", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#3b82f6", "#14b8a6", "#f472b6", "#64748b"];
 
 const fmtM = (n: number) => `${(n / 1e6).toFixed(1)}M`;
@@ -72,18 +96,34 @@ export default function ReportsPage() {
   const chart = useChartColors();
   const [r, setR] = useState<Report | null>(null);
   const [m, setM] = useState<MetaReport | null>(null);
+  const [lineObjective, setLineObjective] = useState("Mess");
   const [dateRange, setDateRange] = useState("last30days");
   const [dateFrom, setDateFrom] = useState(() => presetToDates("last30days").from);
   const [dateTo, setDateTo] = useState(() => presetToDates("last30days").to);
-  const [loading, setLoading] = useState(true);
+  // "" = tất cả ngành. Danh sách lựa chọn do BE trả về (m.industries) nên không hardcode.
+  const [industry, setIndustry] = useState("");
+
+  // setLoading(true) đồng bộ trong effect gây cascading render. Thay bằng: lưu khoá
+  // truy vấn đã sinh ra dữ liệu hiện có, "đang tải" = khoá đó khác khoá cần tải.
+  const q = `from=${dateFrom}&to=${dateTo}${industry ? `&industry=${encodeURIComponent(industry)}` : ""}`;
+  const [loadedQ, setLoadedQ] = useState<string | null>(null);
+  const loading = loadedQ !== q;
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
     Promise.all([
-      apiGet(`/mkt-api/reports?from=${dateFrom}&to=${dateTo}`).then(setR).catch(() => {}),
-      apiGet(`/mkt-api/reports/meta?from=${dateFrom}&to=${dateTo}`).then(setM).catch(() => setM(null)),
-    ]).finally(() => setLoading(false));
-  }, [dateFrom, dateTo]);
+      apiGet(`/mkt-api/reports?${q}`).catch(() => null),
+      apiGet(`/mkt-api/reports/meta?${q}`).catch(() => null),
+    ]).then(([r, m]) => {
+      if (cancelled) return;
+      if (r) setR(r);
+      setM(m);
+      setLoadedQ(q);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [q]);
 
   const axisTick = { fill: chart.axis, fontSize: 10 };
 
@@ -94,16 +134,37 @@ export default function ReportsPage() {
           <h1 className="text-2xl font-bold text-foreground">Báo cáo</h1>
           <p className="text-sm text-muted-foreground mt-1">Phân tích chi tiêu &amp; hiệu quả quảng cáo Meta theo người chạy, mục tiêu, team &amp; tuyến nội dung.</p>
         </div>
-        <DateRangePicker
-          presetId={dateRange}
-          from={dateFrom}
-          to={dateTo}
-          onApply={({ presetId, from, to }) => {
-            setDateRange(presetId);
-            setDateFrom(from);
-            setDateTo(to);
-          }}
-        />
+        <div className="flex flex-wrap items-center gap-3">
+          <DateRangePicker
+            presetId={dateRange}
+            from={dateFrom}
+            to={dateTo}
+            onApply={({ presetId, from, to }) => {
+              setDateRange(presetId);
+              setDateFrom(from);
+              setDateTo(to);
+            }}
+          />
+          {/* Lọc ngành hàng — tách hẳn số liệu Đồ da / Kim hoàn / Đá quý.
+              Danh sách luôn đầy đủ vì BE tính industries TRƯỚC khi áp bộ lọc. */}
+          {(m?.industries?.length ?? 0) > 1 && (
+            <div className="flex items-center gap-1.5">
+              {[{ v: "", label: "Tất cả ngành" }, ...(m?.industries ?? []).map((i) => ({ v: i, label: i }))].map((o) => (
+                <button
+                  key={o.v || "all"}
+                  onClick={() => setIndustry(o.v)}
+                  className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
+                    o.v === industry
+                      ? "bg-foreground text-background border-foreground font-medium"
+                      : "bg-card text-muted-foreground border-border hover:text-foreground"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -155,7 +216,7 @@ export default function ReportsPage() {
                 <Card title="Chi tiêu theo người chạy">
                   <div className="flex items-center gap-4 h-72">
                     <div className="w-[180px] h-[180px] shrink-0">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                         <PieChart>
                           <Pie data={m.bySpender} dataKey="spend" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
                             {m.bySpender.map((s, i) => (
@@ -196,7 +257,7 @@ export default function ReportsPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <Card title="Chi tiêu theo mục tiêu">
                   <div className="h-72 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                       <BarChart data={m.byObjective} margin={{ top: 20, right: 8, bottom: 8, left: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                         <XAxis dataKey="name" tick={axisTick} interval={0} />
@@ -212,7 +273,7 @@ export default function ReportsPage() {
                 </Card>
                 <Card title="CP / kết quả theo mục tiêu" subtitle="VND cho mỗi kết quả của từng loại mục tiêu.">
                   <div className="h-72 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                       <BarChart data={m.byObjective} margin={{ top: 20, right: 8, bottom: 8, left: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                         <XAxis dataKey="name" tick={axisTick} interval={0} />
@@ -231,7 +292,7 @@ export default function ReportsPage() {
               {/* 3. Team */}
               <Card title="Chi tiêu theo Team" subtitle="Tổng chi tiêu mỗi team trong kỳ (tất cả tài khoản).">
                 <div style={{ height: Math.max(240, m.byTeam.length * 34) }} className="w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                     <BarChart data={m.byTeam} layout="vertical" margin={{ top: 4, right: 60, bottom: 4, left: 8 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={false} />
                       <XAxis type="number" tick={axisTick} tickFormatter={fmtM} />
@@ -247,43 +308,34 @@ export default function ReportsPage() {
               </Card>
 
               {/* Theo tài khoản */}
-              <Card title="Theo tài khoản" subtitle="Chi tiêu, số CK active/tổng và CP/kết quả từng tài khoản quảng cáo.">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm min-w-[560px]">
-                    <thead>
-                      <tr className="text-left text-xs text-muted-foreground border-b border-border">
-                        <th className="py-2 pr-3 font-medium">Tài khoản</th>
-                        <th className="py-2 px-3 font-medium text-right">Chi tiêu</th>
-                        <th className="py-2 px-3 font-medium text-right">%</th>
-                        <th className="py-2 px-3 font-medium text-right">Active / Tổng</th>
-                        <th className="py-2 px-3 font-medium text-right">Kết quả</th>
-                        <th className="py-2 pl-3 font-medium text-right">CP/kq</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {m.byAccount.map((a) => (
-                        <tr key={a.name} className="border-b border-border/50">
-                          <td className="py-2 pr-3 text-foreground">{a.name}</td>
-                          <td className="py-2 px-3 text-right text-foreground">{fmtVnd(a.spend)}</td>
-                          <td className="py-2 px-3 text-right text-muted-foreground">{a.pct.toFixed(1)}%</td>
-                          <td className="py-2 px-3 text-right text-muted-foreground">{a.active} / {a.total}</td>
-                          <td className="py-2 px-3 text-right text-muted-foreground">{fmtNum(a.result)}</td>
-                          <td className="py-2 pl-3 text-right text-foreground">{fmtNum(a.cp)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
+              <AccountTable data={m.byAccount ?? []} />
 
               {/* 4. Tuyến nội dung */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <Card title="Chi tiêu theo tuyến nội dung" subtitle="Ngân sách phân bổ theo tuyến A1–A5.">
-                  <HBar data={m.byLine} colorMap={LINE_COLORS} chart={chart} axisTick={axisTick} field="spend" valueFmt={fmtM} width={70} />
+                <Card title="Chi tiêu theo tuyến nội dung" subtitle="Ngân sách theo tuyến A1–A5, tách Meta &amp; TikTok. Không gồm CK Website (không dùng hệ tuyến).">
+                  {/* ?? [] : backend cũ chưa có byLine dạng mới / byLineObjective — thà vẽ rỗng còn hơn vỡ trang */}
+                  <div style={{ height: Math.max(200, (m.byLine ?? []).length * 44) }} className="w-full">
+                    <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+                      <BarChart data={m.byLine ?? []} layout="vertical" margin={{ top: 4, right: 64, bottom: 4, left: 8 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={false} />
+                        <XAxis type="number" tick={axisTick} tickFormatter={fmtM} />
+                        <YAxis type="category" dataKey="name" tick={axisTick} width={70} />
+                        <Tooltip
+                          formatter={(v, n) => [fmtVnd(Number(v)), n]}
+                          contentStyle={chart.tooltip}
+                          cursor={{ fill: chart.cursor }}
+                        />
+                        <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                        <Bar dataKey="spendMeta" name="Meta" stackId="p" fill={platColor("META")} />
+                        <Bar dataKey="spendTiktok" name="TikTok" stackId="p" fill={platColor("TIKTOK")} radius={[0, 4, 4, 0]}>
+                          {/* dataKey="spend" = tổng 2 nền tảng, đặt ở cuối stack */}
+                          <LabelList dataKey="spend" position="right" formatter={(v) => fmtM(Number(v))} style={{ fill: chart.axis, fontSize: 10 }} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </Card>
-                <Card title="CP / kết quả theo tuyến nội dung" subtitle="Hiệu quả chi phí mỗi tuyến.">
-                  <HBar data={m.byLine} colorMap={LINE_COLORS} chart={chart} axisTick={axisTick} field="cp" valueFmt={(v) => fmtNum(v)} width={70} />
-                </Card>
+                <LineCpCard data={m.byLineObjective ?? []} selected={lineObjective} onSelect={setLineObjective} chart={chart} axisTick={axisTick} />
               </div>
 
               {/* Top 10 chi tiêu cao nhất */}
@@ -322,7 +374,7 @@ export default function ReportsPage() {
                   <div className="text-sm text-muted-foreground">Chưa có campaign Mess trong kỳ.</div>
                 ) : (
                   <div style={{ height: Math.max(240, m.topMess.length * 36) }} className="w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                       <BarChart data={m.topMess} layout="vertical" margin={{ top: 4, right: 90, bottom: 4, left: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={false} />
                         <XAxis type="number" tick={axisTick} tickFormatter={(v) => fmtNum(v)} />
@@ -347,7 +399,7 @@ export default function ReportsPage() {
                 <Card title="Chất lượng đặt tên" subtitle="Tỉ lệ chiến dịch đặt tên đúng chuẩn hệ thống.">
                   <div className="flex items-center gap-4 h-64">
                     <div className="w-[170px] h-[170px] shrink-0">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                         <PieChart>
                           <Pie data={m.namingQuality} dataKey="count" nameKey="name" innerRadius={45} outerRadius={75} paddingAngle={2}>
                             {m.namingQuality.map((q, i) => <Cell key={i} fill={NAMEQ_COLORS[q.name] || PALETTE[i % PALETTE.length]} />)}
@@ -398,31 +450,11 @@ export default function ReportsPage() {
                 </Card>
               </div>
 
-              {/* 6. Cảnh báo & Khuyến nghị */}
-              <Card title="Cảnh báo & Khuyến nghị">
-                {m.warnings.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">Không có cảnh báo nào trong kỳ.</div>
-                ) : (
-                  <ul className="flex flex-col gap-2">
-                    {m.warnings.map((w, i) => {
-                      const Icon = w.level === "danger" ? WarningOctagon : w.level === "warn" ? WarningCircle : CheckCircle;
-                      const color = w.level === "danger" ? "#ef4444" : w.level === "warn" ? "#f59e0b" : "#10b981";
-                      return (
-                        <li key={i} className="flex items-start gap-3 text-sm">
-                          <Icon size={18} weight="fill" style={{ color }} className="mt-0.5 shrink-0" />
-                          <span className="text-foreground">{w.text}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </Card>
-
               {/* Spend by account (giữ lại) */}
               {r && r.spendByAccount.length > 0 && (
                 <Card title="Top tài khoản theo chi tiêu">
                   <div className="h-80 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                       <BarChart data={r.spendByAccount} margin={{ top: 22, right: 8, bottom: 60, left: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
                         <XAxis dataKey="name" angle={-30} textAnchor="end" interval={0} tick={{ ...axisTick }} height={70} />
@@ -430,7 +462,7 @@ export default function ReportsPage() {
                         <Tooltip formatter={(v) => fmtVnd(Number(v))} contentStyle={chart.tooltip} cursor={{ fill: chart.cursor }} />
                         <Bar dataKey="spend" radius={[4, 4, 0, 0]}>
                           {r.spendByAccount.map((a, i) => <Cell key={i} fill={platColor(a.platform)} />)}
-                          <LabelList dataKey="spend" position="top" formatter={(v: any) => fmtVndShort(Number(v || 0))} style={{ fill: chart.axis, fontSize: 10, fontWeight: "600" }} />
+                          <LabelList dataKey="spend" position="top" formatter={(v) => fmtVndShort(Number(v ?? 0))} style={{ fill: chart.axis, fontSize: 10, fontWeight: "600" }} />
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
@@ -442,6 +474,141 @@ export default function ReportsPage() {
         </>
       )}
     </div>
+  );
+}
+
+// Bảng "Theo tài khoản" — kết quả & CP tách theo mục tiêu.
+//
+// Cột "Kết quả"/"CP/kq" gộp cũ đã bỏ: tài khoản "Tăng trưởng thần tốc" chia tiền cho Mess (74%),
+// web (14%) và Like page (11%), nên nó cộng tin nhắn + đơn hàng + like vào một mẫu số. Riêng
+// like page nhiều gấp nhiều lần tin nhắn nên nó kéo CP xuống, ra 376đ/kq — không phải giá mess.
+function AccountTable({ data }: { data: Acct[] }) {
+  // Chỉ hiện cột của mục tiêu thực sự có tài khoản chạy.
+  const cols = ACCT_OBJ_COLS.filter((c) => data.some((a) => a.byObjective?.[c.key]?.spend > 0));
+  const colKeys = new Set<string>(cols.map((c) => c.key));
+  const num = (v: number | undefined) => (v ? fmtNum(v) : "—");
+
+  return (
+    <Card title="Theo tài khoản" subtitle="Chi tiêu, số CK active/tổng, và kết quả + CP tách riêng từng mục tiêu.">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[860px]">
+          <thead>
+            <tr className="text-left text-xs text-muted-foreground border-b border-border">
+              <th className="py-2 pr-3 font-medium">Tài khoản</th>
+              <th className="py-2 px-3 font-medium text-right">Chi tiêu</th>
+              <th className="py-2 px-3 font-medium text-right">%</th>
+              <th className="py-2 px-3 font-medium text-right">Active / Tổng</th>
+              {cols.map((c) => (
+                <Fragment key={c.key}>
+                  <th className="py-2 px-3 font-medium text-right border-l border-border/50">{c.result}</th>
+                  <th className="py-2 px-3 font-medium text-right">{c.cp}</th>
+                </Fragment>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((a) => {
+              // Mục tiêu có chi tiêu nhưng không có cột riêng (vd Tương tác, Follow) — cho xuống
+              // dòng phụ để tiền của chúng không biến mất khỏi bảng.
+              const rest = Object.entries(a.byObjective || {}).filter(([k, o]) => !colKeys.has(k) && o.spend > 0);
+              return (
+                <tr key={a.name} className="border-b border-border/50">
+                  <td className="py-2 pr-3 text-foreground">
+                    {a.name}
+                    {rest.length > 0 && (
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        {rest.map(([k, o]) => `${k}: ${fmtVndShort(o.spend)}${o.result > 0 ? ` · ${fmtNum(o.cp)}đ/${RESULT_UNIT[k] || "kq"}` : ""}`).join(" · ")}
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-2 px-3 text-right text-foreground align-top">{fmtVnd(a.spend)}</td>
+                  <td className="py-2 px-3 text-right text-muted-foreground align-top">{a.pct.toFixed(1)}%</td>
+                  <td className="py-2 px-3 text-right text-muted-foreground align-top">{a.active} / {a.total}</td>
+                  {cols.map((c) => {
+                    const o = a.byObjective?.[c.key];
+                    return (
+                      <Fragment key={c.key}>
+                        <td className="py-2 px-3 text-right text-muted-foreground align-top border-l border-border/50">{num(o?.result)}</td>
+                        <td className="py-2 px-3 text-right text-foreground align-top">{num(o?.cp)}</td>
+                      </Fragment>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
+// CP/kết quả theo tuyến — MỘT mục tiêu tại một thời điểm.
+//
+// Không gộp mọi mục tiêu vào một cột như trước: "kết quả" của Mess là tin nhắn, của Like page
+// là like, của Chuyển đổi web là đơn hàng. Cộng chung rồi chia làm CP/tin nhắn của tuyến A4
+// tụt từ 6.897đ xuống 5.798đ vì bị like & click pha loãng.
+function LineCpCard({
+  data, selected, onSelect, chart, axisTick,
+}: {
+  data: LineObj[];
+  selected: string;
+  onSelect: (v: string) => void;
+  chart: ReturnType<typeof useChartColors>;
+  axisTick: { fill: string; fontSize: number };
+}) {
+  // Mục tiêu nào tiêu nhiều tiền hơn đứng trước; data đã sort sẵn theo spend giảm dần.
+  const objectives = [...new Set(data.map((d) => d.objective))];
+  const active = objectives.includes(selected) ? selected : objectives[0];
+  const rows = data.filter((d) => d.objective === active).sort((a, b) => b.spend - a.spend);
+  const unit = RESULT_UNIT[active] || "kết quả";
+
+  return (
+    <Card
+      title="CP / kết quả theo tuyến nội dung"
+      subtitle={objectives.length ? `VND cho mỗi ${unit} — chỉ Meta, không gồm CK Website (insight TikTok chưa có chỉ số kết quả).` : "Chưa có dữ liệu."}
+    >
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {objectives.map((o) => (
+          <button
+            key={o}
+            onClick={() => onSelect(o)}
+            className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
+              o === active
+                ? "bg-foreground text-background border-foreground font-medium"
+                : "bg-muted/30 text-muted-foreground border-border hover:text-foreground"
+            }`}
+          >
+            {o}
+          </button>
+        ))}
+      </div>
+      {rows.length === 0 ? (
+        <div className="text-sm text-muted-foreground">Không có tuyến nào có kết quả cho mục tiêu này.</div>
+      ) : (
+        <div style={{ height: Math.max(160, rows.length * 44) }} className="w-full">
+          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+            <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 64, bottom: 4, left: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={false} />
+              <XAxis type="number" tick={axisTick} tickFormatter={(v) => fmtNum(v)} />
+              <YAxis type="category" dataKey="line" tick={axisTick} width={70} />
+              <Tooltip
+                formatter={(v, _n, p) => {
+                  const d = p?.payload as LineObj;
+                  return [`${fmtVnd(Number(v))} / ${unit} · ${fmtNum(d.result)} ${unit} · ${d.campaigns} CK`, "CP"];
+                }}
+                contentStyle={chart.tooltip}
+                cursor={{ fill: chart.cursor }}
+              />
+              <Bar dataKey="cp" radius={[0, 4, 4, 0]}>
+                {rows.map((d, i) => <Cell key={i} fill={LINE_COLORS[d.line] || PALETTE[i % PALETTE.length]} />)}
+                <LabelList dataKey="cp" position="right" formatter={(v) => fmtNum(Number(v))} style={{ fill: chart.axis, fontSize: 10 }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -459,7 +626,7 @@ function HBar({
 }) {
   return (
     <div style={{ height: Math.max(200, data.length * 44) }} className="w-full">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
         <BarChart data={data} layout="vertical" margin={{ top: 4, right: 56, bottom: 4, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={false} />
           <XAxis type="number" tick={axisTick} tickFormatter={valueFmt} />

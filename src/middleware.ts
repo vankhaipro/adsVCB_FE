@@ -4,15 +4,15 @@ import type { NextRequest } from "next/server";
 // Các trang PUBLIC (không cần đăng nhập)
 const PUBLIC_PATHS = ["/login"];
 
+// Đuôi file tĩnh trong /public được phục vụ không cần đăng nhập.
+const STATIC_FILE = /\.(png|jpe?g|gif|svg|webp|avif|ico|txt|xml|webmanifest|woff2?|ttf|otf|css|js|map)$/i;
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Cho phép các static files và API routes đi qua
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.includes(".")
-  ) {
+  // Cho phép static files đi qua. Chỉ nhận đúng các đuôi file tĩnh — trước đây
+  // dùng pathname.includes(".") nên mọi URL có dấu chấm đều lọt qua kiểm tra.
+  if (pathname.startsWith("/_next") || STATIC_FILE.test(pathname)) {
     return NextResponse.next();
   }
 

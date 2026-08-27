@@ -15,7 +15,17 @@ import OrdersBreakdown from "@/components/OrdersBreakdown";
 import OverviewHeader, { type KpiItem } from "@/components/overview/OverviewHeader";
 import { presetToDates } from "@/components/DateRangePicker";
 import OverviewBody from "@/components/overview/OverviewBody";
-import { KPIS, type Kpi } from "@/components/overview/dashboardData";
+import type { BreakdownData, TeamBreakdown, TrendPoint } from "@/components/overview/dashboardData";
+
+// Bản ghi kênh organic trả về từ /channels (chỉ các field trang này dùng).
+type OrganicChannelRow = {
+  id: string;
+  channelName: string | null;
+  platform: string | null;
+  team: string | null;
+  pageId: string | null;
+  adCampaignCount?: number;
+};
 
 // Bản Tổng quan cũ (dữ liệu thật) được giữ lại — đặt true để bật lại.
 const LEGACY_OVERVIEW: boolean = false;
@@ -77,99 +87,20 @@ type InsightData = {
   hasData: boolean;
 };
 
-type InsightAgg = {
-  spend: number; impressions: number; clicks: number; reach: number;
-  messages: number; likes: number; comments: number; conversions: number; campaigns: number;
-};
-type BreakdownData = {
-  byPlatform: (InsightAgg & { platform: string })[];
-  byChannel: (InsightAgg & { name: string; platform: string })[];
-  byContentLine: (InsightAgg & { line: string })[];
-  byObjective: (InsightAgg & { objective: string })[];
-  byTeam?: (InsightAgg & { name: string })[];
-  byMarket?: (InsightAgg & { name: string })[];
-  byIndustry?: (InsightAgg & { name: string })[];
-  hasData: boolean;
-};
 
-// Hash function to make generated data deterministic per campaign
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
 
-// Extracted properties from campaign name
-function parseCampaignName(name: string, id: string) {
-  const upper = name.toUpperCase();
-  const hash = hashString(id);
-
-  // 1. SKU Extraction
-  // Look for product SKUs (e.g. B400815, NM101, L0006, L000963, N101220, N0006, N001347, N200099)
-  const skuRegex = /\b([A-Z]{1,3}\d{3,7})\b/i;
-  const skuMatch = name.match(skuRegex);
-  let sku = skuMatch ? skuMatch[1].toUpperCase() : "";
-
-  if (!sku) {
-    const kRegex = /\b(K\d+)\b/i;
-    const kMatch = name.match(kRegex);
-    if (kMatch) {
-      const kCode = kMatch[1].toUpperCase();
-      // Map K0, K1, K2 to realistic SKU codes
-      if (kCode === "K2") sku = "B400815";
-      else if (kCode === "K1") sku = "NM101";
-      else if (kCode === "K0") sku = "L000963";
-      else sku = kCode;
-    }
-  }
-
-  // Predefined SKUs mapping from screenshot if not matched
-  const predefinedSkus = ["B400815", "NM101", "L0006", "L000963", "N101220", "N0006", "N001347", "N200099"];
-  if (!sku || sku === "Khác") {
-    sku = predefinedSkus[hash % predefinedSkus.length];
-  }
-
-  // 2. Staff Extraction
-  let staff = "Khác";
-  const cleanName = name.trim();
-  if (/^(Việt|Viet)\b/i.test(cleanName)) staff = "Việt";
-  else if (/^(Thành|Thanh)\b/i.test(cleanName)) staff = "Thành";
-  else if (/^(Ngọc|Ngoc)\b/i.test(cleanName)) staff = "Ngọc";
-  else if (/^(Cương|Cuong)\b/i.test(cleanName)) staff = "Cương";
-
-  // 3. Channel Extraction
-  let channel = "Facebook Feed";
-  if (upper.includes("MESS") || upper.includes("TIN NHAN")) {
-    channel = "Messenger";
-  } else if (upper.includes("LIKE PAGE") || upper.includes("THICH TRANG")) {
-    channel = "Facebook Page Likes";
-  } else if (upper.includes("IG") || upper.includes("INSTAGRAM")) {
-    channel = "Instagram";
-  }
-
-  return { sku, staff, channel };
-}
 
 function OverviewInner() {
   const chart = useChartColors();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [, setCampaigns] = useState<Campaign[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
 
-  // Dữ liệu doanh thu thật từ Sapo (theo khoảng thời gian đang chọn)
-  const [sapo, setSapo] = useState<SapoData | null>(null);
+  // Dữ liệu doanh thu thật từ Sapo (theo khoảng thời gian đang chọn) — xem sapoResult bên dưới.
   // Bảng SKU giờ tự fetch dữ liệu; state này chỉ còn phục vụ khối LEGACY_OVERVIEW (đang tắt).
   const [sapoSkus] = useState<SapoSku[]>([]);
-  const [insights, setInsights] = useState<InsightData | null>(null);
-  const [breakdown, setBreakdown] = useState<BreakdownData | null>(null);
-  const [trendData, setTrendData] = useState<any[]>([]);
 
   // Tab từ query param ?tab=overview|channel|mode
   const TAB_VALUES = ["overview", "channel", "mode", "orders"] as const;
@@ -183,7 +114,7 @@ function OverviewInner() {
     apiGet("/employees")
       .then((data) => {
         if (Array.isArray(data)) {
-          setEmployeeOptions(data.map((e: any) => ({ id: e.name, label: e.name })));
+          setEmployeeOptions(data.map((e: { name: string }) => ({ id: e.name, label: e.name })));
         }
       })
       .catch(() => {});
@@ -203,7 +134,7 @@ function OverviewInner() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [accountId, setAccountId] = useState("ALL");
-  const [channel, setChannel] = useState("ALL");
+  const [channel] = useState("ALL");
   const [staff, setStaff] = useState("ALL");
   const [pageName, setPageName] = useState("ALL");
   const [team, setTeam] = useState("ALL");
@@ -242,7 +173,7 @@ function OverviewInner() {
       // "Nhạn Nhạn- Vân Phong Các" [FACEBOOK]): ưu tiên giữ bản có pageId, vì chỉ bản đó
       // mới nối được chính xác theo ID; các bản còn lại lùi về so tên.
       const byKey = new Map<string, { id: string; label: string; platform: string; team: string; hasPageId: boolean; linked: number; pageId: string }>();
-      for (const ch of chs as any[]) {
+      for (const ch of chs as OrganicChannelRow[]) {
         const name = ch?.channelName;
         if (!name || !ch?.id) continue;
         // Khoá gộp: ưu tiên pageId — hai page KHÁC NHAU là hai kênh khác nhau kể cả trùng
@@ -291,21 +222,30 @@ function OverviewInner() {
 
   // Doanh thu Sapo chỉ map được theo thời gian (utm_id của đơn ở cấp ad,
   // không gắn được vào campaign/nền tảng/tài khoản) → chỉ phụ thuộc dateRange.
-  const loadSapo = useCallback(async () => {
-    const q = datesToQuery(customFrom, customTo);
-    // Xóa số cũ trước khi tải khoảng ngày mới để thẻ không "đọng" giá trị của
-    // range trước trong lúc fetch (tránh hiểu nhầm kiểu ngày chưa tới vẫn có data).
-    setSapo(null);
-    try {
-      const rev = await apiGet(`/sapo/revenue?${q}`);
-      setSapo(rev);
-    } catch {
-      setSapo(null);
-    }
-  }, [customFrom, customTo]);
+  const sapoQuery = datesToQuery(customFrom, customTo);
+  // Lưu dữ liệu kèm query đã sinh ra nó. Khi query đổi, `sapo` tự động là null cho tới
+  // khi fetch xong — thay cho setSapo(null) đồng bộ trong effect (gây cascading render).
+  // Hiệu quả giữ nguyên: thẻ hiện "—" lúc đang tải thay vì đọng số của khoảng ngày trước.
+  const [sapoResult, setSapoResult] = useState<{ query: string; data: SapoData | null } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiGet(`/sapo/revenue?${sapoQuery}`)
+      .then((rev) => {
+        if (!cancelled) setSapoResult({ query: sapoQuery, data: rev });
+      })
+      .catch(() => {
+        if (!cancelled) setSapoResult({ query: sapoQuery, data: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sapoQuery]);
+
+  const sapo = sapoResult?.query === sapoQuery ? sapoResult.data : null;
 
   // Chỉ số quảng cáo (Meta/TikTok) tôn trọng toàn bộ bộ lọc của Tổng quan.
-  const loadInsights = useCallback(async () => {
+  const insightsQuery = useMemo(() => {
     const params = new URLSearchParams(datesToQuery(customFrom, customTo));
     if (platform !== "ALL") params.set("platform", platform);
     if (objective !== "ALL") params.set("objective", objective);
@@ -316,86 +256,78 @@ function OverviewInner() {
     // lùi về so tên khi một trong hai phía chưa có ID.
     if (pageName !== "ALL") params.set("channelId", pageName);
     if (team !== "ALL") params.set("team", team);
-    const q = params.toString();
-    // Xóa số cũ trước khi tải để thẻ hiện "—" trong lúc fetch thay vì giữ lại
-    // chỉ số của khoảng ngày trước (nguyên nhân trước đây "ngày 15 vẫn có data").
-    setInsights(null);
-    setBreakdown(null);
-    setTrendData([]);
-    try {
-      const [ins, brk, trend] = await Promise.all([
-        apiGet(`/mkt-api/insights?${q}`),
-        apiGet(`/mkt-api/insights/breakdown?${q}`),
-        apiGet(`/mkt-api/insights/trend?${q}`),
-      ]);
-      setInsights(ins);
-      setBreakdown(brk);
-      setTrendData(trend);
+    return params.toString();
+  }, [customFrom, customTo, platform, objective, accountId, channel, staff, pageName, team]);
 
-      // Chọn Team rồi thì dropdown Kênh chỉ hiện kênh của team đó.
-      // So khớp theo tiền tố đã chuẩn hoá vì hai bên khác định dạng: dropdown lấy team từ
-      // TÊN CHIẾN DỊCH ("Global JP") còn Channel.team do người dùng nhập ("Global - JP1/2/3").
-      // Team nào không có kênh nào (vd "Khác") thì giữ nguyên toàn bộ danh sách, tránh
-      // để người dùng kẹt với dropdown rỗng.
-      const teamKey = pageNameKey(team);
-      const matched =
-        team === "ALL"
-          ? allOrganicChannels
-          : allOrganicChannels.filter((c) => pageNameKey(c.team).startsWith(teamKey));
-      const visible = matched.length > 0 ? matched : allOrganicChannels;
-      setOrganicChannels(visible.map(({ id, label, platform }) => ({ id, label, platform })));
-
-      // Kênh đang chọn không còn trong danh sách sau khi đổi Team → bỏ chọn, nếu không
-      // bộ lọc sẽ âm thầm giữ một kênh không thuộc team đang xem.
-      if (pageName !== "ALL" && !visible.some((c) => c.id === pageName)) setPageName("ALL");
-
-      // Danh sách Team lấy từ chính breakdown.byTeam (backend suy Team từ tên chiến dịch).
-      // Chỉ cập nhật khi chưa lọc team, vì byTeam đã bị thu hẹp theo bộ lọc hiện tại —
-      // cập nhật lúc đang lọc sẽ khiến dropdown tụt còn đúng một lựa chọn.
-      if (team === "ALL") {
-        setTeamOptions(
-          (brk?.byTeam ?? [])
-            .filter((t: any) => t?.name && t.name !== "Không xác định" && !t.name.includes("Chưa khai báo"))
-            .sort((a: any, b: any) => (b.spend || 0) - (a.spend || 0))
-            .map((t: any) => ({ id: t.name, label: t.name })),
-        );
-      }
-    } catch {
-      setInsights(null);
-      setBreakdown(null);
-      setTrendData([]);
-    }
-  }, [customFrom, customTo, platform, objective, accountId, channel, staff, pageName, team, allOrganicChannels]);
+  // Cùng cách làm như sapo: dữ liệu cũ bị coi là "chưa có" ngay khi query đổi, nên không
+  // cần xoá bằng tay trong effect nữa.
+  const [insightsResult, setInsightsResult] = useState<{
+    query: string;
+    insights: InsightData | null;
+    breakdown: BreakdownData | null;
+    trend: TrendPoint[];
+  } | null>(null);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadSapo();
-  }, [loadSapo]);
+    let cancelled = false;
+    const q = insightsQuery;
+    Promise.all([
+      apiGet(`/mkt-api/insights?${q}`),
+      apiGet(`/mkt-api/insights/breakdown?${q}`),
+      apiGet(`/mkt-api/insights/trend?${q}`),
+    ])
+      .then(([ins, brk, trend]) => {
+        if (cancelled) return;
+        setInsightsResult({ query: q, insights: ins, breakdown: brk, trend });
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadInsights();
-  }, [loadInsights]);
+        // Chọn Team rồi thì dropdown Kênh chỉ hiện kênh của team đó.
+        // So khớp theo tiền tố đã chuẩn hoá vì hai bên khác định dạng: dropdown lấy team từ
+        // TÊN CHIẾN DỊCH ("Global JP") còn Channel.team do người dùng nhập ("Global - JP1/2/3").
+        // Team nào không có kênh nào (vd "Khác") thì giữ nguyên toàn bộ danh sách, tránh
+        // để người dùng kẹt với dropdown rỗng.
+        const teamKey = pageNameKey(team);
+        const matched =
+          team === "ALL"
+            ? allOrganicChannels
+            : allOrganicChannels.filter((c) => pageNameKey(c.team).startsWith(teamKey));
+        const visible = matched.length > 0 ? matched : allOrganicChannels;
+        setOrganicChannels(visible.map(({ id, label, platform }) => ({ id, label, platform })));
 
-  // "Làm mới": chỉ tải lại dữ liệu từ DB (không gọi sync).
-  const refresh = async () => {
-    setSyncing(true);
-    try {
-      await Promise.all([load(), loadSapo(), loadInsights()]);
-    } finally {
-      setSyncing(false);
-    }
-  };
+        // Kênh đang chọn không còn trong danh sách sau khi đổi Team → bỏ chọn, nếu không
+        // bộ lọc sẽ âm thầm giữ một kênh không thuộc team đang xem.
+        if (pageName !== "ALL" && !visible.some((c) => c.id === pageName)) setPageName("ALL");
+
+        // Danh sách Team lấy từ chính breakdown.byTeam (backend suy Team từ tên chiến dịch).
+        // Chỉ cập nhật khi chưa lọc team, vì byTeam đã bị thu hẹp theo bộ lọc hiện tại —
+        // cập nhật lúc đang lọc sẽ khiến dropdown tụt còn đúng một lựa chọn.
+        if (team === "ALL") {
+          setTeamOptions(
+            (brk?.byTeam ?? [])
+              .filter((t: TeamBreakdown) => t?.name && t.name !== "Không xác định" && !t.name.includes("Chưa khai báo"))
+              .sort((a: TeamBreakdown, b: TeamBreakdown) => (b.spend || 0) - (a.spend || 0))
+              .map((t: TeamBreakdown) => ({ id: t.name, label: t.name })),
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setInsightsResult({ query: q, insights: null, breakdown: null, trend: [] });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [insightsQuery, allOrganicChannels, team, pageName]);
+
+  const insightsFresh = insightsResult?.query === insightsQuery;
+  const insights = insightsFresh ? insightsResult.insights : null;
+  const breakdown = insightsFresh ? insightsResult.breakdown : null;
+  const trendData = useMemo(
+    () => (insightsFresh && insightsResult ? insightsResult.trend : []),
+    [insightsFresh, insightsResult],
+  );
+
 
   // Format Helper for numbers
   const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n || 0));
-  const fmtCompact = (n: number) => {
-    const abs = Math.abs(n || 0);
-    if (abs >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
-    if (abs >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
-    if (abs >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
-    return fmtNum(n);
-  };
 
   const sapoFilterQuery = useMemo(() => {
     const p = new URLSearchParams();
@@ -430,7 +362,6 @@ function OverviewInner() {
     const impressions = insights?.impressions ?? 0;
     const reach = insights?.reach ?? 0;
     const clicks = insights?.clicks ?? 0;
-    const orders = sapo?.orderCount ?? 0;
     const ctr = insights?.ctr ?? 0;
     const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0;
 
@@ -569,7 +500,7 @@ function OverviewInner() {
                       ) : (
                         <div className="flex items-center gap-4">
                           <div className="w-[130px] h-[130px] shrink-0">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                               <PieChart>
                                 <Pie data={platSpend} cx="50%" cy="50%" innerRadius={40} outerRadius={58}
                                   paddingAngle={3} dataKey="spend" stroke="none">
@@ -606,7 +537,7 @@ function OverviewInner() {
                             <span className="text-[14px]">Cần đồng bộ insight Meta/TikTok</span>
                           </div>
                         ) : (
-                          <ResponsiveContainer width="100%" height="100%">
+                          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                             <BarChart data={msgByPlatform} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                               <XAxis dataKey="name" stroke={chart.axis} fontSize={10} tickLine={false} />
@@ -632,7 +563,7 @@ function OverviewInner() {
                             <span className="text-[14px]">Cần đồng bộ insight Meta/TikTok</span>
                           </div>
                         ) : (
-                          <ResponsiveContainer width="100%" height="100%">
+                          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                             <BarChart data={likeByPlatform} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                               <XAxis dataKey="name" stroke={chart.axis} fontSize={10} tickLine={false} />
@@ -703,7 +634,7 @@ function OverviewInner() {
                             <span className="text-[14px]">Cần đồng bộ chi phí QC theo tuyến nội dung</span>
                           </div>
                         ) : (
-                          <ResponsiveContainer width="100%" height="100%">
+                          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                             <BarChart data={contentLineData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                               <XAxis dataKey="name" stroke={chart.axis} fontSize={10} tickLine={false} />
@@ -863,7 +794,7 @@ function OverviewInner() {
                     <div className="flex flex-col gap-5 items-center">
                       {/* Donut */}
                       <div className="w-[200px] h-[200px] shrink-0">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                           <PieChart>
                             <Pie data={donutData} cx="50%" cy="50%" innerRadius={65} outerRadius={95}
                               paddingAngle={1} dataKey="value" stroke="none">

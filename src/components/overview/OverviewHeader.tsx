@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  MagnifyingGlass,
   Download,
   CaretUp,
   CaretDown,
@@ -113,8 +112,6 @@ type Props = {
 };
 
 export default function OverviewHeader({
-  search,
-  onSearchChange,
   platform,
   pageName,
   status,
