@@ -25,7 +25,7 @@ function colorOf(name: string): string {
 }
 
 export default function Header() {
-  const { theme, toggleTheme } = useTheme();
+  const { toggleTheme } = useTheme();
   const user = useAuthUser();
   const displayName = user?.name || "Người dùng";
   const roleLabel = user?.role ? (ROLE_LABEL[user.role] ?? user.role) : "";
@@ -43,10 +43,14 @@ export default function Header() {
         <button
           onClick={toggleTheme}
           className="text-muted-foreground hover:text-foreground"
-          title={theme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
+          title="Đổi giao diện sáng/tối"
           aria-label="Đổi giao diện sáng/tối"
         >
-          {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+          {/* Cả hai icon đều nằm trong DOM, ẩn/hiện bằng class .dark trên <html> mà
+              script no-flash đã đặt trước khi React chạy. Markup giống hệt nhau ở
+              server và client → không lệch hydrate, cũng không nháy icon sau hydrate. */}
+          <Sun size={20} className="hidden dark:block" />
+          <Moon size={20} className="block dark:hidden" />
         </button>
 
         {/* Notifications */}
