@@ -143,9 +143,9 @@ export default function OverviewHeader({
     .map((a) => ({ id: a.id, label: a.name || a.id }));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" suppressHydrationWarning>
       {/* Filter bar — một hàng gọn, nằm trực tiếp trên nền trang */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3" suppressHydrationWarning>
 
         {/* Nhóm bộ lọc dạng Select (Compact) */}
         <FilterDropdown label="Nền tảng:" items={CHANNELS} value={platform} onChange={onPlatformChange} searchable={false} />

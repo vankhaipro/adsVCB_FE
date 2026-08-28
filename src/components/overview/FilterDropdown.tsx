@@ -54,7 +54,7 @@ export default function FilterDropdown({ label, items, value, onChange, searchab
   );
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative" ref={containerRef} suppressHydrationWarning>
       <button
         type="button"
         onClick={() => {

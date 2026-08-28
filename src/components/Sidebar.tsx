@@ -126,7 +126,7 @@ function SidebarContent() {
   }
 
   return (
-    <div className="w-[210px] h-full flex flex-col bg-card text-foreground border-r border-border flex-shrink-0">
+    <div className="w-[210px] h-full flex flex-col bg-card text-foreground border-r border-border flex-shrink-0" suppressHydrationWarning>
       {/* Logo */}
       <div className="h-[52px] flex items-center px-4 font-bold text-foreground text-[12px] whitespace-nowrap border-b border-border">
         <span className="relative w-6 h-6 mr-2 rounded-full overflow-hidden inline-flex flex-shrink-0">

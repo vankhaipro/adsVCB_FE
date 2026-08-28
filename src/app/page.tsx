@@ -386,9 +386,9 @@ function OverviewInner() {
   }, [insights, sapo]);
 
   return (
-    <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10 font-sans -m-4 sm:-m-5 p-4 sm:p-5 bg-background min-h-full">
+    <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10 font-sans -m-4 sm:-m-5 p-4 sm:p-5 bg-background min-h-full" suppressHydrationWarning>
       {/* Navigation Tabs — URL query param: ?tab=overview|channel|mode */}
-      <div className="flex border-b border-border gap-1 bg-background rounded-t-xl px-2 pt-1">
+      <div className="flex border-b border-border gap-1 bg-background rounded-t-xl px-2 pt-1" suppressHydrationWarning>
         {([
           { value: "overview", label: "Tổng quan" },
           { value: "channel", label: "Hiệu quả theo Kênh" },
@@ -500,7 +500,7 @@ function OverviewInner() {
                       ) : (
                         <div className="flex items-center gap-4">
                           <div className="w-[130px] h-[130px] shrink-0">
-                            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 0, height: 0 }}>
                               <PieChart>
                                 <Pie data={platSpend} cx="50%" cy="50%" innerRadius={40} outerRadius={58}
                                   paddingAngle={3} dataKey="spend" stroke="none">
@@ -537,7 +537,7 @@ function OverviewInner() {
                             <span className="text-[14px]">Cần đồng bộ insight Meta/TikTok</span>
                           </div>
                         ) : (
-                          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 0, height: 0 }}>
                             <BarChart data={msgByPlatform} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                               <XAxis dataKey="name" stroke={chart.axis} fontSize={10} tickLine={false} />
@@ -563,7 +563,7 @@ function OverviewInner() {
                             <span className="text-[14px]">Cần đồng bộ insight Meta/TikTok</span>
                           </div>
                         ) : (
-                          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 0, height: 0 }}>
                             <BarChart data={likeByPlatform} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                               <XAxis dataKey="name" stroke={chart.axis} fontSize={10} tickLine={false} />
@@ -634,7 +634,7 @@ function OverviewInner() {
                             <span className="text-[14px]">Cần đồng bộ chi phí QC theo tuyến nội dung</span>
                           </div>
                         ) : (
-                          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 0, height: 0 }}>
                             <BarChart data={contentLineData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                               <XAxis dataKey="name" stroke={chart.axis} fontSize={10} tickLine={false} />
@@ -794,7 +794,7 @@ function OverviewInner() {
                     <div className="flex flex-col gap-5 items-center">
                       {/* Donut */}
                       <div className="w-[200px] h-[200px] shrink-0">
-                        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 0, height: 0 }}>
                           <PieChart>
                             <Pie data={donutData} cx="50%" cy="50%" innerRadius={65} outerRadius={95}
                               paddingAngle={1} dataKey="value" stroke="none">

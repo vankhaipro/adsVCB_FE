@@ -244,7 +244,7 @@ export default function DateRangePicker({ presetId, from, to, onApply }: Props) 
       : presetLabel(presetId);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative" ref={ref} suppressHydrationWarning>
       {/* Trigger */}
       <button
         type="button"

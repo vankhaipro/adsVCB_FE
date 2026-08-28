@@ -4,9 +4,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
 } from "react";
 
 export type Theme = "light" | "dark";
@@ -28,42 +27,55 @@ function applyTheme(theme: Theme) {
   root.style.colorScheme = theme;
 }
 
+// Chủ đề sống ở ngoài React: script no-flash đặt class trên <html> trước khi React
+// chạy, nên <html> mới là nguồn sự thật. Đọc nó bằng useSyncExternalStore giống
+// useAuthUser — getServerSnapshot trả DEFAULT_THEME để lần render trên server và lần
+// hydrate đầu tiên khớp nhau, rồi React tự render lại với giá trị thật sau khi hydrate.
+// (Đọc localStorage ngay trong useState sẽ lệch với HTML server → hydration mismatch.)
+let listeners: Array<() => void> = [];
+// getSnapshot phải trả cùng giá trị khi không có gì đổi, nên cache lại.
+let snapshot: Theme | null = null;
+
+function getSnapshot(): Theme {
+  if (snapshot === null) {
+    snapshot = document.documentElement.classList.contains("dark")
+      ? "dark"
+      : "light";
+  }
+  return snapshot;
+}
+
+function getServerSnapshot(): Theme {
+  return DEFAULT_THEME;
+}
+
+function subscribe(onChange: () => void) {
+  listeners.push(onChange);
+  return () => {
+    listeners = listeners.filter((l) => l !== onChange);
+  };
+}
+
+function setThemeGlobal(next: Theme) {
+  if (snapshot === next) return;
+  snapshot = next;
+  try {
+    localStorage.setItem(STORAGE_KEY, next);
+  } catch {
+    /* localStorage unavailable */
+  }
+  applyTheme(next);
+  for (const l of listeners) l();
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Lazy initializer reads the same source as the inline no-flash script,
-  // so React's initial state matches the DOM the script already set.
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return DEFAULT_THEME;
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === "light" || stored === "dark" ? stored : DEFAULT_THEME;
-  });
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const setTheme = useCallback((next: Theme) => {
-    setThemeState(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      /* localStorage unavailable */
-    }
-    applyTheme(next);
-  }, []);
-
-  const toggleTheme = useCallback(() => {
-    setThemeState((prev) => {
-      const next: Theme = prev === "dark" ? "light" : "dark";
-      try {
-        localStorage.setItem(STORAGE_KEY, next);
-      } catch {
-        /* localStorage unavailable */
-      }
-      applyTheme(next);
-      return next;
-    });
-  }, []);
-
-  // Keep the DOM in sync on mount (covers client-side navigations).
-  useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
+  const setTheme = useCallback((next: Theme) => setThemeGlobal(next), []);
+  const toggleTheme = useCallback(
+    () => setThemeGlobal(getSnapshot() === "dark" ? "light" : "dark"),
+    []
+  );
 
   const value = useMemo(
     () => ({ theme, setTheme, toggleTheme }),
