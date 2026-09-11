@@ -16,16 +16,24 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = request.cookies.get("token")?.value;
+  // Cờ do chính frontend đặt sau khi đăng nhập (xem setSessionHint trong lib/api.ts), KHÔNG phải
+  // cookie của backend. Cookie backend nằm trên domain khác nên middleware chỉ thấy chúng khi
+  // biến COOKIE_DOMAIN được cấu hình đúng — quên biến đó là người dùng kẹt trong vòng lặp
+  // chuyển hướng dù đăng nhập thành công.
+  //
+  // Đây chỉ là chặn điều hướng cho đỡ chớp màn hình, không phải lớp bảo mật. Lớp chặn thật nằm
+  // ở backend, nơi kiểm chữ ký token trong cookie HttpOnly và tra lại tài khoản trong cơ sở
+  // dữ liệu ở mỗi request.
+  const session = request.cookies.get("vcbi_session")?.value;
 
-  // Nếu đang ở trang public (login) và đã có token → redirect về trang chủ
+  // Nếu đang ở trang public (login) và đã có phiên → redirect về trang chủ
   if (PUBLIC_PATHS.includes(pathname)) {
-    if (token) return NextResponse.redirect(new URL("/", request.url));
+    if (session) return NextResponse.redirect(new URL("/", request.url));
     return NextResponse.next();
   }
 
-  // Nếu chưa có token → redirect về login
-  if (!token) {
+  // Nếu chưa có phiên → redirect về login
+  if (!session) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

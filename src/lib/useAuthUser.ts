@@ -8,22 +8,23 @@ import { getAuthUser, type AuthUser } from "./api";
 // trên server và lần hydrate đầu tiên khớp nhau — không có localStorage ở server.
 
 // getSnapshot phải trả về CÙNG một tham chiếu khi dữ liệu không đổi, nếu không React
-// sẽ render lại vô hạn. Vì vậy cache theo chuỗi token.
-let cachedToken: string | null = null;
+// sẽ render lại vô hạn. Vì vậy cache theo chuỗi JSON thô của hồ sơ người dùng.
+const USER_KEY = "authUser";
+let cachedRaw: string | null = null;
 let cachedUser: AuthUser | null = null;
 
-function readToken(): string | null {
+function readRaw(): string | null {
   try {
-    return localStorage.getItem("token");
+    return localStorage.getItem(USER_KEY);
   } catch {
     return null;
   }
 }
 
 function getSnapshot(): AuthUser | null {
-  const token = readToken();
-  if (token !== cachedToken) {
-    cachedToken = token;
+  const raw = readRaw();
+  if (raw !== cachedRaw) {
+    cachedRaw = raw;
     cachedUser = getAuthUser();
   }
   return cachedUser;

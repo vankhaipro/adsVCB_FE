@@ -118,10 +118,12 @@ function SidebarContent() {
     setOpen((prev) => ({ ...prev, [label]: !prev[label] }));
   }
 
-  function handleLogout() {
-    // clearSession xoá cả cache GET phía client — nếu không, người đăng nhập
-    // tiếp theo trên cùng máy sẽ thấy dữ liệu còn lại của phiên trước.
-    clearSession();
+  async function handleLogout() {
+    // clearSession giờ gọi mạng (BE thu hồi refresh token và xoá cookie) nên phải await —
+    // điều hướng trước khi nó xong thì phiên vẫn sống nguyên ở server.
+    // Nó cũng xoá cache GET phía client, nếu không người đăng nhập tiếp theo trên cùng máy
+    // sẽ thấy dữ liệu còn lại của phiên trước.
+    await clearSession();
     router.push("/login");
   }
 

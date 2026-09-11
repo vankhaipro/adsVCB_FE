@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { API_URL } from "@/lib/api";
+import { login } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,20 +17,9 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Đăng nhập thất bại");
-
-      // Lưu token vào localStorage (để gắn header Authorization) và cookie
-      // (để middleware chặn điều hướng). SameSite=Lax chặn gửi cookie khi bị
-      // site khác nhúng; Secure khi chạy https.
-      localStorage.setItem("token", data.token);
-      const secure = window.location.protocol === "https:" ? "; Secure" : "";
-      document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax${secure}`;
+      // Token không còn đi qua đây. BE đặt thẳng cookie HttpOnly trong response, JavaScript
+      // không chạm tới được. Chỗ này chỉ nhận lại hồ sơ để hiển thị tên và phân quyền giao diện.
+      await login(email, password);
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đăng nhập thất bại");
