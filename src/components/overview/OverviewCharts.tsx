@@ -127,7 +127,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
           bodyClassName="px-3 pb-4"
         >
           <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 0, height: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <LineChart data={trend} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
                 <XAxis dataKey="day" stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} ticks={ticks} />
@@ -144,7 +144,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
         <Panel className="lg:col-span-4" title="Phân bổ kênh" subtitle="Theo chi tiêu quảng cáo thực tế">
           <div className="flex items-center gap-4">
             <div className="w-[150px] h-[150px] shrink-0">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 0, height: 0 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <PieChart>
                   <Pie data={channelSplit} cx="50%" cy="50%" innerRadius={45} outerRadius={68} paddingAngle={2} dataKey="value" stroke="none">
                     {channelSplit.map((c) => <Cell key={c.name} fill={c.color} />)}
@@ -181,7 +181,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
         {/* Chuyển đổi theo ngày */}
         <Panel className="lg:col-span-3" title="Chuyển đổi theo ngày" subtitle="Tổng đơn hàng ghi nhận (thật)" bodyClassName="px-3 pb-4">
           <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 0, height: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <BarChart data={trend} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
                 <XAxis dataKey="day" stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} ticks={ticks} />
@@ -201,7 +201,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
           <Panel className="lg:col-span-3" title="Phân bổ thị trường" subtitle="Chi phí theo thị trường">
             <div className="flex flex-col gap-3">
               <div className="w-full h-[120px] flex justify-center">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 0, height: 0 }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <PieChart>
                     <Pie data={marketSplit} cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={2} dataKey="value" stroke="none">
                       {marketSplit.map((c) => <Cell key={c.name} fill={c.color} />)}
@@ -229,7 +229,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
           <Panel className="lg:col-span-3" title="Phân bổ ngành hàng" subtitle="Chi phí theo ngành">
             <div className="flex flex-col gap-3">
               <div className="w-full h-[120px] flex justify-center">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 0, height: 0 }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <PieChart>
                     <Pie data={industrySplit} cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={2} dataKey="value" stroke="none">
                       {industrySplit.map((c) => <Cell key={c.name} fill={c.color} />)}
@@ -256,7 +256,7 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
           {/* Chi phí quảng cáo theo Team */}
           <Panel className="lg:col-span-6" title="Chi phí quảng cáo theo Team" subtitle="Ngân sách quảng cáo thực tế cho các nhóm">
             <div className="h-[220px]">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 0, height: 0 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <BarChart data={teamSpendData} margin={{ top: 22, right: 8, left: -10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
                   <XAxis dataKey="name" stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={45} />

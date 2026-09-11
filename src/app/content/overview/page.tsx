@@ -477,7 +477,7 @@ export default function ContentOverviewPage() {
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-4">Tổng lượt xem theo nền tảng</h3>
             <div className="relative w-full h-[160px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={platformData}
@@ -557,7 +557,7 @@ export default function ContentOverviewPage() {
               <div className="flex flex-col items-center">
                 <p className="text-[13px] text-muted-foreground font-semibold mb-2">Nội dung đăng tải</p>
                 <div className="relative w-[180px] h-[160px] flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={postContentData}
@@ -603,7 +603,7 @@ export default function ContentOverviewPage() {
             </h3>
           </div>
           <div className="h-[260px] w-full">
-            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={viewsTrendData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorFacebook" x1="0" y1="0" x2="0" y2="1">
@@ -633,7 +633,7 @@ export default function ContentOverviewPage() {
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-4">Tổng số kênh</h3>
             <div className="relative w-full h-[180px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={channelsDistributionData}
@@ -677,7 +677,7 @@ export default function ContentOverviewPage() {
         <div className="bg-card border border-border rounded-xl p-5 shadow-md">
           <h3 className="text-sm font-semibold text-foreground mb-4">Tổng lượt view theo team</h3>
           <div className="h-[220px] w-full">
-            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={viewsByTeamData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                 <XAxis dataKey="name" stroke="#6b7280" fontSize={9} />
@@ -693,7 +693,7 @@ export default function ContentOverviewPage() {
         <div className="bg-card border border-border rounded-xl p-5 shadow-md">
           <h3 className="text-sm font-semibold text-foreground mb-4">Tổng nội dung được tạo theo team</h3>
           <div className="h-[220px] w-full">
-            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart layout="vertical" data={contentByTeamData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                 <CartesianGrid stroke={chart.grid} horizontal={false} />
                 <XAxis type="number" stroke="#6b7280" fontSize={9} />
@@ -710,7 +710,7 @@ export default function ContentOverviewPage() {
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-4">Phân bổ theo tuyến nội dung</h3>
             <div className="relative w-full h-[150px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={contentLineDistributionData}
@@ -755,7 +755,7 @@ export default function ContentOverviewPage() {
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-4">Phân bổ theo Thị trường</h3>
               <div className="relative w-full h-[150px] flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={marketDistributionData}
@@ -795,7 +795,7 @@ export default function ContentOverviewPage() {
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-4">Phân bổ theo Ngành hàng</h3>
               <div className="relative w-full h-[150px] flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={industryDistributionData}
@@ -834,7 +834,7 @@ export default function ContentOverviewPage() {
           <div className="bg-card border border-border rounded-xl p-5 shadow-md lg:col-span-6">
             <h3 className="text-sm font-semibold text-foreground mb-4">Tổng lượt xem theo Thị trường & Ngành hàng</h3>
             <div className="h-[220px] w-full">
-              <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={marketIndustryBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                   <XAxis dataKey="name" stroke="#6b7280" fontSize={10} />
@@ -860,7 +860,7 @@ export default function ContentOverviewPage() {
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-4">Phân bổ theo concept</h3>
             <div className="relative w-full h-[150px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={conceptDistributionData}

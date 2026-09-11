@@ -147,7 +147,7 @@ export default function OrdersBreakdown({ query }: { query: string }) {
             <ChartPie size={18} className="text-violet-500" /> Tỉ trọng doanh thu theo kênh
           </h3>
           <div className="h-[210px] w-full">
-            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={channelPie} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2}>
                   {channelPie.map((_, i) => (
@@ -185,7 +185,7 @@ export default function OrdersBreakdown({ query }: { query: string }) {
             <UsersThree size={18} className="text-blue-500" /> Doanh thu theo team kinh doanh
           </h3>
           <div className="h-[260px] w-full">
-            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={teamBar} margin={{ top: 25, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                 <XAxis dataKey="name" stroke="#6b7280" fontSize={11} tickLine={false} />
