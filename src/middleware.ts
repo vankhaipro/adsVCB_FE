@@ -12,10 +12,9 @@ export function middleware(request: NextRequest) {
 
   // Cho phép static files đi qua. Chỉ nhận đúng các đuôi file tĩnh — trước đây
   // dùng pathname.includes(".") nên mọi URL có dấu chấm đều lọt qua kiểm tra.
-  if (pathname.startsWith("/_next") || STATIC_FILE.test(pathname)) {
+  if (pathname.startsWith("/_next") || pathname.startsWith("/api") || STATIC_FILE.test(pathname)) {
     return NextResponse.next();
   }
-
   // Cờ do chính frontend đặt sau khi đăng nhập (xem setSessionHint trong lib/api.ts), KHÔNG phải
   // cookie của backend. Cookie backend nằm trên domain khác nên middleware chỉ thấy chúng khi
   // biến COOKIE_DOMAIN được cấu hình đúng — quên biến đó là người dùng kẹt trong vòng lặp

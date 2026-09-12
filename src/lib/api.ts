@@ -4,6 +4,10 @@ function cleanApiUrl(url: string): string {
   // trường kèm nháy nguyên văn ("https://a.com"). Không gỡ thì chuỗi không khớp /^https?:\/\//
   // và bị nối thêm tiền tố thành https://"https://... — mọi lời gọi chết ngay ở trình duyệt.
   let cleaned = url.trim().replace(/^["']+|["']+$/g, "").replace(/\/+$/, "");
+
+  // Same-origin proxy (NEXT_PUBLIC_API_URL=/api) — không thêm https://
+  if (cleaned.startsWith("/")) return cleaned;
+
   if (!/^https?:\/\//i.test(cleaned) && !/^\/\//.test(cleaned)) {
     cleaned = `https://${cleaned}`;
   }
