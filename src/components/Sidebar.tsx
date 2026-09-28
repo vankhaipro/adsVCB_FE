@@ -16,9 +16,11 @@ import {
   SignOut,
   Broadcast,
   CaretDown,
+  CurrencyDollar,
   type Icon,
 } from "@phosphor-icons/react";
 import { clearSession } from "@/lib/api";
+import { useAuthRole } from "@/lib/useAuthUser";
 
 type NavSubChild = { href: string; label: string };
 type NavChild = { href: string; label: string } | { label: string; children: NavSubChild[] };
@@ -49,8 +51,12 @@ const mainNav: NavItem[] = [
   { href: "/logs", label: "Nhật ký hệ thống", icon: Scroll },
   { href: "/ad-accounts", label: "Tài khoản quảng cáo", icon: UserRectangle },
   { href: "/channels", label: "Kênh organic", icon: Broadcast },
+  { href: "/api-costs", label: "Chi phí API", icon: CurrencyDollar },
   { href: "/settings", label: "Cài đặt", icon: Gear },
 ];
+
+// Mục chỉ ADMIN thấy. Ẩn ở đây chỉ để gọn giao diện — BE mới là lớp chặn thật (@Roles).
+const ADMIN_ONLY = new Set(["/api-costs"]);
 
 export default function Sidebar() {
   return (
@@ -64,6 +70,8 @@ function SidebarContent() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isAdmin = useAuthRole() === "ADMIN";
+  const nav = mainNav.filter((item) => !("href" in item) || !ADMIN_ONLY.has(item.href) || isAdmin);
 
   // Helper to check if a specific link is active (matching pathname and search params)
   function isLinkActive(href: string) {
@@ -148,7 +156,7 @@ function SidebarContent() {
       <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-6">
         {/* Main Nav */}
         <nav className="flex flex-col gap-1 px-2">
-          {mainNav.map((item) => {
+          {nav.map((item) => {
             const Icon = item.icon;
 
             // Menu cha có dropdown (Level 1)
