@@ -50,9 +50,14 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
   const marketSplit = useMemo(() => {
     if (!breakdown?.byMarket?.length) return [];
     const total = breakdown.byMarket.reduce((s: number, m: InsightAgg) => s + m.spend, 0) || 1;
+    // Thị trường giờ lấy từ bảng Team (đồng bộ từ AutomationGenVideo) nên chi tiết hơn hai
+    // lát Việt Nam/Global như trước — thiếu màu là các lát mới đều xám giống nhau.
     const colors: Record<string, string> = {
       "Việt Nam": "#10b981", // Green
       "Global": "#8b5cf6",   // Purple
+      "Nhật Bản": "#ef4444", // Red
+      "Thái Lan": "#f59e0b", // Amber
+      "Indonesia": "#06b6d4", // Cyan
       "Khác": "#6b7280"      // Gray
     };
     return breakdown.byMarket.map((m) => ({
