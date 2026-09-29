@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArrowClockwise, SpinnerGap, WarningCircle } from "@phosphor-icons/react";
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
 } from "recharts";
 import { apiGet, apiPost } from "@/lib/api";
 import { useAuthRole } from "@/lib/useAuthUser";
@@ -11,7 +11,7 @@ import { useChartColors } from "@/lib/chartTheme";
 import { Panel } from "@/components/overview/parts";
 
 type Provider = {
-  id: "TIKHUB" | "DEEPSEEK";
+  id: "TIKHUB";
   name: string;
   purpose: string;
   pricing: string;
@@ -35,12 +35,12 @@ type Summary = {
   days: number;
   firstSnapshotAt: string | null;
   providers: Provider[];
-  daily: { date: string; TIKHUB: number; DEEPSEEK: number }[];
+  daily: { date: string; TIKHUB: number }[];
   topups: { date: string; provider: string; amount: number }[];
   others: Other[];
 };
 
-const COLORS = { TIKHUB: "#ec4899", DEEPSEEK: "#3b82f6" } as const;
+const COLORS = { TIKHUB: "#ec4899" } as const;
 const RANGES = [7, 30, 90];
 
 // Chi phí API tính bằng cent lẻ — hiện 3 số lẻ khi dưới 1 USD, không thì mọi ngày đều "$0.00".
@@ -168,7 +168,7 @@ export default function ApiCostsPage() {
             {data.firstSnapshotAt && (
               <p className="px-2 pb-3 text-xs text-muted-foreground">
                 Bắt đầu ghi nhận từ {fmtDateTime(data.firstSnapshotAt)}. Trước mốc này không có dữ liệu vì TikHub và
-                DeepSeek không lưu lịch sử chi tiêu.
+                TikHub không lưu lịch sử chi tiêu.
               </p>
             )}
             <div className="h-[240px]">
@@ -188,14 +188,9 @@ export default function ApiCostsPage() {
                   <RTooltip
                     contentStyle={tooltipStyle}
                     cursor={{ fill: cursor }}
-                    formatter={(v, name) => [fmtUsd(Number(v)), name === "TIKHUB" ? "TikHub" : "DeepSeek"]}
+                    formatter={(v) => [fmtUsd(Number(v)), "TikHub"]}
                   />
-                  <Legend
-                    wrapperStyle={{ fontSize: 11 }}
-                    formatter={(v) => (v === "TIKHUB" ? "TikHub" : "DeepSeek")}
-                  />
-                  <Bar dataKey="TIKHUB" stackId="a" fill={COLORS.TIKHUB} />
-                  <Bar dataKey="DEEPSEEK" stackId="a" fill={COLORS.DEEPSEEK} radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="TIKHUB" fill={COLORS.TIKHUB} radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -207,7 +202,7 @@ export default function ApiCostsPage() {
                 {data.topups.map((t, i) => (
                   <li key={i} className="flex justify-between">
                     <span className="text-muted-foreground">
-                      {t.date} · {t.provider === "TIKHUB" ? "TikHub" : "DeepSeek"}
+                      {t.date} · TikHub
                     </span>
                     <span className="text-emerald-400 font-medium">+{fmtUsd(t.amount)}</span>
                   </li>
