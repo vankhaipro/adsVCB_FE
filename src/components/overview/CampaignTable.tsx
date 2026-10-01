@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, forwardRef, useImperativeHandle } from "react";
 import { CaretLeft, CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
 import { Panel, Th, StatusPill, ChannelChip } from "./parts";
 import {
   fmtNum, fmtCompact, fmtVndShort, fmtPct, fmtRoas,
 } from "./dashboardData";
-import { useTableInsights, OBJECTIVE_LABELS } from "./useTableInsights";
+import { useTableInsights, OBJECTIVE_LABELS, type CampaignInsight } from "./useTableInsights";
 import TableFilterBar from "./TableFilterBar";
+import type { ExportSheet } from "@/lib/exportExcel";
 
 const PER_PAGE = 8;
 
@@ -18,9 +19,40 @@ function roasColor(v: number) {
   return v >= 2 ? "text-green-400" : "text-amber-400";
 }
 
-export default function CampaignTable() {
+export type CampaignTableHandle = { exportSheet: () => ExportSheet };
+
+function campaignsToSheet(campaigns: CampaignInsight[]): ExportSheet {
+  return {
+    name: "Chi tiết chiến dịch",
+    rows: campaigns.map((c) => ({
+      "Tên chiến dịch": c.name,
+      "Kênh": c.pageName,
+      "Tuyến ND": c.contentLine,
+      "Mục tiêu": c.objectiveLabel,
+      "Trạng thái": c.status,
+      "Ngân sách": c.budget,
+      "Chi tiêu": c.spend,
+      "Tiếp cận": c.reach,
+      "Hiển thị": c.impressions,
+      "Lượt nhấp": c.clicks,
+      "CTR (%)": c.ctr,
+      "CPC": c.cpc,
+      "CPM": c.cpm,
+      "Chuyển đổi": c.conversions,
+      "Doanh thu": c.revenue,
+      "ROAS": c.roas,
+      "Frequency": c.frequency,
+    })),
+  };
+}
+
+export default forwardRef<CampaignTableHandle>(function CampaignTable(_props, ref) {
   const [page, setPage] = useState(0);
   const { filteredCampaigns, accountOptions, campaignOptions, pageOptions, teamOptions, filterState, filterKey } = useTableInsights();
+
+  useImperativeHandle(ref, () => ({
+    exportSheet: () => campaignsToSheet(filteredCampaigns),
+  }), [filteredCampaigns]);
 
   // Reset về trang đầu khi bộ lọc đổi. Khoá phải là CHUỖI: nó được so ngay trong thân
   // render, nếu so bằng tham chiếu mảng thì mỗi render ra tham chiếu mới -> lặp vô hạn.
@@ -229,4 +261,4 @@ export default function CampaignTable() {
       )}
     </Panel>
   );
-}
+});

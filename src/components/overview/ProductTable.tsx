@@ -1,19 +1,41 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, forwardRef, useImperativeHandle } from "react";
 import { MagnifyingGlass, Download, CaretLeft, CaretRight } from "@phosphor-icons/react";
 import DateRangePicker from "@/components/DateRangePicker";
 import { Panel, Th } from "./parts";
 import { fmtNum, fmtVndShort } from "./dashboardData";
-import { useProductInsights } from "./useProductInsights";
+import { useProductInsights, type ProductRow } from "./useProductInsights";
 import { OBJECTIVE_LABELS } from "./useTableInsights";
 import FilterDropdown from "./FilterDropdown";
 import MultiFilterDropdown from "./MultiFilterDropdown";
+import { exportWorkbook, type ExportSheet } from "@/lib/exportExcel";
 
 const PER_PAGE = 10;
 const COL_COUNT = 11;
 
-export default function ProductTable() {
+export type ProductTableHandle = { exportSheet: () => ExportSheet };
+
+function productsToSheet(rows: ProductRow[]): ExportSheet {
+  return {
+    name: "Hiệu quả theo sản phẩm",
+    rows: rows.map((r) => ({
+      "Mã SP": r.code,
+      "Tên sản phẩm": r.name,
+      "Video organic": r.videos,
+      "Số chiến dịch": r.campaigns,
+      "Chi phí ads": r.spend,
+      "Lượt thích Trang": r.likes,
+      "Chi phí/Like": r.costPerLike,
+      "Tin nhắn": r.messages,
+      "Chi phí/Mess": r.costPerMessage,
+      "Comment (ads)": r.comments,
+      "Comment (video)": r.organicComments,
+    })),
+  };
+}
+
+export default forwardRef<ProductTableHandle>(function ProductTable(_props, ref) {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
 
@@ -34,6 +56,12 @@ export default function ProductTable() {
       (r) => r.code.toLowerCase().includes(kw) || r.name.toLowerCase().includes(kw),
     );
   }, [allRows, q]);
+
+  const doExport = () => {
+    exportWorkbook(`hieu-qua-san-pham-${new Date().toISOString().slice(0, 10)}.xlsx`, [productsToSheet(filteredRows)]);
+  };
+
+  useImperativeHandle(ref, () => ({ exportSheet: () => productsToSheet(filteredRows) }), [filteredRows]);
 
   const pages = Math.max(1, Math.ceil(filteredRows.length / PER_PAGE));
   const start = page * PER_PAGE;
@@ -81,7 +109,10 @@ export default function ProductTable() {
               className="bg-transparent text-xs text-foreground outline-none w-32 placeholder:text-muted-foreground"
             />
           </div>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border hover:bg-muted text-foreground text-xs font-medium rounded-lg transition-colors">
+          <button
+            onClick={doExport}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border hover:bg-muted text-foreground text-xs font-medium rounded-lg transition-colors"
+          >
             <Download size={14} /> Xuất
           </button>
         </div>
@@ -233,4 +264,4 @@ export default function ProductTable() {
       )}
     </Panel>
   );
-}
+});

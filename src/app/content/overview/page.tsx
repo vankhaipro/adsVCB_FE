@@ -14,8 +14,10 @@ import {
   Info,
   Tag,
   Star,
-  Funnel
+  Funnel,
+  Download
 } from "@phosphor-icons/react";
+import { exportWorkbook } from "@/lib/exportExcel";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -402,6 +404,38 @@ export default function ContentOverviewPage() {
   const metaRawContentList = list.filter((x) => x.platform === "facebook" || x.platform === "instagram");
   const tiktokRawContentList = list.filter((x) => x.platform === "tiktok");
   const youtubeRawContentList = list.filter((x) => x.platform === "youtube");
+
+  // Xuất Excel: dùng dữ liệu SỐ THÔ (report.channelDetail/staffDetail, chưa qua fmtNum ở trên)
+  // để Excel tự hiển thị/tính tổng được, không export bản đã format thành chuỗi.
+  const exportContentOverview = () => {
+    const contentCols = (items: typeof list) => items.map((x) => ({
+      "Caption": x.caption, "Kênh": x.channel, "Ngày tạo": x.date,
+      "Concept": x.concept, "Tuyến": x.line,
+      "Lượt xem": x.views, "Tiếp cận": x.reach, "Thích": x.likes, "Bình luận": x.comments,
+    }));
+    const ok = exportWorkbook(`tong-quan-content-${new Date().toISOString().slice(0, 10)}.xlsx`, [
+      {
+        name: "Hiệu suất theo kênh",
+        rows: (report?.channelDetail || []).map((c) => ({
+          "Nền tảng": PLATFORM_LABEL[c.platform] || c.platform, "Kênh": c.name,
+          "Lượt xem": c.views, "Follow": c.followers,
+          "Thích": c.likes, "Bình luận": c.comments, "Chia sẻ": c.shares,
+        })),
+      },
+      {
+        name: "Hiệu suất theo nhân sự",
+        rows: (report?.staffDetail || []).map((s) => ({
+          "Nhân sự": s.name, "Team": s.team,
+          "Lượt xem": s.views, "Thích": s.likes, "Bình luận": s.comments, "Chia sẻ": s.shares,
+        })),
+      },
+      { name: "Content Meta", rows: contentCols(metaRawContentList) },
+      { name: "Content TikTok", rows: contentCols(tiktokRawContentList) },
+      { name: "Content YouTube", rows: contentCols(youtubeRawContentList) },
+    ]);
+    if (!ok) alert("Không có dữ liệu để xuất.");
+  };
+
   const PAGE_SIZE = 10;
   const paged = (arr: ListItem[], p: number) => arr.slice((p - 1) * PAGE_SIZE, p * PAGE_SIZE);
 
@@ -417,11 +451,21 @@ export default function ContentOverviewPage() {
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       
       {/* Page Header */}
-      <div className="border-b border-border pb-4">
-        <h1 className="text-2xl font-bold text-foreground">Tổng quan content</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Tổng hợp hiệu quả nội dung organic trên các kênh (views, tương tác, follow…)
-        </p>
+      <div className="border-b border-border pb-4 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Tổng quan content</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Tổng hợp hiệu quả nội dung organic trên các kênh (views, tương tác, follow…)
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={exportContentOverview}
+          className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-foreground text-sm font-medium rounded-lg transition-colors shrink-0"
+        >
+          <Download size={16} />
+          Xuất Excel
+        </button>
       </div>
 
       {/* Quick Info Banner */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   SpinnerGap, Circle, Info,
@@ -15,6 +15,9 @@ import OrdersBreakdown from "@/components/OrdersBreakdown";
 import OverviewHeader, { type KpiItem } from "@/components/overview/OverviewHeader";
 import { presetToDates } from "@/components/DateRangePicker";
 import OverviewBody from "@/components/overview/OverviewBody";
+import type { CampaignTableHandle } from "@/components/overview/CampaignTable";
+import type { ProductTableHandle } from "@/components/overview/ProductTable";
+import { exportWorkbook, type ExportSheet } from "@/lib/exportExcel";
 import type { BreakdownData, TeamBreakdown, TrendPoint } from "@/components/overview/dashboardData";
 
 // Bản ghi kênh organic trả về từ /channels (chỉ các field trang này dùng).
@@ -94,6 +97,8 @@ function OverviewInner() {
   const chart = useChartColors();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const campaignTableRef = useRef<CampaignTableHandle>(null);
+  const productTableRef = useRef<ProductTableHandle>(null);
   const [, setCampaigns] = useState<Campaign[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -445,7 +450,12 @@ function OverviewInner() {
         onAccountIdChange={setAccountId}
         kpis={overviewKpis}
         showKpis={selectedTab === "overview"}
-        onExport={() => alert("Bắt đầu xuất dữ liệu báo cáo...")}
+        onExport={() => {
+          const sheets = [campaignTableRef.current?.exportSheet(), productTableRef.current?.exportSheet()]
+            .filter((s): s is ExportSheet => !!s);
+          const ok = exportWorkbook(`tong-quan-ads-${new Date().toISOString().slice(0, 10)}.xlsx`, sheets);
+          if (!ok) alert("Không có dữ liệu để xuất.");
+        }}
       />
 
       {loading ? (
@@ -460,6 +470,8 @@ function OverviewInner() {
             <OverviewBody
               trend={trendData}
               breakdown={breakdown}
+              campaignTableRef={campaignTableRef}
+              productTableRef={productTableRef}
             />
           )}
           {LEGACY_OVERVIEW && (() => {

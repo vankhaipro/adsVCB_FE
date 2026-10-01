@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight, Funnel, CaretDown, MagnifyingGlass, FacebookLogo
+  SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight, Funnel, CaretDown, MagnifyingGlass, FacebookLogo, InstagramLogo
 } from "@phosphor-icons/react";
 import { apiGet, apiPost, apiPatch, apiDelete, API_URL } from "@/lib/api";
 
@@ -156,15 +156,16 @@ export default function ChannelsPage() {
     const params = new URLSearchParams(window.location.search);
     const result = params.get("metaConnect");
     if (!result) return;
+    const isInstagram = params.get("platform") === "instagram";
+    const label = isInstagram ? "Instagram" : "Facebook";
     if (result === "ok") {
-      const pages = params.get("pages") ?? "0";
       const matched = params.get("matched") ?? "0";
-      setMetaConnectMsg({
-        ok: true,
-        text: `Kết nối Facebook thành công: tìm thấy ${pages} Page, đã khớp & cập nhật token cho ${matched} kênh.`,
-      });
+      const text = isInstagram
+        ? `Kết nối ${label} thành công (@${params.get("username") ?? "?"}): ${matched === "1" ? "đã khớp & cập nhật token cho kênh tương ứng." : "không tìm thấy kênh IG khớp trong DB — kiểm tra lại externalId/username của kênh."}`
+        : `Kết nối ${label} thành công: tìm thấy ${params.get("pages") ?? "0"} Page, đã khớp & cập nhật token cho ${matched} kênh.`;
+      setMetaConnectMsg({ ok: true, text });
     } else {
-      setMetaConnectMsg({ ok: false, text: `Kết nối Facebook lỗi: ${params.get("reason") ?? "không rõ nguyên nhân"}` });
+      setMetaConnectMsg({ ok: false, text: `Kết nối ${label} lỗi: ${params.get("reason") ?? "không rõ nguyên nhân"}` });
     }
     router.replace("/channels");
   }, [router]);
@@ -442,13 +443,22 @@ export default function ChannelsPage() {
             {channels.length} kênh
           </p>
         </div>
-        <a
-          href={`${API_URL}/meta-oauth/connect`}
-          className="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 transition-colors self-start"
-          title="Login Facebook để cấp Page Access Token riêng cho các Page/IG bạn quản lý"
-        >
-          <FacebookLogo size={18} weight="fill" /> Kết nối Facebook
-        </a>
+        <div className="flex items-center gap-2 self-start">
+          <a
+            href={`${API_URL}/meta-oauth/connect`}
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 transition-colors"
+            title="Login Facebook để cấp Page Access Token riêng cho các Page/IG (liên kết Page) bạn quản lý"
+          >
+            <FacebookLogo size={18} weight="fill" /> Kết nối Facebook
+          </a>
+          <a
+            href={`${API_URL}/meta-oauth/instagram/connect`}
+            className="inline-flex items-center gap-2 rounded-md bg-gradient-to-br from-purple-600 to-pink-500 hover:opacity-90 text-white text-sm font-medium px-4 py-2 transition-opacity"
+            title="Login thẳng bằng tài khoản Instagram — dùng cho kênh IG chưa liên kết Page Facebook"
+          >
+            <InstagramLogo size={18} weight="fill" /> Kết nối Instagram
+          </a>
+        </div>
       </div>
 
       {error && (
