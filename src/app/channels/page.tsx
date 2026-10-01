@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight, Funnel, CaretDown, MagnifyingGlass
+  SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight, Funnel, CaretDown, MagnifyingGlass, FacebookLogo
 } from "@phosphor-icons/react";
-import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api";
+import { apiGet, apiPost, apiPatch, apiDelete, API_URL } from "@/lib/api";
 
 type Channel = {
   id: string;
@@ -147,6 +147,27 @@ export default function ChannelsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [metaConnectMsg, setMetaConnectMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // Đọc kết quả redirect về từ /meta-oauth/callback (?metaConnect=ok|error) rồi dọn URL.
+  // Dùng window.location trực tiếp (thay vì useSearchParams) để khỏi bắt buộc bọc Suspense
+  // chỉ vì 1 lần đọc query string lúc mount.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get("metaConnect");
+    if (!result) return;
+    if (result === "ok") {
+      const pages = params.get("pages") ?? "0";
+      const matched = params.get("matched") ?? "0";
+      setMetaConnectMsg({
+        ok: true,
+        text: `Kết nối Facebook thành công: tìm thấy ${pages} Page, đã khớp & cập nhật token cho ${matched} kênh.`,
+      });
+    } else {
+      setMetaConnectMsg({ ok: false, text: `Kết nối Facebook lỗi: ${params.get("reason") ?? "không rõ nguyên nhân"}` });
+    }
+    router.replace("/channels");
+  }, [router]);
 
   // Phân trang
   const [page, setPage] = useState(0);
@@ -421,11 +442,30 @@ export default function ChannelsPage() {
             {channels.length} kênh
           </p>
         </div>
+        <a
+          href={`${API_URL}/meta-oauth/connect`}
+          className="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 transition-colors self-start"
+          title="Login Facebook để cấp Page Access Token riêng cho các Page/IG bạn quản lý"
+        >
+          <FacebookLogo size={18} weight="fill" /> Kết nối Facebook
+        </a>
       </div>
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-md px-4 py-2">
           {error}
+        </div>
+      )}
+
+      {metaConnectMsg && (
+        <div
+          className={`text-sm rounded-md px-4 py-2 border ${
+            metaConnectMsg.ok
+              ? "bg-green-500/10 border-green-500/30 text-green-400"
+              : "bg-red-500/10 border-red-500/30 text-red-400"
+          }`}
+        >
+          {metaConnectMsg.text}
         </div>
       )}
 
