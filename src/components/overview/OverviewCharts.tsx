@@ -98,6 +98,28 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
       .sort((a, b) => b.spend - a.spend);
   }, [breakdown]);
 
+  const staffSpendData = useMemo(() => {
+    if (!breakdown?.byStaff?.length) return [];
+    return breakdown.byStaff
+      .map((s) => ({ name: s.name, spend: s.spend }))
+      .sort((a, b) => b.spend - a.spend);
+  }, [breakdown]);
+
+  // Chi phí ads đổ vào từng kênh, gộp theo người QUẢN LÝ kênh đó (Channel.staff) — khác
+  // staffSpendData ở trên, vốn là người CHẠY ads suy từ tên chiến dịch.
+  const channelManagerSpendData = useMemo(() => {
+    if (!breakdown?.byChannelManager?.length) return [];
+    return breakdown.byChannelManager
+      .map((s) => ({ name: s.name, spend: s.spend }))
+      .sort((a, b) => b.spend - a.spend);
+  }, [breakdown]);
+  const channelManagerUnmatchedPct = useMemo(() => {
+    const total = channelManagerSpendData.reduce((s, c) => s + c.spend, 0);
+    if (total <= 0) return 0;
+    const unmatched = channelManagerSpendData.find((c) => c.name === "Chưa gắn quản lý kênh")?.spend ?? 0;
+    return Math.round((unmatched / total) * 100);
+  }, [channelManagerSpendData]);
+
   const hasData = trend.length > 0;
 
   // Render ticks dynamically or fallback
@@ -273,6 +295,59 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
                 </BarChart>
               </ResponsiveContainer>
             </div>
+          </Panel>
+
+          {/* Chi phí quảng cáo theo Nhân viên */}
+          <Panel className="lg:col-span-6" title="Chi phí quảng cáo theo Nhân viên" subtitle="Người chạy suy từ tên chiến dịch">
+            {staffSpendData.length > 0 ? (
+              <div className="h-[220px]">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                  <BarChart data={staffSpendData} margin={{ top: 22, right: 8, left: -10, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+                    <XAxis dataKey="name" stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={45} />
+                    <YAxis stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => fmtCompact(v)} />
+                    <RTooltip contentStyle={tooltipStyle} cursor={{ fill: cursor }} formatter={(v) => [fmtNum(Number(v)) + "đ", "Chi phí"]} />
+                    <Bar dataKey="spend" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={56}>
+                      <LabelList dataKey="spend" position="top" formatter={(v) => fmtVndShort(Number(v ?? 0))} style={{ fill: labelFill, fontSize: "10px", fontWeight: "600" }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-[120px] flex items-center justify-center text-sm text-muted-foreground">Chưa có dữ liệu</div>
+            )}
+          </Panel>
+
+          {/* Chi phí ads theo Người quản lý kênh (khác người CHẠY ads ở panel trên) */}
+          <Panel
+            className="lg:col-span-6"
+            title="Chi phí quảng cáo theo Người quản lý kênh"
+            subtitle={
+              channelManagerUnmatchedPct > 0
+                ? `Người xây/quản lý kênh · còn ${channelManagerUnmatchedPct}% chi phí chưa nối được kênh (thiếu pageId)`
+                : "Người xây/quản lý kênh có video được lên ads"
+            }
+          >
+            {channelManagerSpendData.length > 0 ? (
+              <div className="h-[220px]">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                  <BarChart data={channelManagerSpendData} margin={{ top: 22, right: 8, left: -10, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+                    <XAxis dataKey="name" stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={45} />
+                    <YAxis stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => fmtCompact(v)} />
+                    <RTooltip contentStyle={tooltipStyle} cursor={{ fill: cursor }} formatter={(v) => [fmtNum(Number(v)) + "đ", "Chi phí"]} />
+                    <Bar dataKey="spend" radius={[4, 4, 0, 0]} maxBarSize={56}>
+                      {channelManagerSpendData.map((c) => (
+                        <Cell key={c.name} fill={c.name === "Chưa gắn quản lý kênh" ? "#6b7280" : "#8b5cf6"} />
+                      ))}
+                      <LabelList dataKey="spend" position="top" formatter={(v) => fmtVndShort(Number(v ?? 0))} style={{ fill: labelFill, fontSize: "10px", fontWeight: "600" }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-[120px] flex items-center justify-center text-sm text-muted-foreground">Chưa có dữ liệu</div>
+            )}
           </Panel>
         </div>
       )}

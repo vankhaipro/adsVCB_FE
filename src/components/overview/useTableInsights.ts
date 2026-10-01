@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiGet, datesToQuery } from "@/lib/api";
 import { presetToDates } from "@/components/DateRangePicker";
+import { normalizeStatus } from "./parts";
 
 // Một dòng insight chiến dịch từ /mkt-api/campaigns/insights.
 // Khớp đúng object mà ads.service.ts#getCampaignsWithInsights dựng: các chỉ số luôn
@@ -180,8 +181,12 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
       if (objectiveLabel !== "ALL" && c.objectiveLabel !== objectiveLabel) return false;
       if (teams.length > 0 && !teams.includes(c.team)) return false;
       if (kw) {
-        // Tìm trên tên chiến dịch + kênh, đủ để bắt cả mã SKU nằm cuối tên campaign.
-        const hay = `${c.name || ""} ${c.pageName || ""} ${c.channel || ""}`.toLowerCase();
+        // Tìm trên tên chiến dịch + kênh + các nhãn hiển thị trên bảng (trạng thái, mục
+        // tiêu, tuyến ND, team) — gõ "tạm dừng" hay "A1" cũng ra kết quả như gõ tên,
+        // không chỉ khớp đúng tên chiến dịch.
+        const hay = `${c.name || ""} ${c.pageName || ""} ${c.channel || ""} ${
+          normalizeStatus(c.status) || c.status || ""
+        } ${c.objectiveLabel || ""} ${c.contentLine || ""} ${c.team || ""}`.toLowerCase();
         if (!hay.includes(kw)) return false;
       }
       return true;

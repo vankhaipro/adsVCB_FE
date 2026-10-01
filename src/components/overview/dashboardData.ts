@@ -64,6 +64,11 @@ export type BreakdownData = {
   byTeam?: TeamBreakdown[];
   byMarket?: (InsightAgg & { name: string })[];
   byIndustry?: (InsightAgg & { name: string })[];
+  byStaff?: (InsightAgg & { name: string })[];
+  // Người quản lý kênh organic (khác byStaff — đó là người CHẠY ads, đây là người XÂY kênh
+  // mà ads đang chạy trên đó). "Chưa gắn quản lý kênh" = campaign chưa nối được với Channel
+  // nào (thiếu pageId ở một trong hai phía) — cần vào tab "Kênh organic" bổ sung pageId.
+  byChannelManager?: (InsightAgg & { name: string })[];
   hasData: boolean;
 };
 

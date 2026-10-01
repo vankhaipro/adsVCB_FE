@@ -102,8 +102,8 @@ function OverviewInner() {
   // Bảng SKU giờ tự fetch dữ liệu; state này chỉ còn phục vụ khối LEGACY_OVERVIEW (đang tắt).
   const [sapoSkus] = useState<SapoSku[]>([]);
 
-  // Tab từ query param ?tab=overview|channel|mode
-  const TAB_VALUES = ["overview", "channel", "mode", "orders"] as const;
+  // Tab từ query param ?tab=overview|channel|orders
+  const TAB_VALUES = ["overview", "channel", "orders"] as const;
   type TabValue = typeof TAB_VALUES[number];
   const rawTab = searchParams.get("tab");
   const selectedTab: TabValue = TAB_VALUES.includes(rawTab as TabValue) ? (rawTab as TabValue) : "overview";
@@ -256,8 +256,11 @@ function OverviewInner() {
     // lùi về so tên khi một trong hai phía chưa có ID.
     if (pageName !== "ALL") params.set("channelId", pageName);
     if (team !== "ALL") params.set("team", team);
+    // Trạng thái ACTIVE/PAUSED — backend tự gộp Meta (ACTIVE/PAUSED) và TikTok (ENABLE/DISABLE)
+    // về cùng một nghĩa nên FE chỉ cần gửi đúng 2 giá trị này.
+    if (statusFilter !== "ALL") params.set("status", statusFilter);
     return params.toString();
-  }, [customFrom, customTo, platform, objective, accountId, channel, staff, pageName, team]);
+  }, [customFrom, customTo, platform, objective, accountId, channel, staff, pageName, team, statusFilter]);
 
   // Cùng cách làm như sapo: dữ liệu cũ bị coi là "chưa có" ngay khi query đổi, nên không
   // cần xoá bằng tay trong effect nữa.
@@ -387,12 +390,11 @@ function OverviewInner() {
 
   return (
     <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10 font-sans -m-4 sm:-m-5 p-4 sm:p-5 bg-background min-h-full" suppressHydrationWarning>
-      {/* Navigation Tabs — URL query param: ?tab=overview|channel|mode */}
+      {/* Navigation Tabs — URL query param: ?tab=overview|channel|orders */}
       <div className="flex border-b border-border gap-1 bg-background rounded-t-xl px-2 pt-1" suppressHydrationWarning>
         {([
           { value: "overview", label: "Tổng quan" },
           { value: "channel", label: "Hiệu quả theo Kênh" },
-          { value: "mode",    label: "Hiệu quả theo Mode" },
           { value: "orders",  label: "Đơn hàng bán" },
         ] as { value: TabValue; label: string }[]).map((t) => (
           <button
@@ -972,53 +974,6 @@ function OverviewInner() {
             );
           })()}
 
-
-          {/* TAB 3: EFFICIENCY BY MODE */}
-          {selectedTab === "mode" && (
-            <div className="flex flex-col gap-6">
-              {/* Objective breakdown table */}
-              <div className="bg-background border border-border rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-foreground mb-4">Phân tích hiệu quả theo Mục tiêu (Objective Mode)</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left whitespace-nowrap">
-                    <thead className="text-muted-foreground uppercase border-b border-border">
-                      <tr>
-                        <th className="px-4 py-3 font-medium">Mục tiêu tối ưu</th>
-                        <th className="px-4 py-3 font-medium text-right">Chi tiêu</th>
-                        <th className="px-4 py-3 font-medium text-right">Hiển thị</th>
-                        <th className="px-4 py-3 font-medium text-right">Click</th>
-                        <th className="px-4 py-3 font-medium text-right">CTR</th>
-                        <th className="px-4 py-3 font-medium text-right">CPC</th>
-                        <th className="px-4 py-3 font-medium text-right">Tin nhắn / Lượt chuyển đổi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border text-foreground">
-                      {!breakdown?.hasData ? (
-                        <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Chưa có dữ liệu insight. Hãy đồng bộ insight Meta/TikTok.</td></tr>
-                      ) : (
-                        breakdown.byObjective.map((o, idx) => {
-                          const ctr = o.impressions > 0 ? (o.clicks / o.impressions) * 100 : 0;
-                          const cpc = o.clicks > 0 ? o.spend / o.clicks : 0;
-                          const conv = o.messages + o.conversions;
-                          return (
-                            <tr key={idx} className="hover:bg-card/40">
-                              <td className="px-4 py-3 font-semibold text-foreground">{o.objective}</td>
-                              <td className="px-4 py-3 text-right">{fmtVnd(o.spend)}</td>
-                              <td className="px-4 py-3 text-right">{fmtNum(o.impressions)}</td>
-                              <td className="px-4 py-3 text-right">{fmtNum(o.clicks)}</td>
-                              <td className="px-4 py-3 text-right">{ctr.toFixed(2)}%</td>
-                              <td className="px-4 py-3 text-right">{cpc > 0 ? fmtVnd(cpc) : "—"}</td>
-                              <td className="px-4 py-3 text-right text-blue-400">{fmtNum(conv)}</td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* TAB 4: ĐƠN HÀNG BÁN (Sapo) */}
           {selectedTab === "orders" && (

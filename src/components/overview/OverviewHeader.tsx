@@ -58,10 +58,11 @@ const CHANNELS: FilterPill[] = [
   { id: "ZALO", label: "Zalo" },
 ];
 
+// Chỉ 2 trạng thái thật có trong dữ liệu — backend gộp Meta (ACTIVE/PAUSED) và TikTok
+// (ENABLE/DISABLE) về chung id này (xem deriveRunState ở adsVCB_BE/ads.service.ts).
 const STATUSES: FilterPill[] = [
   { id: "ACTIVE", label: "Đang chạy" },
   { id: "PAUSED", label: "Tạm dừng" },
-  { id: "ENDED", label: "Kết thúc" },
 ];
 
 // Nhãn phải khớp đúng nghĩa của id — trước đây LIKES ghi là "Nhận thức" và MESS ghi là
