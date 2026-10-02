@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight, Funnel, CaretDown, MagnifyingGlass, FacebookLogo, InstagramLogo
+  SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight, Funnel, CaretDown, MagnifyingGlass, FacebookLogo, InstagramLogo, DownloadSimple
 } from "@phosphor-icons/react";
 import { apiGet, apiPost, apiPatch, apiDelete, API_URL } from "@/lib/api";
+import * as XLSX from "xlsx";
 
 type Channel = {
   id: string;
@@ -40,6 +41,62 @@ const PLATFORM_COLOR: Record<string, string> = {
 const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n || 0));
 const fmtDate = (s: string | null) =>
   s ? new Date(s).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+
+function exportChannelsToXlsx(
+  data: Channel[],
+  teamList: { id: string; name: string; industry?: string | null; market?: string | null }[]
+) {
+  const rows = data.map((c) => {
+    const channelTeam = teamList.find((t) => t.name === c.team);
+    const displayIndustry = channelTeam?.industry ?? c.industry ?? "";
+    const displayMarket = channelTeam?.market ?? c.market ?? "";
+    return {
+      "Nhân viên": c.staff || "",
+      "Team": c.team || "",
+      "Ngành": displayIndustry,
+      "Thị trường": displayMarket,
+      "Tên kênh": c.channelName || "",
+      "Nền tảng": PLATFORM_LABEL[c.platform] || c.platform || "",
+      "ID kênh": c.externalId || "",
+      "URL": c.url || "",
+      "Followers": c.followers || 0,
+      "Trạng thái": c.isActive ? "Đang hoạt động" : "Tạm dừng",
+      "Ngày thêm": c.createdAt
+        ? new Date(c.createdAt).toLocaleString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "",
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+
+  // Căn chỉnh độ rộng cột
+  ws["!cols"] = [
+    { wch: 20 }, // Nhân viên
+    { wch: 18 }, // Team
+    { wch: 18 }, // Ngành
+    { wch: 18 }, // Thị trường
+    { wch: 28 }, // Tên kênh
+    { wch: 14 }, // Nền tảng
+    { wch: 22 }, // ID kênh
+    { wch: 40 }, // URL
+    { wch: 14 }, // Followers
+    { wch: 18 }, // Trạng thái
+    { wch: 20 }, // Ngày thêm
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Kênh Organic");
+
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+  XLSX.writeFile(wb, `kenh-organic-${dateStr}.xlsx`);
+}
 
 function FilterDropdown({
   label,
@@ -443,7 +500,17 @@ export default function ChannelsPage() {
             {channels.length} kênh
           </p>
         </div>
-        <div className="flex items-center gap-2 self-start">
+        <div className="flex items-center gap-2 self-start flex-wrap">
+          <button
+            type="button"
+            onClick={() => exportChannelsToXlsx(filtered, teamList)}
+            disabled={filtered.length === 0}
+            title={`Xuất ${filtered.length} kênh đang hiển thị ra file Excel`}
+            className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 transition-colors"
+          >
+            <DownloadSimple size={18} weight="bold" />
+            Xuất XLSX ({filtered.length})
+          </button>
           <a
             href={`${API_URL}/meta-oauth/connect`}
             className="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 transition-colors"
