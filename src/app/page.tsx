@@ -11,7 +11,7 @@ import {
 import { apiGet, fmtVnd, datesToQuery } from "@/lib/api";
 import { pageNameKey } from "@/lib/pageNameKey";
 import { useChartColors } from "@/lib/chartTheme";
-import OrdersBreakdown from "@/components/OrdersBreakdown";
+import OrdersBreakdown, { type OrdersBreakdownHandle } from "@/components/OrdersBreakdown";
 import OverviewHeader, { type KpiItem } from "@/components/overview/OverviewHeader";
 import { presetToDates } from "@/components/DateRangePicker";
 import OverviewBody from "@/components/overview/OverviewBody";
@@ -99,6 +99,7 @@ function OverviewInner() {
   const searchParams = useSearchParams();
   const campaignTableRef = useRef<CampaignTableHandle>(null);
   const productTableRef = useRef<ProductTableHandle>(null);
+  const ordersRef = useRef<OrdersBreakdownHandle>(null);
   const [, setCampaigns] = useState<Campaign[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -333,6 +334,23 @@ function OverviewInner() {
     [insightsFresh, insightsResult],
   );
 
+  // Dữ liệu các bảng của tab "Hiệu quả theo Kênh" — hoist ra khỏi JSX cục bộ của tab để
+  // cũng dùng được trong onExport (chạy bất kể tab nào đang hiển thị).
+  const channelRows = useMemo(
+    () =>
+      (breakdown?.byChannel ?? []).map((c) => ({
+        name: c.name, spend: c.spend, messages: c.messages, likes: c.likes,
+        clicks: c.clicks, impressions: c.impressions, reach: c.reach, comments: c.comments ?? 0,
+      })),
+    [breakdown],
+  );
+  const likeRanking = useMemo(() => [...channelRows].sort((a, b) => b.likes - a.likes), [channelRows]);
+  const messRanking = useMemo(() => [...channelRows].sort((a, b) => b.messages - a.messages), [channelRows]);
+  const objBarDataRaw = useMemo(
+    () => (breakdown?.byObjective ?? []).map((o) => ({ name: o.objective, value: o.spend })),
+    [breakdown],
+  );
+
 
   // Format Helper for numbers
   const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n || 0));
@@ -451,9 +469,51 @@ function OverviewInner() {
         kpis={overviewKpis}
         showKpis={selectedTab === "overview"}
         onExport={() => {
+          const date = new Date().toISOString().slice(0, 10);
+
+          if (selectedTab === "channel") {
+            const sheets: ExportSheet[] = [
+              {
+                name: "Phân bổ theo kênh",
+                rows: channelRows.map((c) => ({
+                  "Kênh": c.name, "Chi tiêu": c.spend, "Tin nhắn": c.messages,
+                  "Like": c.likes, "Bình luận": c.comments, "Lượt tiếp cận": c.reach,
+                })),
+              },
+              {
+                name: "Phân bổ theo mục tiêu",
+                rows: objBarDataRaw.map((o) => ({ "Mục tiêu": o.name, "Chi tiêu": o.value })),
+              },
+              {
+                name: "Hiệu quả kênh - Like Page",
+                rows: likeRanking.filter((r) => r.likes > 0).map((r, i) => ({
+                  "#": i + 1, "Kênh": r.name, "Like page": r.likes,
+                  "Chi phí/like page": r.likes > 0 ? Math.round(r.spend / r.likes) : 0,
+                })),
+              },
+              {
+                name: "Hiệu quả kênh - Tin nhắn",
+                rows: messRanking.filter((r) => r.messages > 0).map((r, i) => ({
+                  "#": i + 1, "Kênh": r.name, "Tin nhắn": r.messages,
+                  "Chi phí/tin nhắn": r.messages > 0 ? Math.round(r.spend / r.messages) : 0,
+                })),
+              },
+            ];
+            const ok = exportWorkbook(`hieu-qua-theo-kenh-${date}.xlsx`, sheets);
+            if (!ok) alert("Không có dữ liệu để xuất.");
+            return;
+          }
+
+          if (selectedTab === "orders") {
+            const sheets = ordersRef.current?.exportSheets() ?? [];
+            const ok = exportWorkbook(`don-hang-ban-${date}.xlsx`, sheets);
+            if (!ok) alert("Không có dữ liệu để xuất.");
+            return;
+          }
+
           const sheets = [campaignTableRef.current?.exportSheet(), productTableRef.current?.exportSheet()]
             .filter((s): s is ExportSheet => !!s);
-          const ok = exportWorkbook(`tong-quan-ads-${new Date().toISOString().slice(0, 10)}.xlsx`, sheets);
+          const ok = exportWorkbook(`tong-quan-ads-${date}.xlsx`, sheets);
           if (!ok) alert("Không có dữ liệu để xuất.");
         }}
       />
@@ -725,11 +785,6 @@ function OverviewInner() {
           {selectedTab === "channel" && (() => {
             // Dữ liệu THẬT từ insight Meta/TikTok (qua /ads/insights + /ads/insights/breakdown)
             const adReal = !!insights?.hasData;
-            const bd = breakdown;
-            const channelRows = (bd?.byChannel ?? []).map((c) => ({
-              name: c.name, spend: c.spend, messages: c.messages, likes: c.likes,
-              clicks: c.clicks, impressions: c.impressions, reach: c.reach, comments: c.comments ?? 0,
-            }));
 
             const totalSpend = insights?.totalSpend ?? 0;
             const totalLikes = insights?.likes ?? 0;
@@ -744,10 +799,6 @@ function OverviewInner() {
             const costPerMess = insights?.costPerMessage ?? 0;
             const costPerComment = insights?.costPerComment ?? 0;
 
-            // Sorted tables
-            const likeRanking = [...channelRows].sort((a, b) => b.likes - a.likes);
-            const messRanking = [...channelRows].sort((a, b) => b.messages - a.messages);
-
             // Donut data: tất cả các kênh (không giới hạn)
             const DONUT_COLORS = [
               "#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4",
@@ -760,8 +811,8 @@ function OverviewInner() {
             }));
 
             // Horizontal bar: ngân sách theo mục tiêu (objective thật)
-            const objBarData = (bd?.byObjective ?? []).map((o, i) => ({
-              name: o.objective, value: o.spend, color: DONUT_COLORS[i] || "#94a3b8",
+            const objBarData = objBarDataRaw.map((o, i) => ({
+              ...o, color: DONUT_COLORS[i] || "#94a3b8",
             }));
 
             // Top 30 kênh theo chi tiêu
@@ -989,7 +1040,7 @@ function OverviewInner() {
 
           {/* TAB 4: ĐƠN HÀNG BÁN (Sapo) */}
           {selectedTab === "orders" && (
-            <OrdersBreakdown query={sapoFilterQuery} />
+            <OrdersBreakdown ref={ordersRef} query={sapoFilterQuery} />
           )}
         </>
       )}

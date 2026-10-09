@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { apiGet, fmtVnd } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
 import { Storefront, UsersThree, UserCircle, CurrencyDollar, ShoppingBag, FacebookLogo, ChartPie } from "@phosphor-icons/react";
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Label, LabelList } from "recharts";
+import type { ExportSheet } from "@/lib/exportExcel";
 
 const CHART_COLORS = ["#3b82f6", "#db2777", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#64748b"];
 
@@ -93,8 +94,39 @@ function BreakdownCard({
   );
 }
 
+export type OrdersBreakdownHandle = { exportSheets: () => ExportSheet[] };
+
+function dashToSheets(data: Dash | null): ExportSheet[] {
+  if (!data) return [];
+  return [
+    {
+      name: "Theo kênh",
+      rows: data.byChannel.map((r) => ({ "Kênh": CHANNEL_LABEL[r.name] ?? r.name, "Số đơn": r.orders, "Doanh thu": r.revenue })),
+    },
+    {
+      name: "Theo team kinh doanh",
+      rows: data.byTeam.map((r) => ({ "Team": r.name, "Số đơn": r.orders, "Doanh thu": r.revenue })),
+    },
+    {
+      name: "Theo page khách nhắn",
+      rows: data.byMessagedPage.map((r) => ({ "Page": r.name, "Số đơn": r.orders, "Doanh thu": r.revenue })),
+    },
+    {
+      name: "Chi tiết theo nhân viên",
+      rows: data.staffTable.map((s, i) => ({
+        "#": i + 1,
+        "Nhân viên": s.name,
+        "Team": s.team,
+        "Kênh chính": CHANNEL_LABEL[s.topChannel] ?? s.topChannel ?? "",
+        "Số đơn": s.orders,
+        "Doanh thu": s.revenue,
+      })),
+    },
+  ];
+}
+
 // Dashboard đơn hàng bán (nguồn Sapo). `query` = chuỗi "from=...&to=..." từ bộ lọc thời gian.
-export default function OrdersBreakdown({ query }: { query: string }) {
+export default forwardRef<OrdersBreakdownHandle, { query: string }>(function OrdersBreakdown({ query }, ref) {
   const [data, setData] = useState<Dash | null>(null);
   const chart = useChartColors();
 
@@ -103,6 +135,10 @@ export default function OrdersBreakdown({ query }: { query: string }) {
       .then(setData)
       .catch(() => setData(null));
   }, [query]);
+
+  useImperativeHandle(ref, () => ({
+    exportSheets: () => dashToSheets(data),
+  }), [data]);
 
   // Donut theo kênh: top 7 + gộp phần còn lại thành "Khác".
   const channelPie = (() => {
@@ -253,4 +289,4 @@ export default function OrdersBreakdown({ query }: { query: string }) {
       </div>
     </div>
   );
-}
+});

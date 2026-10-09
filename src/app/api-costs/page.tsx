@@ -9,6 +9,7 @@ import { apiGet, apiPost } from "@/lib/api";
 import { useAuthRole } from "@/lib/useAuthUser";
 import { useChartColors } from "@/lib/chartTheme";
 import { Panel } from "@/components/overview/parts";
+import DateRangePicker, { presetToDates } from "@/components/DateRangePicker";
 
 type Provider = {
   id: "TIKHUB";
@@ -41,7 +42,6 @@ type Summary = {
 };
 
 const COLORS = { TIKHUB: "#ec4899" } as const;
-const RANGES = [7, 30, 90];
 
 // Chi phí API tính bằng cent lẻ — hiện 3 số lẻ khi dưới 1 USD, không thì mọi ngày đều "$0.00".
 const fmtUsd = (n: number | null | undefined) =>
@@ -55,21 +55,23 @@ export default function ApiCostsPage() {
   const isAdmin = role === "ADMIN";
   const { axis: AXIS, grid: GRID, cursor, tooltip: tooltipStyle } = useChartColors();
 
-  const [days, setDays] = useState(30);
+  const [dateRange, setDateRange] = useState("last30days");
+  const [dateFrom, setDateFrom] = useState(() => presetToDates("last30days").from);
+  const [dateTo, setDateTo] = useState(() => presetToDates("last30days").to);
   const [reloadKey, setReloadKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Lưu dữ liệu kèm khoá đã sinh ra nó: "đang tải" suy ra bằng cách so khoá (cùng cách với
   // trang Tài khoản quảng cáo), tránh setLoading đồng bộ trong effect.
-  const key = `${days}:${reloadKey}`;
+  const key = `${dateFrom}:${dateTo}:${reloadKey}`;
   const [result, setResult] = useState<{ key: string; data: Summary | null } | null>(null);
 
   useEffect(() => {
     if (!isAdmin) return;
     let cancelled = false;
     // cache: false — số dư đổi theo giờ, cache GET 5 phút phía client sẽ che mất lần làm mới.
-    apiGet(`/api-costs?days=${days}`, { cache: false })
+    apiGet(`/api-costs?from=${dateFrom}&to=${dateTo}`, { cache: false })
       .then((d) => {
         if (cancelled) return;
         setResult({ key, data: d });
@@ -83,7 +85,7 @@ export default function ApiCostsPage() {
     return () => {
       cancelled = true;
     };
-  }, [key, days, isAdmin]);
+  }, [key, dateFrom, dateTo, isAdmin]);
 
   async function refresh() {
     setRefreshing(true);
@@ -107,7 +109,8 @@ export default function ApiCostsPage() {
 
   const loading = result?.key !== key;
   const data = result?.data ?? null;
-  const tickEvery = days > 30 ? 7 : days > 7 ? 3 : 1;
+  const rangeDays = data?.days ?? 30;
+  const tickEvery = rangeDays > 30 ? 7 : rangeDays > 7 ? 3 : 1;
   const ticks = data?.daily.filter((_, i, a) => (a.length - 1 - i) % tickEvery === 0).map((d) => d.date);
 
   return (
@@ -121,19 +124,16 @@ export default function ApiCostsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-md border border-border overflow-hidden text-sm">
-            {RANGES.map((r) => (
-              <button
-                key={r}
-                onClick={() => setDays(r)}
-                className={`px-3 py-1.5 transition-colors ${
-                  days === r ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:bg-muted/50"
-                }`}
-              >
-                {r} ngày
-              </button>
-            ))}
-          </div>
+          <DateRangePicker
+            presetId={dateRange}
+            from={dateFrom}
+            to={dateTo}
+            onApply={({ presetId, from, to }) => {
+              setDateRange(presetId);
+              setDateFrom(from);
+              setDateTo(to);
+            }}
+          />
           <button
             onClick={refresh}
             disabled={refreshing}
