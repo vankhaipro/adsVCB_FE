@@ -110,6 +110,7 @@ type Props = {
   kpis?: KpiItem[];
   onExport?: () => void;
   showKpis?: boolean;
+  ordersMode?: boolean;
 };
 
 export default function OverviewHeader({
@@ -138,6 +139,7 @@ export default function OverviewHeader({
   kpis = [],
   onExport,
   showKpis = true,
+  ordersMode = false,
 }: Props) {
   const filteredAccountPills = accounts
     .filter((a) => platform === "ALL" || a.platform === platform)
@@ -149,11 +151,13 @@ export default function OverviewHeader({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3" suppressHydrationWarning>
 
         {/* Nhóm bộ lọc dạng Select (Compact) */}
+        {!ordersMode && <>
         <FilterDropdown label="Nền tảng:" items={CHANNELS} value={platform} onChange={onPlatformChange} searchable={false} />
         <FilterDropdown label="Kênh:" items={organicChannels} value={pageName} onChange={onPageNameChange} searchable={true} />
         {onTeamChange && (
           <FilterDropdown label="Team:" items={teamOptions} value={team} onChange={onTeamChange} searchable={false} />
         )}
+        </>}
         
         <DateRangePicker
           presetId={dateRange}
@@ -162,10 +166,12 @@ export default function OverviewHeader({
           onApply={onDateApply}
         />
 
+        {!ordersMode && <>
         <FilterDropdown label="Tài khoản:" items={filteredAccountPills} value={accountId} onChange={onAccountIdChange} searchable={true} />
         <FilterDropdown label="Trạng thái:" items={STATUSES} value={status} onChange={onStatusChange} searchable={false} />
         <FilterDropdown label="Mục tiêu:" items={OBJECTIVES} value={objective} onChange={onObjectiveChange} searchable={false} />
         <FilterDropdown label="Nhân viên:" items={staffs.length > 0 ? staffs : STAFFS} value={staff} onChange={onStaffChange} searchable={true} />
+        </>}
 
         {/* Bên phải: hành động */}
         <div className="ml-auto flex items-center gap-2">

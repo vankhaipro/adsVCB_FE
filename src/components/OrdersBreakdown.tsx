@@ -1,292 +1,212 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import { apiGet, fmtVnd } from "@/lib/api";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react";
+import { apiGet } from "@/lib/api";
 import { useChartColors } from "@/lib/chartTheme";
-import { Storefront, UsersThree, UserCircle, CurrencyDollar, ShoppingBag, FacebookLogo, ChartPie } from "@phosphor-icons/react";
-import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Label, LabelList } from "recharts";
+import { ChartPie, UsersThree } from "@phosphor-icons/react";
+import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import type { ExportSheet } from "@/lib/exportExcel";
+import { channelKey, filterOrders, formatOrderMoney, groupOrders, orderStaff, orderTeam, UNKNOWN_ORDER_OWNER, type OrderFilters, type OrderGroup, type SalesDashboard } from "@/lib/salesOrders";
 
-const CHART_COLORS = ["#3b82f6", "#db2777", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#64748b"];
-
-type Row = { name: string; orders: number; revenue: number };
-type StaffRow = { name: string; team: string; topChannel: string; orders: number; revenue: number };
-type Dash = {
-  totalRevenue: number;
-  orderCount: number;
-  byChannel: Row[];
-  byMessagedPage: Row[];
-  byStaff: Row[];
-  byTeam: Row[];
-  byProvince: Row[];
-  staffTable: StaffRow[];
-};
-
-const CHANNEL_LABEL: Record<string, string> = {
-  facebook: "Facebook",
-  instagram: "Instagram",
-  tiktokshop: "TikTok Shop",
-  "tiktok-for-business": "TikTok Ads",
-  "tiktok-personal": "TikTok",
-  shopee: "Shopee",
-  zalo: "Zalo",
-  "zalo-oa": "Zalo OA",
-  pos: "POS / Cửa hàng",
-  web: "Website",
-  admin: "Admin",
-};
-
-const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n || 0));
-
-function fmtVndShort(n: number): string {
-  const abs = Math.abs(n || 0);
-  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}Bđ`;
-  if (abs >= 1e6) return `${(n / 1e6).toFixed(0)}Mđ`;
-  if (abs >= 1e3) return `${(n / 1e3).toFixed(0)}Kđ`;
-  return `${Math.round(n)}đ`;
-}
-
-function BreakdownCard({
-  title,
-  icon,
-  items,
-  limit = 12,
-  labelMap,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  items: Row[];
-  limit?: number;
-  labelMap?: Record<string, string>;
-}) {
-  const top = items.slice(0, limit);
-  const max = Math.max(1, ...top.map((r) => r.revenue));
-  return (
-    <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-      <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-        {icon}
-        {title}
-        <span className="text-xs text-muted-foreground font-normal">({items.length})</span>
-      </h3>
-      {top.length === 0 ? (
-        <p className="text-xs text-muted-foreground py-6 text-center">Không có dữ liệu</p>
-      ) : (
-        <div className="flex flex-col gap-2.5">
-          {top.map((r, i) => (
-            <div key={i}>
-              <div className="flex items-center justify-between text-xs mb-1 gap-2">
-                <span className="text-foreground font-medium truncate" title={r.name}>
-                  {labelMap?.[r.name] ?? r.name}
-                </span>
-                <span className="text-foreground font-semibold shrink-0">
-                  {fmtVnd(r.revenue)}{" "}
-                  <span className="text-muted-foreground font-normal">· {fmtNum(r.orders)} đơn</span>
-                </span>
-              </div>
-              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(r.revenue / max) * 100}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
+const COLORS = ["#3b82f6", "#db2777", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4", "#64748b"];
+const num = (n: number) => new Intl.NumberFormat("vi-VN").format(n);
+const date = (s: string) => new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(s));
+const emptyFilters = { platform: "", channel: "", staff: "", team: "", status: "REVENUE", search: "", role: "owner" as const };
+const marketFilters = (market: string) => ({ ...emptyFilters, status: market === "GLOBAL" ? "ALL" : "REVENUE" });
 export type OrdersBreakdownHandle = { exportSheets: () => ExportSheet[] };
 
-function dashToSheets(data: Dash | null): ExportSheet[] {
-  if (!data) return [];
-  return [
-    {
-      name: "Theo kênh",
-      rows: data.byChannel.map((r) => ({ "Kênh": CHANNEL_LABEL[r.name] ?? r.name, "Số đơn": r.orders, "Doanh thu": r.revenue })),
-    },
-    {
-      name: "Theo team kinh doanh",
-      rows: data.byTeam.map((r) => ({ "Team": r.name, "Số đơn": r.orders, "Doanh thu": r.revenue })),
-    },
-    {
-      name: "Theo page khách nhắn",
-      rows: data.byMessagedPage.map((r) => ({ "Page": r.name, "Số đơn": r.orders, "Doanh thu": r.revenue })),
-    },
-    {
-      name: "Chi tiết theo nhân viên",
-      rows: data.staffTable.map((s, i) => ({
-        "#": i + 1,
-        "Nhân viên": s.name,
-        "Team": s.team,
-        "Kênh chính": CHANNEL_LABEL[s.topChannel] ?? s.topChannel ?? "",
-        "Số đơn": s.orders,
-        "Doanh thu": s.revenue,
-      })),
-    },
-  ];
+function Select({ label, value, options, onChange, all = true }: { label: string; value: string; options: { id: string; label: string }[]; onChange: (v: string) => void; all?: boolean }) {
+  return <label className="flex flex-col gap-1 text-xs text-muted-foreground min-w-36 max-w-full">
+    {label}
+    <select aria-label={label} value={value} onChange={e => onChange(e.target.value)} className="border border-border rounded-lg bg-card text-foreground px-3 py-2 text-sm max-w-64">
+      {all && <option value="">Tất cả</option>}
+      {value && !options.some(o => o.id === value) && <option value={value}>{value} (không có đơn trong kỳ)</option>}
+      {options.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+    </select>
+  </label>;
 }
 
-// Dashboard đơn hàng bán (nguồn Sapo). `query` = chuỗi "from=...&to=..." từ bộ lọc thời gian.
+function GroupTable({ title, rows, staff = false, total, onSelect }: { title: string; rows: OrderGroup[]; staff?: boolean; total: number; onSelect: (row: OrderGroup) => void }) {
+  return <section className="bg-card border border-border rounded-xl p-5 shadow-sm">
+    <h3 className="font-semibold text-sm mb-4">{title} <span className="text-muted-foreground font-normal">({rows.length})</span></h3>
+    <div className="overflow-auto max-h-[440px]">
+      <table className="w-full text-xs text-left whitespace-nowrap">
+        <thead className="sticky top-0 bg-card text-muted-foreground border-b border-border"><tr>
+          <th className="p-3">{staff ? "Nhân viên" : title === "Theo team" ? "Team" : "Kênh"}</th>
+          {staff && <th className="p-3">Team</th>}
+          <th className="p-3 text-right">Số đơn</th><th className="p-3 text-right">Doanh thu</th><th className="p-3 text-right">% DT</th><th className="p-3">Chi tiết</th>
+        </tr></thead>
+        <tbody className="divide-y divide-border">
+          {!rows.length && <tr><td colSpan={staff ? 6 : 5} className="p-8 text-center text-muted-foreground">Không có đơn phù hợp bộ lọc</td></tr>}
+          {rows.map(r => <tr key={r.key} className="hover:bg-muted/30">
+            <td className="p-3 font-medium max-w-72 truncate" title={r.name}>{r.name}</td>
+            {staff && <td className="p-3 text-muted-foreground">{r.team}</td>}
+            <td className="p-3 text-right tabular-nums">{num(r.orders)}</td>
+            <td className="p-3 text-right font-semibold tabular-nums">{formatOrderMoney(r.revenue, r.currency)}</td>
+            <td className="p-3 text-right text-muted-foreground">{total > 0 ? (r.revenue / total * 100).toFixed(1) : "0"}%</td>
+            <td className="p-3"><button className="text-blue-500 hover:underline" onClick={() => onSelect(r)}>Xem đơn</button></td>
+          </tr>)}
+        </tbody>
+      </table>
+    </div>
+  </section>;
+}
+
 export default forwardRef<OrdersBreakdownHandle, { query: string }>(function OrdersBreakdown({ query }, ref) {
-  const [data, setData] = useState<Dash | null>(null);
+  const [market, setMarket] = useState("VIETNAM");
+  const [result, setResult] = useState<{ key: string; data?: SalesDashboard; error?: string } | null>(null);
+  const [retry, setRetry] = useState(0);
+  const [filters, setFilters] = useState<Omit<OrderFilters, "currency">>(emptyFilters);
+  const [selectedCurrency, setCurrency] = useState("");
+  const [view, setView] = useState<"staff" | "channel" | "team" | "orders">("staff");
+  const [page, setPage] = useState(1);
   const chart = useChartColors();
+  const requestKey = `${market}:${query}:${retry}`;
+  const current = result?.key === requestKey ? result : null;
+  const data = current?.data;
+  const loading = !current;
 
   useEffect(() => {
-    apiGet(`/sapo/orders/dashboard?${query}`)
-      .then(setData)
-      .catch(() => setData(null));
-  }, [query]);
+    let cancelled = false;
+    const params = new URLSearchParams(query);
+    params.set("market", market);
+    if (retry) params.set("refresh", String(retry));
+    apiGet(`/sales-orders/dashboard?${params}`)
+      .then((value: SalesDashboard) => { if (!cancelled) setResult({ key: requestKey, data: value }); })
+      .catch((e: Error) => { if (!cancelled) setResult({ key: requestKey, error: e.message || "Không tải được đơn hàng." }); });
+    return () => { cancelled = true; };
+  }, [query, market, requestKey, retry]);
 
-  useImperativeHandle(ref, () => ({
-    exportSheets: () => dashToSheets(data),
-  }), [data]);
+  const allOrders = useMemo(() => data?.orders ?? [], [data]);
+  const currencyCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const o of allOrders) counts.set(o.currency, (counts.get(o.currency) || 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [allOrders]);
+  const currencies = currencyCounts.map(([code]) => code);
+  const currency = currencies.includes(selectedCurrency) ? selectedCurrency : currencies[0] || "VND";
+  const options = useMemo(() => {
+    const rows = allOrders.filter(o => o.currency === currency);
+    const unique = (values: string[]) => [...new Set(values)].sort((a, b) => a.localeCompare(b, "vi")).map(s => ({ id: s, label: s }));
+    return {
+      platforms: unique(rows.map(o => o.platform)), staffs: unique(rows.map(o => orderStaff(o, filters.role))),
+      teams: unique(rows.map(o => orderTeam(o, filters.role))), statuses: unique(rows.map(o => o.status)),
+      channels: [...new Map(rows.map(o => [channelKey(o), { id: channelKey(o), label: `${o.channel} · ${o.platform}${o.pageId ? ` · ${o.pageId}` : ""}` }])).values()].sort((a, b) => a.label.localeCompare(b.label, "vi")),
+    };
+  }, [allOrders, currency, filters.role]);
+  const orders = useMemo(() => filterOrders(allOrders, { ...filters, currency }), [allOrders, filters, currency]);
+  const byStaff = useMemo(() => groupOrders(orders, "staff", filters.role), [orders, filters.role]);
+  const byChannel = useMemo(() => groupOrders(orders, "channel", filters.role), [orders, filters.role]);
+  const byTeam = useMemo(() => groupOrders(orders, "team", filters.role), [orders, filters.role]);
+  const revenue = orders.reduce((sum, o) => sum + o.revenue, 0);
+  const eligibleCount = orders.filter(o => o.eligible).length;
+  const unknownCount = orders.filter(o => orderStaff(o, filters.role) === UNKNOWN_ORDER_OWNER || orderTeam(o, filters.role) === UNKNOWN_ORDER_OWNER).length;
+  const pie = byChannel.filter(r => r.revenue > 0).slice(0, 6).map(r => ({ name: r.name, value: r.revenue }));
+  const rest = byChannel.filter(r => r.revenue > 0).slice(6).reduce((sum, r) => sum + r.revenue, 0);
+  if (rest > 0) pie.push({ name: "Các kênh còn lại", value: rest });
+  const pageCount = Math.max(1, Math.ceil(orders.length / 30));
+  const currentPage = Math.min(page, pageCount);
+  const updateFilter = <K extends keyof typeof filters>(key: K, value: typeof filters[K]) => {
+    setFilters(f => ({ ...f, [key]: value })); setPage(1);
+  };
 
-  // Donut theo kênh: top 7 + gộp phần còn lại thành "Khác".
-  const channelPie = (() => {
-    const items = (data?.byChannel ?? []).map((r) => ({ name: CHANNEL_LABEL[r.name] ?? r.name, value: r.revenue }));
-    const top = items.slice(0, 7);
-    const rest = items.slice(7).reduce((s, x) => s + x.value, 0);
-    if (rest > 0) top.push({ name: "Khác", value: rest });
-    return top;
-  })();
-  // Cột theo team kinh doanh (top 8).
-  const teamBar = (data?.byTeam ?? []).slice(0, 8).map((r) => ({ name: r.name, revenue: r.revenue }));
+  useImperativeHandle(ref, () => ({ exportSheets: (): ExportSheet[] => {
+    if (!data) return [];
+    const groupSheet = (name: string, rows: OrderGroup[]) => ({ name, rows: rows.map(r => ({ "Tên": r.name, "Team": r.team, "Số đơn": r.orders, "Doanh thu": r.revenue, "Tiền tệ": r.currency })) });
+    return [
+      { name: "Thông tin báo cáo", rows: [{ "Thị trường": market === "GLOBAL" ? "Global" : "Việt Nam", "Nguồn": data.sourceName, "Khoảng ngày": query, "Tiền tệ": currency, "Phân bổ": filters.role === "owner" ? "Người phụ trách kênh" : "Người bán", "Bộ lọc": JSON.stringify(filters), "Quy tắc doanh thu": data.revenueRule, "Cập nhật": data.loadedAt }] },
+      groupSheet("Theo nhân viên", byStaff), groupSheet("Theo kênh", byChannel), groupSheet("Theo team", byTeam),
+      { name: "Chi tiết đơn hàng", rows: orders.map(o => ({ "Mã đơn": o.code, "ID nguồn": o.externalId, "Nguồn": o.source, "Ngày tạo (VN)": date(o.orderedAt), "Kênh": o.channel, "ID kênh nguồn": o.pageId || "", "Nền tảng": o.platform, "Phụ trách kênh": o.owner, "Team kênh": o.team, "Người bán": o.seller, "Team người bán": o.sellerTeam, "Trạng thái": o.status, "Giá trị đơn": o.value, "Doanh thu": o.revenue, "Tiền tệ": o.currency, "Đối chiếu": o.attribution })) },
+    ];
+  } }), [data, market, query, currency, filters, orders, byStaff, byChannel, byTeam]);
 
-  return (
-    <div className="flex flex-col gap-5">
-      {/* KPI */}
-      <div className="grid grid-cols-2 gap-4 max-w-lg">
-        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-            <CurrencyDollar size={20} className="text-green-500" weight="duotone" />
-          </div>
-          <div>
-            <p className="text-lg font-bold text-foreground leading-tight">{fmtVnd(data?.totalRevenue ?? 0)}</p>
-            <p className="text-xs text-muted-foreground">Tổng doanh thu</p>
-          </div>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-            <ShoppingBag size={20} className="text-blue-500" weight="duotone" />
-          </div>
-          <div>
-            <p className="text-lg font-bold text-foreground leading-tight">{fmtNum(data?.orderCount ?? 0)}</p>
-            <p className="text-xs text-muted-foreground">Số đơn</p>
-          </div>
-        </div>
+  function showGroup(row: OrderGroup, type: "staff" | "channel" | "team") {
+    const key = JSON.parse(row.key) as string[];
+    setFilters(f => ({ ...f, ...(type === "staff" ? { staff: row.name, team: row.team } : type === "team" ? { team: row.name } : { channel: key[1] }) }));
+    setPage(1); setView("orders");
+  }
+
+  return <div className="flex flex-col gap-5">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div role="tablist" aria-label="Thị trường đơn hàng" className="inline-flex p-1 bg-muted rounded-xl border border-border">
+        {[{ id: "VIETNAM", label: "Việt Nam", sub: "Sapo" }, { id: "GLOBAL", label: "Global", sub: "Pancake" }].map(m => <button key={m.id} role="tab" aria-selected={market === m.id}
+          onClick={() => { setMarket(m.id); setFilters(marketFilters(m.id)); setCurrency(""); setPage(1); }}
+          className={`px-5 py-2 rounded-lg text-sm transition-colors ${market === m.id ? "bg-card shadow-sm text-blue-500 font-semibold" : "text-muted-foreground hover:text-foreground"}`}>
+          {m.label} <span className="text-xs font-normal ml-1">· {m.sub}</span>
+        </button>)}
       </div>
-
-      {/* Biểu đồ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Donut: tỉ trọng doanh thu theo kênh */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-            <ChartPie size={18} className="text-violet-500" /> Tỉ trọng doanh thu theo kênh
-          </h3>
-          <div className="h-[210px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={channelPie} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2}>
-                  {channelPie.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
-                  <Label value={fmtVndShort(data?.totalRevenue ?? 0)} position="center" fill={chart.labelFill} fontSize={12} fontWeight="bold" />
-                </Pie>
-                <Tooltip contentStyle={chart.tooltip} formatter={(v) => fmtVnd(Number(v))} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="grid grid-cols-2 gap-1.5 mt-2 text-xs max-h-[140px] overflow-y-auto pr-1 custom-scrollbar">
-            {channelPie.map((c, i) => {
-              const totalRev = data?.totalRevenue || channelPie.reduce((s, x) => s + x.value, 0) || 1;
-              const pct = ((c.value / totalRev) * 100).toFixed(1);
-              return (
-                <div key={i} className="flex items-center justify-between gap-1.5 min-w-0 bg-muted/30 px-2 py-1 rounded">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
-                    <span className="text-foreground font-medium text-xs truncate" title={c.name}>{c.name}</span>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span className="text-blue-600 dark:text-blue-400 font-medium text-[11px]">{fmtVndShort(c.value)}</span>
-                    <span className="font-semibold text-foreground text-[10px] bg-background px-1 py-0.5 rounded border border-border">{pct}%</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Cột: doanh thu theo team kinh doanh */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-            <UsersThree size={18} className="text-blue-500" /> Doanh thu theo team kinh doanh
-          </h3>
-          <div className="h-[260px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={teamBar} margin={{ top: 25, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
-                <XAxis dataKey="name" stroke="#6b7280" fontSize={11} tickLine={false} />
-                <YAxis stroke="#6b7280" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${Math.round(v / 1e6)}M`} />
-                <Tooltip contentStyle={chart.tooltip} formatter={(v) => fmtVnd(Number(v))} cursor={{ fill: "rgba(59,130,246,0.08)" }} />
-                <Bar dataKey="revenue" name="Doanh thu" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={34}>
-                  <LabelList dataKey="revenue" position="top" formatter={(v) => fmtVndShort(Number(v ?? 0))} style={{ fill: chart.labelFill, fontSize: "10px", fontWeight: "600" }} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* Bảng chi tiết theo nhân viên */}
-      <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-          <UserCircle size={18} className="text-amber-500" /> Chi tiết theo nhân viên
-          <span className="text-xs text-muted-foreground font-normal">({data?.staffTable?.length ?? 0})</span>
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left whitespace-nowrap">
-            <thead className="text-muted-foreground border-b border-border">
-              <tr>
-                <th className="px-3 py-2 font-medium">#</th>
-                <th className="px-3 py-2 font-medium">Nhân viên</th>
-                <th className="px-3 py-2 font-medium">Team</th>
-                <th className="px-3 py-2 font-medium">Kênh chính</th>
-                <th className="px-3 py-2 font-medium text-right">Số đơn</th>
-                <th className="px-3 py-2 font-medium text-right">% đơn</th>
-                <th className="px-3 py-2 font-medium text-right">Doanh thu</th>
-                <th className="px-3 py-2 font-medium text-right">% DT</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border text-foreground">
-              {(data?.staffTable ?? []).length === 0 ? (
-                <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">Không có dữ liệu</td></tr>
-              ) : (data?.staffTable ?? []).map((s, i) => {
-                const pctOrders = data && data.orderCount > 0 ? (s.orders / data.orderCount) * 100 : 0;
-                const pctRev = data && data.totalRevenue > 0 ? (s.revenue / data.totalRevenue) * 100 : 0;
-                return (
-                  <tr key={i} className="hover:bg-muted/30">
-                    <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
-                    <td className="px-3 py-2 font-medium text-foreground">{s.name}</td>
-                    <td className="px-3 py-2"><span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[10px]">{s.team}</span></td>
-                    <td className="px-3 py-2 text-muted-foreground">{CHANNEL_LABEL[s.topChannel] ?? s.topChannel ?? "—"}</td>
-                    <td className="px-3 py-2 text-right">{fmtNum(s.orders)}</td>
-                    <td className="px-3 py-2 text-right text-muted-foreground">{pctOrders.toFixed(1)}%</td>
-                    <td className="px-3 py-2 text-right font-semibold">{fmtVnd(s.revenue)}</td>
-                    <td className="px-3 py-2 text-right text-muted-foreground">{pctRev.toFixed(1)}%</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Breakdown grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <BreakdownCard title="Theo kênh" icon={<Storefront size={18} className="text-violet-500" />} items={data?.byChannel ?? []} labelMap={CHANNEL_LABEL} />
-        <BreakdownCard title="Theo page khách nhắn" icon={<FacebookLogo size={18} className="text-blue-500" />} items={data?.byMessagedPage ?? []} limit={15} />
-        <BreakdownCard title="Theo team kinh doanh" icon={<UsersThree size={18} className="text-blue-500" />} items={data?.byTeam ?? []} />
-        <BreakdownCard title="Theo nhân viên" icon={<UserCircle size={18} className="text-amber-500" />} items={data?.byStaff ?? []} limit={15} />
-      </div>
+      {data && <span className="text-xs text-muted-foreground">{data.sourceName} · {data.syncSchedule ? 'Đồng bộ lúc' : 'Tải lúc'} {date(data.loadedAt)}{data.syncSchedule ? ` · Lịch: ${data.syncSchedule}` : ''}</span>}
     </div>
-  );
+    {loading ? <div role="status" className="border border-border rounded-xl bg-card p-12 text-center text-muted-foreground animate-pulse">Đang tải và đối chiếu đơn hàng {market === "GLOBAL" ? "Pancake" : "Sapo"}…</div>
+      : current?.error ? <div role="alert" className="border border-red-500/30 bg-red-500/5 rounded-xl p-6 text-sm"><p>{current.error}</p><button className="mt-3 text-blue-500 underline" onClick={() => setRetry(n => n + 1)}>Thử lại</button></div>
+      : <>
+        {data?.syncWarning && <p role="status" className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">{data.syncWarning}</p>}
+        <div className="rounded-xl border border-border bg-card p-4 text-sm">
+          <p><strong>{num(allOrders.length)} đơn trong khoảng ngày đã chọn</strong> · Tất cả trạng thái và tiền tệ, trước bộ lọc bên dưới.</p>
+          <div className="flex flex-wrap gap-2 mt-3">
+            {currencyCounts.map(([code, count]) => <button key={code} onClick={() => { setCurrency(code); setFilters(marketFilters(market)); setPage(1); }}
+              className={`rounded-lg border px-3 py-1.5 text-xs ${currency === code ? "border-blue-500 bg-blue-500/10 text-blue-500" : "border-border text-muted-foreground hover:bg-muted"}`}>
+              {code}: {num(count)} đơn
+            </button>)}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-3 items-end">
+          <Select label="Tiền tệ" value={currency} options={currencies.length ? currencyCounts.map(([code, count]) => ({ id: code, label: `${code} · ${num(count)} đơn` })) : [{ id: "VND", label: "VND" }]} all={false} onChange={v => { setCurrency(v); setFilters(f => ({ ...marketFilters(market), role: f.role })); setPage(1); }} />
+          <Select label="Phân bổ theo" value={filters.role} all={false} options={[{ id: "owner", label: "Người phụ trách kênh" }, { id: "seller", label: "Người bán / xử lý đơn" }]} onChange={v => { setFilters(f => ({ ...f, role: v as "owner" | "seller", staff: "", team: "" })); setPage(1); }} />
+          <Select label="Nền tảng" value={filters.platform} options={options.platforms} onChange={v => updateFilter("platform", v)} />
+          <Select label="Kênh" value={filters.channel} options={options.channels} onChange={v => updateFilter("channel", v)} />
+          <Select label="Team" value={filters.team} options={options.teams} onChange={v => updateFilter("team", v)} />
+          <Select label="Nhân viên" value={filters.staff} options={options.staffs} onChange={v => updateFilter("staff", v)} />
+          <Select label="Trạng thái đơn" value={filters.status} all={false} options={[{ id: "REVENUE", label: "Đơn ghi nhận doanh thu" }, { id: "ALL", label: "Tất cả trạng thái" }, ...options.statuses]} onChange={v => updateFilter("status", v)} />
+          <button onClick={() => { setFilters(marketFilters(market)); setPage(1); }} className="text-xs text-blue-500 hover:underline pb-2">Đặt lại bộ lọc</button>
+        </div>
+        <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-3 leading-relaxed">
+          <p>{data?.revenueRule} Lọc theo ngày tạo đơn, múi giờ Việt Nam.</p>
+          <p>Tiền giữ nguyên theo đơn, chưa quy đổi; đang xem {currency}. Nhân viên/team của kênh được đối chiếu theo danh mục hiện tại, không suy đoán từ tên người bán.</p>
+        </div>
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          {[{ label: "Doanh thu", value: formatOrderMoney(revenue, currency), sub: `${num(eligibleCount)} đơn đủ điều kiện` }, { label: "Số đơn theo bộ lọc", value: num(orders.length), sub: "Bao gồm các trạng thái đã chọn" }, { label: "Kênh có đơn", value: num(new Set(orders.filter(o => o.channel !== UNKNOWN_ORDER_OWNER).map(channelKey)).size), sub: "Theo kênh nguồn của đơn" }, { label: "Chưa gán đủ người / team", value: num(unknownCount), sub: "Vẫn được tính trong tổng báo cáo" }].map(k => <div key={k.label} className="bg-card border border-border rounded-xl p-4">
+            <p className="text-xs text-muted-foreground mb-2">{k.label}</p><p className="text-xl font-bold break-words">{k.value}</p><p className="text-xs text-muted-foreground mt-1">{k.sub}</p>
+          </div>)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <section className="bg-card border border-border rounded-xl p-5 shadow-sm">
+            <h3 className="text-sm font-semibold flex items-center gap-2"><ChartPie size={18} className="text-violet-500" /> Doanh thu theo kênh</h3>
+            {pie.length ? <><div className="h-56"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pie} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={2}>{pie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}</Pie><Tooltip contentStyle={chart.tooltip} formatter={v => formatOrderMoney(Number(v), currency)} /></PieChart></ResponsiveContainer></div>
+              <div className="grid sm:grid-cols-2 gap-2 text-xs">{pie.map((p, i) => <div key={i} className="flex items-center gap-2 min-w-0"><span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLORS[i % COLORS.length] }} /><span className="truncate flex-1" title={p.name}>{p.name}</span><span>{formatOrderMoney(p.value, currency, true)}</span></div>)}</div></>
+              : <p className="py-20 text-center text-sm text-muted-foreground">Chưa có doanh thu phù hợp</p>}
+          </section>
+          <section className="bg-card border border-border rounded-xl p-5 shadow-sm">
+            <h3 className="text-sm font-semibold flex items-center gap-2 mb-4"><UsersThree size={18} className="text-blue-500" /> Doanh thu theo team · {currency}</h3>
+            {byTeam.some(t => t.revenue > 0) ? <div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={byTeam.slice(0, 8)} margin={{ top: 12, right: 12, bottom: 20, left: 10 }}><CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} /><XAxis dataKey="name" fontSize={10} interval={0} tickFormatter={v => String(v).length > 16 ? `${String(v).slice(0, 16)}…` : String(v)} /><YAxis fontSize={10} tickFormatter={v => new Intl.NumberFormat("vi-VN", { notation: "compact" }).format(Number(v))} /><Tooltip contentStyle={chart.tooltip} formatter={v => formatOrderMoney(Number(v), currency)} /><Bar name="Doanh thu" dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} /></BarChart></ResponsiveContainer></div> : <p className="py-20 text-center text-sm text-muted-foreground">Chưa có doanh thu phù hợp</p>}
+          </section>
+        </div>
+        <div className="flex flex-wrap justify-between gap-3 items-center">
+          <div role="tablist" aria-label="Chi tiết doanh thu" className="flex flex-wrap gap-1">
+            {([{ id: "staff", label: "Theo nhân viên" }, { id: "channel", label: "Theo kênh" }, { id: "team", label: "Theo team" }, { id: "orders", label: "Chi tiết đơn hàng" }] as const).map(t => <button key={t.id} role="tab" aria-selected={view === t.id} onClick={() => setView(t.id)} className={`px-4 py-2 rounded-lg text-sm ${view === t.id ? "bg-blue-500/10 text-blue-500 font-semibold" : "text-muted-foreground hover:bg-muted"}`}>{t.label}</button>)}
+          </div>
+          <input aria-label="Tìm mã đơn, kênh, nhân viên" value={filters.search} onChange={e => updateFilter("search", e.target.value)} placeholder="Tìm mã đơn, kênh, nhân viên…" className="border border-border bg-card rounded-lg px-3 py-2 text-sm w-72 max-w-full" />
+        </div>
+        {view === "staff" && <GroupTable title={filters.role === "owner" ? "Theo người phụ trách kênh" : "Theo người bán / xử lý đơn"} rows={byStaff} staff total={revenue} onSelect={r => showGroup(r, "staff")} />}
+        {view === "channel" && <GroupTable title="Theo kênh" rows={byChannel} total={revenue} onSelect={r => showGroup(r, "channel")} />}
+        {view === "team" && <GroupTable title="Theo team" rows={byTeam} total={revenue} onSelect={r => showGroup(r, "team")} />}
+        {view === "orders" && <section className="bg-card border border-border rounded-xl p-5 shadow-sm">
+          <h3 className="text-sm font-semibold mb-4">Chi tiết đơn hàng <span className="font-normal text-muted-foreground">({num(orders.length)})</span></h3>
+          <div className="overflow-x-auto"><table className="w-full text-xs text-left whitespace-nowrap">
+            <thead className="border-b border-border text-muted-foreground"><tr>{["Mã đơn / ID nguồn", "Ngày tạo", "Kênh / Nền tảng", "Phụ trách kênh", "Team kênh", "Người bán", "Team người bán", "Trạng thái", "Giá trị đơn", "Doanh thu", "Đối chiếu"].map(h => <th className="p-3 font-medium" key={h}>{h}</th>)}</tr></thead>
+            <tbody className="divide-y divide-border">
+              {!orders.length && <tr><td colSpan={11} className="p-10 text-center text-muted-foreground">Không có đơn phù hợp bộ lọc</td></tr>}
+              {orders.slice((currentPage - 1) * 30, currentPage * 30).map(o => <tr key={o.id} className="hover:bg-muted/30">
+                <td className="p-3"><span className="font-semibold text-blue-500">{o.code}</span><div className="text-muted-foreground mt-1">{o.source} · {o.externalId}</div></td>
+                <td className="p-3">{date(o.orderedAt)}</td><td className="p-3 max-w-72"><div className="truncate" title={o.channel}>{o.channel}</div><div className="text-muted-foreground mt-1">{o.platform}{o.pageId ? ` · ${o.pageId}` : ""}</div></td>
+                <td className="p-3">{o.owner}</td><td className="p-3">{o.team}</td><td className="p-3">{o.seller}</td><td className="p-3">{o.sellerTeam}</td>
+                <td className="p-3"><span className={`px-2 py-1 rounded ${o.eligible ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground"}`}>{o.status}</span></td>
+                <td className="p-3 text-right tabular-nums">{formatOrderMoney(o.value, o.currency)}</td><td className="p-3 text-right font-semibold tabular-nums">{formatOrderMoney(o.revenue, o.currency)}</td><td className="p-3 text-muted-foreground">{o.attribution}</td>
+              </tr>)}
+            </tbody>
+          </table></div>
+          <div className="flex items-center justify-between gap-3 mt-4 text-xs text-muted-foreground"><span>Trang {currentPage} / {pageCount} · 30 đơn/trang</span><div className="flex gap-2"><button disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)} className="border border-border px-3 py-2 rounded disabled:opacity-40">Trước</button><button disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)} className="border border-border px-3 py-2 rounded disabled:opacity-40">Sau</button></div></div>
+        </section>}
+      </>}
+  </div>;
 });

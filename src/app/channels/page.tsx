@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight, Funnel, CaretDown, MagnifyingGlass, FacebookLogo, InstagramLogo, DownloadSimple
+  SpinnerGap, Plus, Trash, Broadcast, ListMagnifyingGlass, PencilSimple, CaretLeft, CaretRight, Funnel, CaretDown, MagnifyingGlass, DownloadSimple
 } from "@phosphor-icons/react";
 import { apiGet, apiPost, apiPatch, apiDelete, API_URL } from "@/lib/api";
 import * as XLSX from "xlsx";
@@ -204,28 +204,6 @@ export default function ChannelsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [metaConnectMsg, setMetaConnectMsg] = useState<{ ok: boolean; text: string } | null>(null);
-
-  // Đọc kết quả redirect về từ /meta-oauth/callback (?metaConnect=ok|error) rồi dọn URL.
-  // Dùng window.location trực tiếp (thay vì useSearchParams) để khỏi bắt buộc bọc Suspense
-  // chỉ vì 1 lần đọc query string lúc mount.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const result = params.get("metaConnect");
-    if (!result) return;
-    const isInstagram = params.get("platform") === "instagram";
-    const label = isInstagram ? "Instagram" : "Facebook";
-    if (result === "ok") {
-      const matched = params.get("matched") ?? "0";
-      const text = isInstagram
-        ? `Kết nối ${label} thành công (@${params.get("username") ?? "?"}): ${matched === "1" ? "đã khớp & cập nhật token cho kênh tương ứng." : "không tìm thấy kênh IG khớp trong DB — kiểm tra lại externalId/username của kênh."}`
-        : `Kết nối ${label} thành công: tìm thấy ${params.get("pages") ?? "0"} Page, đã khớp & cập nhật token cho ${matched} kênh.`;
-      setMetaConnectMsg({ ok: true, text });
-    } else {
-      setMetaConnectMsg({ ok: false, text: `Kết nối ${label} lỗi: ${params.get("reason") ?? "không rõ nguyên nhân"}` });
-    }
-    router.replace("/channels");
-  }, [router]);
 
   // Phân trang
   const [page, setPage] = useState(0);
@@ -511,38 +489,12 @@ export default function ChannelsPage() {
             <DownloadSimple size={18} weight="bold" />
             Xuất XLSX ({filtered.length})
           </button>
-          <a
-            href={`${API_URL}/meta-oauth/connect`}
-            className="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 transition-colors"
-            title="Login Facebook để cấp Page Access Token riêng cho các Page/IG (liên kết Page) bạn quản lý"
-          >
-            <FacebookLogo size={18} weight="fill" /> Kết nối Facebook
-          </a>
-          <a
-            href={`${API_URL}/meta-oauth/instagram/connect`}
-            className="inline-flex items-center gap-2 rounded-md bg-gradient-to-br from-purple-600 to-pink-500 hover:opacity-90 text-white text-sm font-medium px-4 py-2 transition-opacity"
-            title="Login thẳng bằng tài khoản Instagram — dùng cho kênh IG chưa liên kết Page Facebook"
-          >
-            <InstagramLogo size={18} weight="fill" /> Kết nối Instagram
-          </a>
         </div>
       </div>
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-md px-4 py-2">
           {error}
-        </div>
-      )}
-
-      {metaConnectMsg && (
-        <div
-          className={`text-sm rounded-md px-4 py-2 border ${
-            metaConnectMsg.ok
-              ? "bg-green-500/10 border-green-500/30 text-green-400"
-              : "bg-red-500/10 border-red-500/30 text-red-400"
-          }`}
-        >
-          {metaConnectMsg.text}
         </div>
       )}
 

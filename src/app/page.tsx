@@ -364,11 +364,8 @@ function OverviewInner() {
       p.set(k, v);
     }
 
-    if (platform !== "ALL") p.set("platform", platform);
-    if (staff !== "ALL") p.set("staff", staff);
-
     return p.toString();
-  }, [customFrom, customTo, platform, staff]);
+  }, [customFrom, customTo]);
 
   const overviewKpis = useMemo((): KpiItem[] => {
     const ICONS: Record<string, Icon> = {
@@ -435,6 +432,7 @@ function OverviewInner() {
       </div>
 
       <OverviewHeader
+        ordersMode={selectedTab === "orders"}
         search={search}
         onSearchChange={setSearch}
         platform={platform}
