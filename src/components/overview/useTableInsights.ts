@@ -72,17 +72,13 @@ export const OBJECTIVE_LABELS = [
   "Mess", "Like page", "Follow", "Chuyển đổi web", "Tương tác",
 ] as const;
 
-interface UseTableInsightsOptions {
-  withSapo?: boolean;
-}
-
 const EMPTY_CAMPAIGNS: CampaignInsight[] = [];
 const EMPTY_CATALOG: { sku: string; name: string }[] = [];
 
 // Hook độc lập cho từng bảng ở Tổng quan: tự quản lý bộ lọc (ngày/tài khoản/chiến dịch)
 // và tự fetch dữ liệu insight campaign (+ Sapo SKU nếu cần). Ngày lọc bằng cách gọi lại API;
 // tài khoản và chiến dịch lọc phía client trên mảng đã tải.
-export function useTableInsights({ withSapo = false }: UseTableInsightsOptions = {}) {
+export function useTableInsights() {
   const initial = useMemo(() => presetToDates("thisMonth"), []);
 
   const [presetId, setPresetId] = useState("thisMonth");
@@ -98,7 +94,7 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
 
   // Gộp dữ liệu tải về vào MỘT state kèm khoá đã sinh ra nó. "Đang tải" được suy ra
   // bằng cách so khoá, thay vì gọi setLoading(true) ngay trong effect (cascading render).
-  const fetchKey = `${datesToQuery(from, to)}|${withSapo}`;
+  const fetchKey = datesToQuery(from, to);
   const [result, setResult] = useState<{
     key: string;
     campaigns: CampaignInsight[];
@@ -109,7 +105,7 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
     let cancelled = false;
     const q = datesToQuery(from, to);
     const fetchCamps = apiGet(`/mkt-api/campaigns/insights?${q}`).catch(() => []);
-    const fetchCatalog = withSapo ? apiGet(`/sapo/sku-catalog`).catch(() => []) : Promise.resolve([]);
+    const fetchCatalog = Promise.resolve([]);
 
     Promise.all([fetchCamps, fetchCatalog]).then(([camps, catalog]) => {
       if (cancelled) return;
@@ -123,7 +119,7 @@ export function useTableInsights({ withSapo = false }: UseTableInsightsOptions =
     return () => {
       cancelled = true;
     };
-  }, [from, to, withSapo, fetchKey]);
+  }, [from, to, fetchKey]);
 
   const loading = result?.key !== fetchKey;
   const rawCampaigns = useMemo(() => result?.campaigns ?? EMPTY_CAMPAIGNS, [result]);

@@ -11,7 +11,6 @@ import {
 import { apiGet, fmtVnd, datesToQuery } from "@/lib/api";
 import { pageNameKey } from "@/lib/pageNameKey";
 import { useChartColors } from "@/lib/chartTheme";
-import OrdersBreakdown, { type OrdersBreakdownHandle } from "@/components/OrdersBreakdown";
 import OverviewHeader, { type KpiItem } from "@/components/overview/OverviewHeader";
 import { presetToDates } from "@/components/DateRangePicker";
 import OverviewBody from "@/components/overview/OverviewBody";
@@ -59,16 +58,6 @@ type Account = {
   amountSpent: number;
 };
 
-// ===== Dữ liệu doanh thu thật từ Sapo =====
-type SapoData = {
-  totalRevenue: number;
-  totalReceived: number;
-  totalDiscounts: number;
-  orderCount: number;
-  bySource: { source: string; revenue: number; orders: number }[];
-  byFinancialStatus: { status: string; revenue: number; orders: number }[];
-};
-type SapoSku = { sku: string; revenue: number; quantity: number; lines: number };
 
 // ===== Insight quảng cáo thật từ Meta/TikTok (qua Pipeboard) =====
 type InsightData = {
@@ -99,17 +88,15 @@ function OverviewInner() {
   const searchParams = useSearchParams();
   const campaignTableRef = useRef<CampaignTableHandle>(null);
   const productTableRef = useRef<ProductTableHandle>(null);
-  const ordersRef = useRef<OrdersBreakdownHandle>(null);
   const [, setCampaigns] = useState<Campaign[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Dữ liệu doanh thu thật từ Sapo (theo khoảng thời gian đang chọn) — xem sapoResult bên dưới.
   // Bảng SKU giờ tự fetch dữ liệu; state này chỉ còn phục vụ khối LEGACY_OVERVIEW (đang tắt).
-  const [sapoSkus] = useState<SapoSku[]>([]);
 
   // Tab từ query param ?tab=overview|channel|orders
-  const TAB_VALUES = ["overview", "channel", "orders"] as const;
+  const TAB_VALUES = ["overview", "channel"] as const;
   type TabValue = typeof TAB_VALUES[number];
   const rawTab = searchParams.get("tab");
   const selectedTab: TabValue = TAB_VALUES.includes(rawTab as TabValue) ? (rawTab as TabValue) : "overview";
@@ -151,9 +138,6 @@ function OverviewInner() {
   const [organicChannels, setOrganicChannels] = useState<{ id: string; label: string; platform: string }[]>([]);
 
   const currentStaffs = useMemo(() => {
-    if (selectedTab === "orders") {
-      return employeeOptions;
-    }
     return [
       { id: "Việt", label: "Việt" },
       { id: "Thành", label: "Thành" },
@@ -161,7 +145,7 @@ function OverviewInner() {
       { id: "Cương", label: "Cương" },
       { id: "Khác", label: "Khác" },
     ];
-  }, [selectedTab, employeeOptions]);
+  }, []);
 
   // Load Initial Data
   const load = useCallback(async () => {
@@ -226,29 +210,6 @@ function OverviewInner() {
     load();
   }, [load]);
 
-  // Doanh thu Sapo chỉ map được theo thời gian (utm_id của đơn ở cấp ad,
-  // không gắn được vào campaign/nền tảng/tài khoản) → chỉ phụ thuộc dateRange.
-  const sapoQuery = datesToQuery(customFrom, customTo);
-  // Lưu dữ liệu kèm query đã sinh ra nó. Khi query đổi, `sapo` tự động là null cho tới
-  // khi fetch xong — thay cho setSapo(null) đồng bộ trong effect (gây cascading render).
-  // Hiệu quả giữ nguyên: thẻ hiện "—" lúc đang tải thay vì đọng số của khoảng ngày trước.
-  const [sapoResult, setSapoResult] = useState<{ query: string; data: SapoData | null } | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    apiGet(`/sapo/revenue?${sapoQuery}`)
-      .then((rev) => {
-        if (!cancelled) setSapoResult({ query: sapoQuery, data: rev });
-      })
-      .catch(() => {
-        if (!cancelled) setSapoResult({ query: sapoQuery, data: null });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [sapoQuery]);
-
-  const sapo = sapoResult?.query === sapoQuery ? sapoResult.data : null;
 
   // Chỉ số quảng cáo (Meta/TikTok) tôn trọng toàn bộ bộ lọc của Tổng quan.
   const insightsQuery = useMemo(() => {
@@ -355,18 +316,6 @@ function OverviewInner() {
   // Format Helper for numbers
   const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n || 0));
 
-  const sapoFilterQuery = useMemo(() => {
-    const p = new URLSearchParams();
-    
-    // Parse khoảng thời gian đã chọn
-    const dateParams = new URLSearchParams(datesToQuery(customFrom, customTo));
-    for (const [k, v] of dateParams.entries()) {
-      p.set(k, v);
-    }
-
-    return p.toString();
-  }, [customFrom, customTo]);
-
   const overviewKpis = useMemo((): KpiItem[] => {
     const ICONS: Record<string, Icon> = {
       spend: CurrencyDollar,
@@ -381,7 +330,6 @@ function OverviewInner() {
 
     const hasData = !!insights?.hasData;
     const spend = insights?.totalSpend ?? 0;
-    const revenue = sapo?.totalRevenue ?? 0;
     const impressions = insights?.impressions ?? 0;
     const reach = insights?.reach ?? 0;
     const clicks = insights?.clicks ?? 0;
@@ -399,14 +347,14 @@ function OverviewInner() {
 
     return data.map((k) => ({
       label: k.label,
-      value: hasData || revenue > 0 ? k.value : "—",
+      value: hasData ? k.value : "—",
       sub: k.sub,
       change: k.change,
       icon: ICONS[k.key],
       iconColor: k.color,
       iconBg: k.bg,
     }));
-  }, [insights, sapo]);
+  }, [insights]);
 
   return (
     <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-10 font-sans -m-4 sm:-m-5 p-4 sm:p-5 bg-background min-h-full" suppressHydrationWarning>
@@ -432,7 +380,7 @@ function OverviewInner() {
       </div>
 
       <OverviewHeader
-        ordersMode={selectedTab === "orders"}
+        ordersMode={false}
         search={search}
         onSearchChange={setSearch}
         platform={platform}
@@ -498,13 +446,6 @@ function OverviewInner() {
               },
             ];
             const ok = exportWorkbook(`hieu-qua-theo-kenh-${date}.xlsx`, sheets);
-            if (!ok) alert("Không có dữ liệu để xuất.");
-            return;
-          }
-
-          if (selectedTab === "orders") {
-            const sheets = ordersRef.current?.exportSheets() ?? [];
-            const ok = exportWorkbook(`don-hang-ban-${date}.xlsx`, sheets);
             if (!ok) alert("Không có dữ liệu để xuất.");
             return;
           }
@@ -656,46 +597,6 @@ function OverviewInner() {
                   <div className="lg:col-span-8 flex flex-col gap-5">
 
                     {/* SKU Detail Table */}
-                    <div className="bg-background border border-border rounded-xl overflow-hidden">
-                      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                        <h3 className="text-sm font-semibold text-foreground">Doanh thu theo SKU (Sapo)</h3>
-                        <span className="text-xs text-muted-foreground">Theo doanh thu thật</span>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs text-left whitespace-nowrap">
-                          <thead className="border-b border-border">
-                            <tr>
-                              <th className="px-4 py-3 font-medium text-blue-400">SKU</th>
-                              <th className="px-4 py-3 font-medium text-blue-400 text-right">Số lượng bán</th>
-                              <th className="px-4 py-3 font-medium text-blue-400 text-right">Số dòng đơn</th>
-                              <th className="px-4 py-3 font-medium text-blue-400 text-right">Doanh thu</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border text-foreground">
-                            {sapoSkus.length === 0 ? (
-                              <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">Chưa có dữ liệu SKU. Hãy đồng bộ Sapo.</td></tr>
-                            ) : (
-                              sapoSkus.map((s, idx) => (
-                                <tr key={s.sku || idx} className="hover:bg-card/40">
-                                  <td className="px-4 py-2.5 font-semibold text-foreground">{s.sku}</td>
-                                  <td className="px-4 py-2.5 text-right">{fmtNum(s.quantity)}</td>
-                                  <td className="px-4 py-2.5 text-right text-muted-foreground">{fmtNum(s.lines)}</td>
-                                  <td className="px-4 py-2.5 text-right font-medium text-green-400">{fmtVnd(s.revenue)}</td>
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                          {sapoSkus.length > 0 && (
-                            <tfoot className="border-t border-border">
-                              <tr>
-                                <td colSpan={4} className="px-4 py-2 text-right text-[14px] text-muted-foreground">Top {sapoSkus.length} SKU theo doanh thu</td>
-                              </tr>
-                            </tfoot>
-                          )}
-                        </table>
-                      </div>
-                    </div>
-
                     {/* Content Line Bar - full width */}
                     <div className="bg-background border border-border rounded-xl p-5">
                       <h3 className="text-sm font-semibold text-foreground mb-3">Hiệu quả theo tuyến nội dung</h3>
@@ -1036,10 +937,6 @@ function OverviewInner() {
           })()}
 
 
-          {/* TAB 4: ĐƠN HÀNG BÁN (Sapo) */}
-          {selectedTab === "orders" && (
-            <OrdersBreakdown ref={ordersRef} query={sapoFilterQuery} />
-          )}
         </>
       )}
     </div>
