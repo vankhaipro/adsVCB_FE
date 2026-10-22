@@ -24,7 +24,7 @@ function colorOf(name: string): string {
   return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
 
-export default function Header() {
+export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const { toggleTheme } = useTheme();
   const user = useAuthUser();
   const displayName = user?.name || "Người dùng";
@@ -33,12 +33,17 @@ export default function Header() {
   return (
     <header className="h-[52px] bg-card border-b border-border flex items-center justify-between px-4 sticky top-0 z-10 flex-shrink-0">
       <div className="flex items-center gap-3">
-        <button className="text-muted-foreground hover:text-foreground lg:hidden">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          aria-label="Mở menu"
+          className="text-muted-foreground hover:text-foreground lg:hidden p-1 -ml-1"
+        >
           <List size={24} />
         </button>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4">
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}

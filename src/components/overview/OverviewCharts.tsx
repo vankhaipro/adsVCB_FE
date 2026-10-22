@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   ResponsiveContainer,
   LineChart, Line,
@@ -113,12 +113,33 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
       .map((s) => ({ name: s.name, spend: s.spend }))
       .sort((a, b) => b.spend - a.spend);
   }, [breakdown]);
-  const channelManagerUnmatchedPct = useMemo(() => {
+  // Cột "Chưa gắn quản lý kênh" tách riêng khỏi biểu đồ: nó lớn gấp nhiều lần mọi người khác
+  // nên ép trục về thang 200tr và dẹt các cột còn lại, khó so sánh người với người.
+  const UNMATCHED = "Chưa gắn quản lý kênh";
+  const channelManagerRanked = useMemo(
+    () => channelManagerSpendData.filter((c) => c.name !== UNMATCHED),
+    [channelManagerSpendData],
+  );
+  const channelManagerSummary = useMemo(() => {
     const total = channelManagerSpendData.reduce((s, c) => s + c.spend, 0);
-    if (total <= 0) return 0;
-    const unmatched = channelManagerSpendData.find((c) => c.name === "Chưa gắn quản lý kênh")?.spend ?? 0;
-    return Math.round((unmatched / total) * 100);
+    const unmatched = channelManagerSpendData.find((c) => c.name === UNMATCHED)?.spend ?? 0;
+    const matched = total - unmatched;
+    return {
+      total,
+      unmatched,
+      matched,
+      unmatchedPct: total > 0 ? Math.round((unmatched / total) * 100) : 0,
+    };
   }, [channelManagerSpendData]);
+  const channelManagerUnmatchedPct = channelManagerSummary.unmatchedPct;
+  // Mặc định chỉ hiện top 8 để card gọn, ngang chiều cao với card Nhân viên bên cạnh.
+  const MANAGER_TOP = 8;
+  const [showAllManagers, setShowAllManagers] = useState(false);
+  const channelManagerShown = showAllManagers ? channelManagerRanked : channelManagerRanked.slice(0, MANAGER_TOP);
+  const staffTotal = useMemo(() => staffSpendData.reduce((sum, s) => sum + s.spend, 0), [staffSpendData]);
+  // 75.937.560 -> "75,9tr"; dưới 1tr hiện nghìn để người nhỏ vẫn đọc được.
+  const fmtMillion = (n: number) =>
+    n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(".", ",")}tr` : `${Math.round(n / 1000)}k`;
 
   const hasData = trend.length > 0;
 
@@ -300,18 +321,24 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
           {/* Chi phí quảng cáo theo Nhân viên */}
           <Panel className="lg:col-span-6" title="Chi phí quảng cáo theo Nhân viên" subtitle="Người chạy suy từ tên chiến dịch">
             {staffSpendData.length > 0 ? (
-              <div className="h-[220px]">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                  <BarChart data={staffSpendData} margin={{ top: 22, right: 8, left: -10, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
-                    <XAxis dataKey="name" stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={45} />
-                    <YAxis stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => fmtCompact(v)} />
-                    <RTooltip contentStyle={tooltipStyle} cursor={{ fill: cursor }} formatter={(v) => [fmtNum(Number(v)) + "đ", "Chi phí"]} />
-                    <Bar dataKey="spend" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={56}>
-                      <LabelList dataKey="spend" position="top" formatter={(v) => fmtVndShort(Number(v ?? 0))} style={{ fill: labelFill, fontSize: "10px", fontWeight: "600" }} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs">
+                  <span className="font-semibold text-foreground">Tổng chi phí: {fmtNum(staffTotal)}đ</span>
+                  <span className="text-muted-foreground">{staffSpendData.length} nhóm người chạy</span>
+                </div>
+                <div style={{ height: Math.max(120, Math.max(staffSpendData.length, MANAGER_TOP) * 28 + 16) }}>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                    <BarChart data={staffSpendData} layout="vertical" margin={{ top: 4, right: 64, left: 4, bottom: 4 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
+                      <XAxis type="number" stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => fmtCompact(v)} />
+                      <YAxis type="category" dataKey="name" stroke={AXIS} fontSize={11} tickLine={false} axisLine={false} width={100} interval={0} />
+                      <RTooltip contentStyle={tooltipStyle} cursor={{ fill: cursor }} formatter={(v) => [fmtNum(Number(v)) + "đ", "Chi phí"]} />
+                      <Bar dataKey="spend" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={22}>
+                        <LabelList dataKey="spend" position="right" formatter={(v) => fmtMillion(Number(v ?? 0))} style={{ fill: labelFill, fontSize: "10px", fontWeight: "600" }} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             ) : (
               <div className="h-[120px] flex items-center justify-center text-sm text-muted-foreground">Chưa có dữ liệu</div>
@@ -322,28 +349,42 @@ export default function OverviewCharts({ trend, breakdown }: OverviewChartsProps
           <Panel
             className="lg:col-span-6"
             title="Chi phí quảng cáo theo Người quản lý kênh"
-            subtitle={
-              channelManagerUnmatchedPct > 0
-                ? `Người xây/quản lý kênh · còn ${channelManagerUnmatchedPct}% chi phí chưa nối được kênh (thiếu pageId)`
-                : "Người xây/quản lý kênh có video được lên ads"
-            }
+            subtitle="Người xây/quản lý kênh · xếp từ cao xuống thấp"
           >
             {channelManagerSpendData.length > 0 ? (
-              <div className="h-[220px]">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                  <BarChart data={channelManagerSpendData} margin={{ top: 22, right: 8, left: -10, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
-                    <XAxis dataKey="name" stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={45} />
-                    <YAxis stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => fmtCompact(v)} />
-                    <RTooltip contentStyle={tooltipStyle} cursor={{ fill: cursor }} formatter={(v) => [fmtNum(Number(v)) + "đ", "Chi phí"]} />
-                    <Bar dataKey="spend" radius={[4, 4, 0, 0]} maxBarSize={56}>
-                      {channelManagerSpendData.map((c) => (
-                        <Cell key={c.name} fill={c.name === "Chưa gắn quản lý kênh" ? "#6b7280" : "#8b5cf6"} />
-                      ))}
-                      <LabelList dataKey="spend" position="top" formatter={(v) => fmtVndShort(Number(v ?? 0))} style={{ fill: labelFill, fontSize: "10px", fontWeight: "600" }} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="flex flex-col gap-3">
+                {channelManagerUnmatchedPct > 0 && (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs">
+                    <span className="font-semibold text-foreground">Đã gắn người quản lý: {fmtNum(channelManagerSummary.matched)}đ ({100 - channelManagerUnmatchedPct}%)</span>
+                    <span className="text-muted-foreground">
+                      Chưa gắn: {fmtNum(channelManagerSummary.unmatched)}đ ({channelManagerUnmatchedPct}%) — Page chạy ads chưa có kênh organic cùng pageId
+                    </span>
+                  </div>
+                )}
+                <div className={showAllManagers ? "max-h-[420px] overflow-y-auto pr-1" : ""}>
+                  <div style={{ height: Math.max(120, channelManagerShown.length * 28 + 16) }}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                      <BarChart data={channelManagerShown} layout="vertical" margin={{ top: 4, right: 64, left: 4, bottom: 4 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
+                        <XAxis type="number" stroke={AXIS} fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => fmtCompact(v)} />
+                        <YAxis type="category" dataKey="name" stroke={AXIS} fontSize={11} tickLine={false} axisLine={false} width={130} interval={0} />
+                        <RTooltip contentStyle={tooltipStyle} cursor={{ fill: cursor }} formatter={(v) => [fmtNum(Number(v)) + "đ", "Chi phí"]} />
+                        <Bar dataKey="spend" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={16}>
+                          <LabelList dataKey="spend" position="right" formatter={(v) => fmtMillion(Number(v ?? 0))} style={{ fill: labelFill, fontSize: "10px", fontWeight: "600" }} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                {channelManagerRanked.length > MANAGER_TOP && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllManagers((v) => !v)}
+                    className="self-center text-xs font-medium text-primary hover:underline"
+                  >
+                    {showAllManagers ? "Thu gọn" : `Xem tất cả ${channelManagerRanked.length} người`}
+                  </button>
+                )}
               </div>
             ) : (
               <div className="h-[120px] flex items-center justify-center text-sm text-muted-foreground">Chưa có dữ liệu</div>
