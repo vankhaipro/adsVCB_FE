@@ -15,6 +15,8 @@ type Channel = {
   channelName: string;
   platform: string;
   externalId: string | null;
+  pageId: string | null; // Page ID Facebook dùng để nối với quảng cáo (khác externalId)
+  adCampaignCount?: number; // số chiến dịch ads đang nối được qua pageId
   url: string | null;
   isActive: boolean;
   createdAt: string;
@@ -58,6 +60,8 @@ function exportChannelsToXlsx(
       "Tên kênh": c.channelName || "",
       "Nền tảng": PLATFORM_LABEL[c.platform] || c.platform || "",
       "ID kênh": c.externalId || "",
+      "Page ID (ads)": c.pageId || "",
+      "Chiến dịch ads": c.adCampaignCount ?? 0,
       "URL": c.url || "",
       "Followers": c.followers || 0,
       "Trạng thái": c.isActive ? "Đang hoạt động" : "Tạm dừng",
@@ -84,6 +88,8 @@ function exportChannelsToXlsx(
     { wch: 28 }, // Tên kênh
     { wch: 14 }, // Nền tảng
     { wch: 22 }, // ID kênh
+    { wch: 22 }, // Page ID (ads)
+    { wch: 14 }, // Chiến dịch ads
     { wch: 40 }, // URL
     { wch: 14 }, // Followers
     { wch: 18 }, // Trạng thái
@@ -302,7 +308,7 @@ export default function ChannelsPage() {
     if (fMarket && (c.market ?? "") !== fMarket) return false;
     if (fSearch) {
       const q = fSearch.toLowerCase();
-      const hay = `${c.channelName ?? ""} ${c.externalId ?? ""} ${c.url ?? ""}`.toLowerCase();
+      const hay = `${c.channelName ?? ""} ${c.externalId ?? ""} ${c.pageId ?? ""} ${c.url ?? ""}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -682,6 +688,7 @@ export default function ChannelsPage() {
                   <th className="px-4 py-3 font-medium">Tên kênh</th>
                   <th className="px-4 py-3 font-medium">Nền tảng</th>
                   <th className="px-4 py-3 font-medium">ID kênh</th>
+                  <th className="px-4 py-3 font-medium" title="Page ID Facebook dùng để nối chi phí quảng cáo với kênh">Page ID (ads)</th>
                   <th className="px-4 py-3 font-medium">URL</th>
                   <th className="px-4 py-3 font-medium text-right">Followers</th>
                   <th className="px-4 py-3 font-medium text-center">Trạng thái</th>
@@ -691,7 +698,7 @@ export default function ChannelsPage() {
               </thead>
               <tbody className="divide-y divide-border text-foreground">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={12} className="px-4 py-10 text-center text-muted-foreground">{channels.length === 0 ? "Chưa có kênh nào. Thêm kênh bằng URL ở trên." : "Không có kênh khớp bộ lọc."}</td></tr>
+                  <tr><td colSpan={13} className="px-4 py-10 text-center text-muted-foreground">{channels.length === 0 ? "Chưa có kênh nào. Thêm kênh bằng URL ở trên." : "Không có kênh khớp bộ lọc."}</td></tr>
                 ) : (
                   rows.map((c) => {
                     const channelTeam = teamList.find((t) => t.name === c.team);
@@ -710,6 +717,23 @@ export default function ChannelsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-2.5 text-muted-foreground">{c.externalId || "—"}</td>
+                      <td className="px-4 py-2.5">
+                        {c.pageId ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="text-foreground">{c.pageId}</span>
+                            {(c.adCampaignCount ?? 0) > 0 && (
+                              <span
+                                className="text-[12px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-500 font-medium"
+                                title={`${c.adCampaignCount} chiến dịch ads đang nối với kênh này`}
+                              >
+                                ads {c.adCampaignCount}
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          c.platform === "FACEBOOK" ? <span className="text-amber-500" title="Kênh Facebook chưa có Page ID nên chưa nối được chi phí ads">Chưa có</span> : "—"
+                        )}
+                      </td>
                       <td className="px-4 py-2.5 max-w-[180px] truncate">
                         {c.url ? <a href={c.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline" title={c.url}>{c.url}</a> : "—"}
                       </td>
